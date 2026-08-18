@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import { Calendar, ChevronDown, Heart } from 'lucide-react'
+import { Calendar, ChevronDown, Heart, Mail } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import { couple, civilWedding, traditionalWedding } from '@/lib/config'
 
@@ -184,11 +184,17 @@ export default function Hero() {
           {/* CTA Buttons */}
           <motion.div
             variants={itemVariants}
-            className="flex flex-col sm:flex-row items-center justify-center gap-3"
+            className="flex flex-col sm:flex-row items-center justify-center gap-3 flex-wrap"
           >
             <Link href="/info">
               <Button variant="primary" size="lg">
                 Hochzeitsinfos
+              </Button>
+            </Link>
+            <Link href="/einladungen">
+              <Button variant="gold" size="lg">
+                <Mail size={16} />
+                Einladungen
               </Button>
             </Link>
             <Link href="/story">

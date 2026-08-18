@@ -3,6 +3,8 @@ import { GalleryImage, GuestbookEntry, Memory, QuizQuestion, TimelineItem, FAQIt
 export const couple = {
   bride: 'Saruga',
   groom: 'Vinith',
+  brideFull: 'Saruga Sivapathy',
+  groomFull: 'Vinith Kowrithasan',
   hashtag: '#SaruVinith2026',
   combinedName: 'Saruga & Vinith',
 }
@@ -12,11 +14,23 @@ export const civilWedding: WeddingEvent = {
   title: 'Standesamtliche Trauung',
   date: '2026-10-17',
   displayDate: '17. Oktober 2026',
-  time: '14:00 Uhr',
-  venue: 'Standesamt Musterstadt',
-  address: 'Rathausplatz 1, 12345 Musterstadt',
-  dresscode: 'Festlich – Damen in hellen Farben, Herren im Anzug',
-  description: 'Unsere standesamtliche Trauung findet in einem intimen Rahmen mit unseren nächsten Angehörigen statt.',
+  time: '9:30 Uhr',
+  venue: 'Schloss Dyck',
+  address: 'Schloß Dyck 1, 41363 Jüchen',
+  dresscode: 'Matte Old Money – Navy Blue · Baby Blue · Champagne · Beige',
+  description: 'Wir geben uns das Ja-Wort vor dem Standesamt, umgeben von unseren liebsten Menschen.',
+}
+
+export const receptionEvent: WeddingEvent = {
+  id: 'reception',
+  title: 'Empfang & Feier',
+  date: '2026-10-17',
+  displayDate: '17. Oktober 2026',
+  time: '15:00 Uhr',
+  venue: 'Oberkirchener Weg 42',
+  address: 'Oberkirchener Weg 42, 41189 Mönchengladbach',
+  dresscode: 'Matte Old Money – Navy Blue · Baby Blue · Champagne · Beige',
+  description: 'Im Anschluss an die Trauung laden wir euch herzlich zu unserem Empfang ein.',
 }
 
 export const traditionalWedding: WeddingEvent = {
@@ -25,8 +39,8 @@ export const traditionalWedding: WeddingEvent = {
   date: '2027-01-01',
   displayDate: '2027 – Datum folgt',
   time: 'TBA',
-  venue: 'Festhalle Musterort',
-  address: 'Festhallenstraße 10, 54321 Musterort',
+  venue: 'Festhalle – Ort folgt',
+  address: 'Adresse wird noch bekanntgegeben',
   dresscode: 'Traditionell tamilisch oder festlich westlich',
   description: 'Das große Hochzeitsfest nach tamilischer Tradition wird 2027 stattfinden. Wir geben das genaue Datum noch bekannt.',
 }
@@ -78,7 +92,7 @@ export const faqItems: FAQItem[] = [
   {
     id: '1',
     question: 'Wann und wo findet die standesamtliche Trauung statt?',
-    answer: 'Die standesamtliche Trauung findet am 17. Oktober 2026 um 14:00 Uhr im Standesamt Musterstadt, Rathausplatz 1, 12345 Musterstadt statt.',
+    answer: 'Die standesamtliche Trauung findet am 17. Oktober 2026 um 9:30 Uhr statt. Die genaue Adresse ist auf der Einladung vermerkt.',
   },
   {
     id: '2',
@@ -109,11 +123,6 @@ export const faqItems: FAQItem[] = [
     id: '7',
     question: 'Wie kann ich meine Teilnahme bestätigen?',
     answer: 'Bitte meldet euch bis zum 1. September 2026 über das Kontaktformular auf dieser Website oder direkt bei uns per E-Mail oder Telefon an. Wir brauchen eure Rückmeldung für die Planung.',
-  },
-  {
-    id: '8',
-    question: 'Können wir ein Hochzeitsgeschenk machen?',
-    answer: 'Eure Anwesenheit ist das schönste Geschenk! Falls ihr uns dennoch eine Freude bereiten möchtet, freuen wir uns über einen Beitrag zu unserem Hochzeitsreise-Fond oder einem tamilischen Kochkurs zusammen. Detaillierte Wunschlisten folgen mit der Einladung.',
   },
 ]
 
@@ -336,6 +345,7 @@ export const navigationItems = [
   { label: 'Startseite', href: '/' },
   { label: 'Unsere Geschichte', href: '/story' },
   { label: 'Hochzeitsinfos', href: '/info' },
+  { label: 'Einladungen', href: '/einladungen' },
   { label: 'Galerie', href: '/gallery' },
   { label: 'Quiz', href: '/quiz' },
   { label: 'Erinnerungen', href: '/memories' },

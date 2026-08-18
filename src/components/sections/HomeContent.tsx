@@ -2,7 +2,10 @@
 
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import { Calendar, MapPin, Shirt, Clock, ArrowRight, BookOpen, Camera, MessageSquare, Heart, HelpCircle } from 'lucide-react'
+import {
+  Calendar, MapPin, Shirt, Clock, ArrowRight, BookOpen,
+  Camera, MessageSquare, Heart, HelpCircle, Mail,
+} from 'lucide-react'
 import Button from '@/components/ui/Button'
 import SectionTitle from '@/components/ui/SectionTitle'
 import Card from '@/components/ui/Card'
@@ -18,10 +21,21 @@ const stagger = {
   visible: { transition: { staggerChildren: 0.1 } },
 }
 
+// Small floating ornament for dividers
+function HeartDivider() {
+  return (
+    <div className="flex items-center justify-center gap-3 my-2">
+      <div className="h-px w-16 bg-gradient-to-r from-transparent to-gold/40" />
+      <Heart size={10} className="text-gold fill-gold" />
+      <div className="h-px w-16 bg-gradient-to-l from-transparent to-gold/40" />
+    </div>
+  )
+}
+
 export default function HomeContent() {
   return (
     <>
-      {/* Our Story Teaser */}
+      {/* ── Our Story Teaser ─────────────────────────── */}
       <section className="py-16 md:py-24 bg-white">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <motion.div
@@ -74,7 +88,7 @@ export default function HomeContent() {
         </div>
       </section>
 
-      {/* Wedding Info Cards */}
+      {/* ── Wedding Info Cards ────────────────────────── */}
       <section className="py-16 md:py-24 bg-champagne-light/40">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <motion.div
@@ -93,9 +107,9 @@ export default function HomeContent() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {/* Civil Wedding Card */}
               <motion.div variants={fadeInUp}>
-                <Card variant="dark" padding="lg" className="h-full">
+                <Card variant="dark" padding="lg" className="h-full group">
                   <div className="flex items-center gap-3 mb-5">
-                    <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center">
+                    <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110">
                       <Calendar size={22} className="text-champagne" />
                     </div>
                     <div>
@@ -126,11 +140,16 @@ export default function HomeContent() {
                     </div>
                   </div>
 
-                  <div className="mt-6">
-                    <Link href="/info">
+                  <div className="mt-6 flex gap-3">
+                    <Link href="/info" className="flex-1">
                       <Button variant="gold" size="sm" className="w-full">
                         Alle Infos
                         <ArrowRight size={14} />
+                      </Button>
+                    </Link>
+                    <Link href="/einladungen">
+                      <Button variant="ghost" size="sm" className="text-white/70 hover:text-white hover:bg-white/10 border border-white/20">
+                        <Mail size={14} />
                       </Button>
                     </Link>
                   </div>
@@ -139,9 +158,9 @@ export default function HomeContent() {
 
               {/* Traditional Wedding Card */}
               <motion.div variants={fadeInUp}>
-                <Card variant="champagne" padding="lg" className="h-full border-2 border-champagne-dark/30">
+                <Card variant="champagne" padding="lg" className="h-full border-2 border-champagne-dark/30 group">
                   <div className="flex items-center gap-3 mb-5">
-                    <div className="w-12 h-12 bg-dark-blue/10 rounded-xl flex items-center justify-center">
+                    <div className="w-12 h-12 bg-dark-blue/10 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110">
                       <Heart size={22} className="text-dark-blue" />
                     </div>
                     <div>
@@ -187,8 +206,54 @@ export default function HomeContent() {
         </div>
       </section>
 
-      {/* Feature Grid (FAQ, Gallery, Quiz, Guestbook) */}
-      <section className="py-16 md:py-24 bg-white">
+      {/* ── Invitation Teaser ─────────────────────────── */}
+      <section className="py-16 md:py-20 bg-white relative overflow-hidden">
+        {/* Subtle background pattern */}
+        <div className="absolute inset-0 pointer-events-none opacity-30">
+          <div className="absolute top-0 left-1/4 w-96 h-96 rounded-full bg-champagne-light blur-3xl" />
+          <div className="absolute bottom-0 right-1/4 w-80 h-80 rounded-full bg-baby-blue-light blur-3xl" />
+        </div>
+
+        <div className="relative max-w-4xl mx-auto px-4 sm:px-6 text-center">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: '-50px' }}
+            variants={stagger}
+          >
+            <motion.div variants={fadeInUp} className="flex justify-center mb-4">
+              <div className="w-14 h-14 bg-champagne rounded-2xl flex items-center justify-center">
+                <Mail size={24} className="text-dark-blue" />
+              </div>
+            </motion.div>
+
+            <motion.div variants={fadeInUp}>
+              <HeartDivider />
+            </motion.div>
+
+            <motion.h2 variants={fadeInUp} className="font-serif text-3xl md:text-4xl font-semibold text-dark-blue mt-4 mb-3">
+              Unsere Einladungen
+            </motion.h2>
+            <motion.p variants={fadeInUp} className="text-gray-500 max-w-md mx-auto mb-8 text-sm md:text-base">
+              Schau dir unsere Einladungskarten für die standesamtliche Trauung und die Empfangsfeier an.
+              Tippe einfach drauf, um sie zu öffnen.
+            </motion.p>
+
+            <motion.div variants={fadeInUp} className="flex flex-col sm:flex-row items-center justify-center gap-3">
+              <Link href="/einladungen">
+                <Button variant="primary" size="lg">
+                  <Mail size={16} />
+                  Einladungen ansehen
+                  <ArrowRight size={16} />
+                </Button>
+              </Link>
+            </motion.div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ── Feature Grid ─────────────────────────────── */}
+      <section className="py-16 md:py-24 bg-champagne-light/30">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <motion.div
             initial="hidden"
@@ -263,12 +328,12 @@ export default function HomeContent() {
         </div>
       </section>
 
-      {/* CTA Section */}
+      {/* ── CTA Section ──────────────────────────────── */}
       <section className="py-16 md:py-24 bg-dark-blue relative overflow-hidden">
-        {/* Background decoration */}
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute -top-20 -right-20 w-80 h-80 rounded-full bg-white/5" />
           <div className="absolute -bottom-20 -left-20 w-80 h-80 rounded-full bg-white/3" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-white/[0.02]" />
         </div>
 
         <div className="relative max-w-3xl mx-auto px-4 sm:px-6 text-center">
