@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { CheckCircle, XCircle, Trophy, RefreshCw, ChevronRight, Heart } from 'lucide-react'
 import SectionTitle from '@/components/ui/SectionTitle'
 import Button from '@/components/ui/Button'
+import HeartBurst from '@/components/ui/HeartBurst'
 import { quizQuestions } from '@/lib/config'
 
 type AnswerState = 'unanswered' | 'correct' | 'wrong'
@@ -50,6 +51,13 @@ export default function QuizPage() {
     score: 0,
     showResult: false,
   })
+  const [burstTrigger, setBurstTrigger] = useState(0)
+
+  useEffect(() => {
+    if (state.showResult && state.score === quizQuestions.length) {
+      setBurstTrigger((t) => t + 1)
+    }
+  }, [state.showResult, state.score])
 
   const currentQuestion = quizQuestions[state.currentIndex]
   const isAnswered = state.selectedOption !== null
@@ -112,6 +120,7 @@ export default function QuizPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-champagne-light/20 to-white pt-24 pb-16">
+      <HeartBurst trigger={burstTrigger} />
       <div className="max-w-2xl mx-auto px-4 sm:px-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}

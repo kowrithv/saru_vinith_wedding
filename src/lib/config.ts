@@ -126,6 +126,16 @@ export const faqItems: FAQItem[] = [
   },
 ]
 
+// Fotos für das Memory-Spiel (jedes Bild bildet ein Kartenpaar).
+// Eigene Fotos hinzufügen: Datei in public/memory-spiel/ ablegen und hier den Pfad eintragen
+// (z.B. '/memory-spiel/foto-4.png'). Bis zu 8 Fotos werden genutzt, fehlende Paare
+// werden automatisch mit Icons aufgefüllt.
+export const memoryGameImages: string[] = [
+  '/memory-spiel/foto-1.png',
+  '/memory-spiel/foto-2.png',
+  '/memory-spiel/foto-3.png',
+]
+
 export const quizQuestions: QuizQuestion[] = [
   {
     id: '1',
@@ -348,6 +358,7 @@ export const navigationItems = [
   { label: 'Einladungen', href: '/einladungen' },
   { label: 'Galerie', href: '/gallery' },
   { label: 'Quiz', href: '/quiz' },
+  { label: 'Gästespiel', href: '/memory-spiel' },
   { label: 'Erinnerungen', href: '/memories' },
   { label: 'Gästebuch', href: '/guestbook' },
   { label: 'Kontakt', href: '/contact' },

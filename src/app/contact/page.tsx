@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { motion } from 'framer-motion'
 import { Mail, Phone, Send, User, MessageSquare, CheckCircle } from 'lucide-react'
@@ -7,6 +8,7 @@ import toast from 'react-hot-toast'
 import SectionTitle from '@/components/ui/SectionTitle'
 import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
+import HeartBurst from '@/components/ui/HeartBurst'
 
 interface ContactFormData {
   name: string
@@ -44,16 +46,19 @@ export default function ContactPage() {
     reset,
     formState: { errors, isSubmitting },
   } = useForm<ContactFormData>()
+  const [burstTrigger, setBurstTrigger] = useState(0)
 
   const onSubmit = async (data: ContactFormData) => {
     await new Promise((r) => setTimeout(r, 1000))
     console.log('Form submitted:', data)
     toast.success('Nachricht gesendet! Wir melden uns bald. 💙')
+    setBurstTrigger((t) => t + 1)
     reset()
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-champagne-light/20 pt-24 pb-16">
+      <HeartBurst trigger={burstTrigger} />
       <div className="max-w-5xl mx-auto px-4 sm:px-6">
         <motion.div
           initial="hidden"

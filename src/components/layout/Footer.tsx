@@ -77,10 +77,14 @@ export default function Footer() {
             </div>
 
             {/* Copyright */}
-            <p className="text-xs text-gray-500 flex items-center gap-1">
+            <p className="text-xs text-gray-500 flex items-center gap-1.5">
               Mit
               <Heart size={10} className="text-gold fill-gold inline" />
               gemacht &copy; {currentYear}
+              <span className="text-gray-700">·</span>
+              <Link href="/admin" className="text-gray-500 hover:text-gold transition-colors">
+                Admin
+              </Link>
             </p>
           </div>
         </div>

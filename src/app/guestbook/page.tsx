@@ -7,6 +7,7 @@ import toast from 'react-hot-toast'
 import SectionTitle from '@/components/ui/SectionTitle'
 import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
+import HeartBurst from '@/components/ui/HeartBurst'
 import { mockGuestbookEntries } from '@/lib/config'
 import { GuestbookEntry } from '@/types'
 import { generateId } from '@/lib/utils'
@@ -73,6 +74,7 @@ export default function GuestbookPage() {
   const [name, setName] = useState('')
   const [message, setMessage] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [burstTrigger, setBurstTrigger] = useState(0)
 
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY)
@@ -125,10 +127,12 @@ export default function GuestbookPage() {
     setIsSubmitting(false)
 
     toast.success('Deine Nachricht wurde ins Gästebuch eingetragen! 💙')
+    setBurstTrigger((t) => t + 1)
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-champagne-light/20 to-white pt-24 pb-16">
+      <HeartBurst trigger={burstTrigger} />
       <div className="max-w-5xl mx-auto px-4 sm:px-6">
         <motion.div
           initial="hidden"

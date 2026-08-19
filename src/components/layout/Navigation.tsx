@@ -1,16 +1,25 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Menu, X, Heart } from 'lucide-react'
 import { navigationItems, couple } from '@/lib/config'
 import { cn } from '@/lib/utils'
+import HeartBurst from '@/components/ui/HeartBurst'
+import toast from 'react-hot-toast'
+
+const EASTER_EGG_CLICKS = 5
+const EASTER_EGG_WINDOW_MS = 2000
 
 export default function Navigation() {
   const [isOpen, setIsOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
+  const [visiblePaths, setVisiblePaths] = useState<Set<string> | null>(null)
+  const [burstTrigger, setBurstTrigger] = useState(0)
+  const logoClickCount = useRef(0)
+  const logoClickTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
   const pathname = usePathname()
 
   useEffect(() => {
@@ -20,6 +29,51 @@ export default function Navigation() {
     window.addEventListener('scroll', handleScroll, { passive: true })
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
+
+  useEffect(() => {
+    let cancelled = false
+
+    const loadVisibility = async () => {
+      try {
+        const response = await fetch('/api/settings', { cache: 'no-store' })
+        if (!response.ok) return
+        const visibility: Record<string, boolean> = await response.json()
+        if (cancelled) return
+        setVisiblePaths(
+          new Set(Object.entries(visibility).filter(([, v]) => v).map(([k]) => `/${k}`))
+        )
+      } catch {
+        // keep showing all links if the settings can't be fetched
+      }
+    }
+
+    loadVisibility()
+    const interval = setInterval(loadVisibility, 60000)
+    return () => {
+      cancelled = true
+      clearInterval(interval)
+    }
+  }, [])
+
+  const visibleNavigationItems = navigationItems.filter(
+    (item) => item.href === '/' || !visiblePaths || visiblePaths.has(item.href)
+  )
+
+  const handleLogoClick = () => {
+    logoClickCount.current += 1
+    if (logoClickTimeout.current) clearTimeout(logoClickTimeout.current)
+
+    if (logoClickCount.current >= EASTER_EGG_CLICKS) {
+      logoClickCount.current = 0
+      setBurstTrigger((t) => t + 1)
+      toast.success('Ihr habt uns gefunden! 💕', { duration: 3000 })
+      return
+    }
+
+    logoClickTimeout.current = setTimeout(() => {
+      logoClickCount.current = 0
+    }, EASTER_EGG_WINDOW_MS)
+  }
 
   useEffect(() => {
     setIsOpen(false)
@@ -38,6 +92,7 @@ export default function Navigation() {
 
   return (
     <>
+      <HeartBurst trigger={burstTrigger} />
       <nav
         className={cn(
           'fixed top-0 left-0 right-0 z-50 transition-all duration-300',
@@ -53,6 +108,7 @@ export default function Navigation() {
               href="/"
               className="flex items-center gap-2 group"
               aria-label="Zur Startseite"
+              onClick={handleLogoClick}
             >
               <motion.div
                 whileHover={{ scale: 1.05 }}
@@ -75,7 +131,7 @@ export default function Navigation() {
 
             {/* Desktop Navigation */}
             <div className="hidden lg:flex items-center gap-1">
-              {navigationItems.map((item) => {
+              {visibleNavigationItems.map((item) => {
                 const isActive = pathname === item.href
                 return (
                   <Link
@@ -160,7 +216,7 @@ export default function Navigation() {
               {/* Nav links */}
               <nav className="flex-1 overflow-y-auto">
                 <ul className="space-y-1">
-                  {navigationItems.map((item, index) => {
+                  {visibleNavigationItems.map((item, index) => {
                     const isActive = pathname === item.href
                     return (
                       <motion.li

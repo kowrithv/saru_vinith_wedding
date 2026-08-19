@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Upload, FileText, Image as ImageIcon, Video, X, Plus, Heart, type LucideIcon } from 'lucide-react'
+import { Upload, FileText, Image as ImageIcon, Video, X, Plus, Heart, Play, type LucideIcon } from 'lucide-react'
 import toast from 'react-hot-toast'
 import SectionTitle from '@/components/ui/SectionTitle'
 import Card from '@/components/ui/Card'
@@ -14,13 +14,15 @@ import { generateId } from '@/lib/utils'
 type TabType = 'text' | 'photo' | 'video'
 
 const STORAGE_KEY = 'saru_vinith_memories'
+const MAX_PHOTO_BYTES = 8 * 1024 * 1024
+const MAX_VIDEO_BYTES = 30 * 1024 * 1024
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 20 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: 'easeOut' } },
 }
 
-function MemoryCard({ memory }: { memory: Memory }) {
+function MemoryCard({ memory, onOpen }: { memory: Memory; onOpen: (memory: Memory) => void }) {
   const iconMap = {
     text: FileText,
     photo: ImageIcon,
@@ -54,16 +56,37 @@ function MemoryCard({ memory }: { memory: Memory }) {
         )}
 
         {memory.type === 'photo' && memory.mediaUrl && (
-          <div className="mt-2 rounded-lg overflow-hidden">
+          <button
+            type="button"
+            onClick={() => onOpen(memory)}
+            className="mt-2 w-full rounded-lg overflow-hidden group relative"
+            aria-label="Foto vergrößern"
+          >
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={memory.mediaUrl} alt="Hochzeitserinnerung" className="w-full h-32 object-cover" />
-          </div>
+            <img src={memory.mediaUrl} alt="Hochzeitserinnerung" className="w-full h-32 object-cover transition-transform duration-300 group-hover:scale-105" />
+            <div className="absolute inset-0 bg-dark-blue/0 group-hover:bg-dark-blue/30 transition-colors duration-200" />
+          </button>
         )}
 
         {memory.type === 'video' && (
-          <div className="mt-2 bg-gray-100 rounded-lg h-24 flex items-center justify-center">
-            <Video size={24} className="text-gray-400" />
-          </div>
+          <button
+            type="button"
+            onClick={() => memory.mediaUrl && onOpen(memory)}
+            disabled={!memory.mediaUrl}
+            className="mt-2 w-full rounded-lg overflow-hidden relative bg-gray-900 h-24 flex items-center justify-center group disabled:cursor-default"
+            aria-label="Video abspielen"
+          >
+            {memory.mediaUrl ? (
+              <>
+                <video src={memory.mediaUrl} className="absolute inset-0 w-full h-full object-cover opacity-70" muted preload="metadata" />
+                <div className="relative w-9 h-9 bg-white/90 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Play size={16} className="text-dark-blue fill-dark-blue ml-0.5" />
+                </div>
+              </>
+            ) : (
+              <Video size={24} className="text-gray-400" />
+            )}
+          </button>
         )}
 
         <p className="text-xs text-gray-400 mt-3 text-right">
@@ -78,6 +101,56 @@ function MemoryCard({ memory }: { memory: Memory }) {
   )
 }
 
+function MemoryLightbox({ memory, onClose }: { memory: Memory; onClose: () => void }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
+      className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <button
+        className="absolute top-4 right-4 z-10 w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white transition-colors"
+        onClick={onClose}
+        aria-label="Schließen"
+      >
+        <X size={20} />
+      </button>
+
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.9 }}
+        transition={{ duration: 0.2 }}
+        className="max-w-3xl max-h-[85vh] w-full"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {memory.type === 'photo' ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={memory.mediaUrl}
+            alt={memory.content || 'Hochzeitserinnerung'}
+            className="max-h-[80vh] w-auto h-auto object-contain rounded-lg mx-auto"
+          />
+        ) : (
+          <video
+            src={memory.mediaUrl}
+            controls
+            autoPlay
+            className="max-h-[80vh] w-auto h-auto object-contain rounded-lg mx-auto"
+          />
+        )}
+        <div className="text-center mt-3">
+          <p className="text-white/80 text-sm font-medium">{memory.name}</p>
+          {memory.content && <p className="text-white/50 text-xs mt-1">{memory.content}</p>}
+        </div>
+      </motion.div>
+    </motion.div>
+  )
+}
+
 export default function MemoriesPage() {
   const [activeTab, setActiveTab] = useState<TabType>('text')
   const [memories, setMemories] = useState<Memory[]>([])
@@ -85,8 +158,10 @@ export default function MemoriesPage() {
   const [content, setContent] = useState('')
   const [dragOver, setDragOver] = useState(false)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [fileName, setFileName] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [lightboxMemory, setLightboxMemory] = useState<Memory | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -106,12 +181,26 @@ export default function MemoriesPage() {
 
   const saveMemories = (newMemories: Memory[]) => {
     setMemories(newMemories)
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(newMemories))
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(newMemories))
+    } catch {
+      toast.error('Speicher ist voll – bitte kleinere Fotos/Videos verwenden.')
+    }
   }
 
   const handleFileSelect = (file: File) => {
+    const isImage = file.type.startsWith('image/')
+    const isVideo = file.type.startsWith('video/')
+    const maxBytes = isImage ? MAX_PHOTO_BYTES : MAX_VIDEO_BYTES
+
+    if (file.size > maxBytes) {
+      toast.error(`Datei zu groß (max. ${Math.round(maxBytes / (1024 * 1024))} MB).`)
+      return
+    }
+
     setFileName(file.name)
-    if (file.type.startsWith('image/')) {
+    setSelectedFile(file)
+    if (isImage || isVideo) {
       const reader = new FileReader()
       reader.onload = (e) => setPreviewUrl(e.target?.result as string)
       reader.readAsDataURL(file)
@@ -148,14 +237,33 @@ export default function MemoriesPage() {
     }
 
     setIsSubmitting(true)
-    await new Promise((r) => setTimeout(r, 800))
+
+    let mediaUrl: string | undefined
+    if ((activeTab === 'photo' || activeTab === 'video') && selectedFile) {
+      try {
+        const formData = new FormData()
+        formData.append('file', selectedFile)
+        const response = await fetch('/api/memories/upload', { method: 'POST', body: formData })
+        const data = await response.json()
+        if (!response.ok) {
+          toast.error(data?.error || 'Hochladen fehlgeschlagen.')
+          setIsSubmitting(false)
+          return
+        }
+        mediaUrl = data.url
+      } catch {
+        toast.error('Hochladen fehlgeschlagen. Bitte versuch es erneut.')
+        setIsSubmitting(false)
+        return
+      }
+    }
 
     const newMemory: Memory = {
       id: generateId(),
       name: name.trim(),
       type: activeTab,
       content: content.trim(),
-      mediaUrl: activeTab === 'photo' ? previewUrl || undefined : undefined,
+      mediaUrl,
       date: new Date().toISOString().split('T')[0],
       createdAt: new Date().toISOString(),
     }
@@ -166,6 +274,7 @@ export default function MemoriesPage() {
     setName('')
     setContent('')
     setPreviewUrl(null)
+    setSelectedFile(null)
     setFileName(null)
     setIsSubmitting(false)
 
@@ -210,6 +319,7 @@ export default function MemoriesPage() {
                         setActiveTab(tab.id)
                         setFileName(null)
                         setPreviewUrl(null)
+                        setSelectedFile(null)
                       }}
                       className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                         activeTab === tab.id
@@ -291,11 +401,15 @@ export default function MemoriesPage() {
 
                           {previewUrl ? (
                             <div className="relative">
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img src={previewUrl} alt="Vorschau" className="max-h-40 mx-auto rounded-lg object-cover" />
+                              {activeTab === 'photo' ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img src={previewUrl} alt="Vorschau" className="max-h-40 mx-auto rounded-lg object-cover" />
+                              ) : (
+                                <video src={previewUrl} controls className="max-h-40 mx-auto rounded-lg" />
+                              )}
                               <button
                                 type="button"
-                                onClick={(e) => { e.stopPropagation(); setPreviewUrl(null); setFileName(null) }}
+                                onClick={(e) => { e.stopPropagation(); setPreviewUrl(null); setFileName(null); setSelectedFile(null) }}
                                 className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white"
                               >
                                 <X size={12} />
@@ -370,7 +484,7 @@ export default function MemoriesPage() {
               <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2 scrollbar-thin">
                 <AnimatePresence>
                   {memories.map((memory) => (
-                    <MemoryCard key={memory.id} memory={memory} />
+                    <MemoryCard key={memory.id} memory={memory} onOpen={setLightboxMemory} />
                   ))}
                 </AnimatePresence>
                 {memories.length === 0 && (
@@ -384,6 +498,12 @@ export default function MemoriesPage() {
           </div>
         </motion.div>
       </div>
+
+      <AnimatePresence>
+        {lightboxMemory && (
+          <MemoryLightbox memory={lightboxMemory} onClose={() => setLightboxMemory(null)} />
+        )}
+      </AnimatePresence>
     </div>
   )
 }

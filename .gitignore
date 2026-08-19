@@ -46,3 +46,7 @@ next-env.d.ts
 
 # Vercel
 .vercel
+
+# Guest-uploaded gallery photos (runtime content, not source)
+public/uploads/
+data/gallery-uploads.json

@@ -1,0 +1,44 @@
+{
+  "pages": {
+    "story": {
+      "enabled": true,
+      "revealAt": null
+    },
+    "info": {
+      "enabled": true,
+      "revealAt": null
+    },
+    "einladungen": {
+      "enabled": true,
+      "revealAt": null
+    },
+    "gallery": {
+      "enabled": true,
+      "revealAt": null
+    },
+    "quiz": {
+      "enabled": true,
+      "revealAt": null
+    },
+    "faq": {
+      "enabled": true,
+      "revealAt": null
+    },
+    "memories": {
+      "enabled": true,
+      "revealAt": null
+    },
+    "guestbook": {
+      "enabled": true,
+      "revealAt": null
+    },
+    "contact": {
+      "enabled": true,
+      "revealAt": null
+    },
+    "memory-spiel": {
+      "enabled": true,
+      "revealAt": null
+    }
+  }
+}

@@ -4,7 +4,7 @@ import { motion } from 'framer-motion'
 import Link from 'next/link'
 import {
   Calendar, MapPin, Shirt, Clock, ArrowRight, BookOpen,
-  Camera, MessageSquare, Heart, HelpCircle, Mail,
+  Camera, MessageSquare, Heart, HelpCircle, Mail, Gamepad2,
 } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import SectionTitle from '@/components/ui/SectionTitle'
@@ -268,7 +268,7 @@ export default function HomeContent() {
               />
             </motion.div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {[
                 {
                   icon: HelpCircle,
@@ -300,6 +300,14 @@ export default function HomeContent() {
                   description: 'Wie gut kennt ihr uns? Testet euer Wissen in unserem Hochzeitsquiz!',
                   href: '/quiz',
                   color: 'bg-dark-blue/5',
+                  iconColor: 'text-dark-blue',
+                },
+                {
+                  icon: Gamepad2,
+                  title: 'Gästespiel',
+                  description: 'Spielt unser Liebes-Memory und findet alle Pärchen – mit Bestzeit!',
+                  href: '/memory-spiel',
+                  color: 'bg-baby-blue/20',
                   iconColor: 'text-dark-blue',
                 },
               ].map((feature, index) => (
