@@ -134,9 +134,9 @@ export default function FAQPage() {
           <motion.div variants={fadeInUp} className="flex items-center gap-3 bg-champagne/40 rounded-2xl p-4 mb-8 border border-champagne-dark/20">
             <HelpCircle size={20} className="text-dark-blue flex-shrink-0" />
             <p className="text-sm text-dark-blue">
-              Noch weitere Fragen? Schreibt uns über das{' '}
-              <a href="/contact" className="font-semibold underline underline-offset-2">
-                Kontaktformular
+              Noch weitere Fragen? Schreibt uns einfach eine{' '}
+              <a href="mailto:hallo@saru-vinith.de" className="font-semibold underline underline-offset-2">
+                E-Mail
               </a>
               , wir antworten gerne!
             </p>
@@ -168,7 +168,7 @@ export default function FAQPage() {
               Wir sind für euch da! Schreibt uns einfach eine Nachricht.
             </p>
             <a
-              href="/contact"
+              href="mailto:hallo@saru-vinith.de"
               className="inline-flex items-center gap-2 bg-gold text-white px-6 py-2.5 rounded-full text-sm font-medium hover:bg-gold-dark transition-colors"
             >
               Kontakt aufnehmen

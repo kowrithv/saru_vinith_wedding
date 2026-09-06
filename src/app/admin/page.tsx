@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers'
 import { ADMIN_COOKIE_NAME, isValidSession } from '@/lib/admin-auth'
 import { readSettings } from '@/lib/site-settings'
+import { readWhoGame } from '@/lib/who-game'
 import AdminLoginForm from '@/components/admin/AdminLoginForm'
 import AdminDashboard from '@/components/admin/AdminDashboard'
 
@@ -13,5 +14,6 @@ export default async function AdminPage() {
   }
 
   const settings = await readSettings()
-  return <AdminDashboard initialSettings={settings} />
+  const whoGameData = await readWhoGame()
+  return <AdminDashboard initialSettings={settings} initialWhoGameData={whoGameData} />
 }

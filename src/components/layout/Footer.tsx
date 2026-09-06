@@ -1,9 +1,14 @@
 import Link from 'next/link'
 import { Heart } from 'lucide-react'
 import { couple, navigationItems } from '@/lib/config'
+import { getVisibilityMap } from '@/lib/site-settings'
 
-export default function Footer() {
+export default async function Footer() {
   const currentYear = new Date().getFullYear()
+  const visibility = await getVisibilityMap()
+  const visibleNavigationItems = navigationItems.filter(
+    (item) => item.href === '/' || visibility[item.href.slice(1) as keyof typeof visibility]
+  )
 
   return (
     <footer className="bg-dark-blue text-white">
@@ -31,7 +36,7 @@ export default function Footer() {
             </h3>
             <nav>
               <ul className="space-y-2">
-                {navigationItems.slice(0, 4).map((item) => (
+                {visibleNavigationItems.slice(0, 4).map((item) => (
                   <li key={item.href}>
                     <Link
                       href={item.href}
@@ -51,7 +56,7 @@ export default function Footer() {
             </h3>
             <nav>
               <ul className="space-y-2">
-                {navigationItems.slice(4).map((item) => (
+                {visibleNavigationItems.slice(4).map((item) => (
                   <li key={item.href}>
                     <Link
                       href={item.href}
@@ -71,7 +76,7 @@ export default function Footer() {
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             {/* Dates */}
             <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-gray-400">
-              <span>Standesamt: 17. Oktober 2026</span>
+              <span>Empfang: 17. Oktober 2026</span>
               <span className="hidden md:inline text-gray-600">|</span>
               <span>Tamilische Hochzeit: 2027</span>
             </div>

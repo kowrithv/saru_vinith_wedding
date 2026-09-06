@@ -1,4 +1,4 @@
-import { GalleryImage, GuestbookEntry, Memory, QuizQuestion, TimelineItem, FAQItem, WeddingEvent } from '@/types'
+import { GalleryImage, GuestbookEntry, Memory, QuizQuestion, TimelineItem, FAQItem, WeddingEvent, WhoQuestion } from '@/types'
 
 export const couple = {
   bride: 'Saruga',
@@ -9,29 +9,22 @@ export const couple = {
   combinedName: 'Saruga & Vinith',
 }
 
-export const civilWedding: WeddingEvent = {
-  id: 'civil',
-  title: 'Standesamtliche Trauung',
-  date: '2026-10-17',
-  displayDate: '17. Oktober 2026',
-  time: '9:30 Uhr',
-  venue: 'Schloss Dyck',
-  address: 'Schloß Dyck 1, 41363 Jüchen',
-  dresscode: 'Matte Old Money – Navy Blue · Baby Blue · Champagne · Beige',
-  description: 'Wir geben uns das Ja-Wort vor dem Standesamt, umgeben von unseren liebsten Menschen.',
-}
-
 export const receptionEvent: WeddingEvent = {
   id: 'reception',
   title: 'Empfang & Feier',
   date: '2026-10-17',
   displayDate: '17. Oktober 2026',
-  time: '15:00 Uhr',
-  venue: 'Oberkirchener Weg 42',
-  address: 'Oberkirchener Weg 42, 41189 Mönchengladbach',
-  dresscode: 'Matte Old Money – Navy Blue · Baby Blue · Champagne · Beige',
-  description: 'Im Anschluss an die Trauung laden wir euch herzlich zu unserem Empfang ein.',
+  time: '16:30 Uhr',
+  venue: 'Begegnungsstätte Niederkrüchten',
+  address: 'Oberkrüchtener Weg 42, 41372 Niederkrüchten',
+  description: 'Wir laden euch herzlich zu unserem Empfang ein, um gemeinsam mit euch diesen besonderen Tag zu feiern.',
+  lat: 51.196771,
+  lng: 6.213148,
 }
+
+// Der Reiter „Tamilische Hochzeit 2027" ist bewusst ausgeblendet, bis die Details feststehen.
+// Einfach auf true setzen, um ihn auf der Hochzeitsinfos-Seite und der Startseite wieder einzublenden.
+export const showTraditionalWeddingTab = false
 
 export const traditionalWedding: WeddingEvent = {
   id: 'traditional',
@@ -41,63 +34,65 @@ export const traditionalWedding: WeddingEvent = {
   time: 'TBA',
   venue: 'Festhalle – Ort folgt',
   address: 'Adresse wird noch bekanntgegeben',
-  dresscode: 'Traditionell tamilisch oder festlich westlich',
   description: 'Das große Hochzeitsfest nach tamilischer Tradition wird 2027 stattfinden. Wir geben das genaue Datum noch bekannt.',
 }
 
 export const storyTimeline: TimelineItem[] = [
   {
     id: '1',
-    year: '2022',
-    title: 'Das erste Treffen',
-    description: 'Alles begann mit einem zufälligen Treffen auf einem Freundesabend in Hamburg. Vinith und Saruga sprachen stundenlang und merkten schnell, dass sie eine besondere Verbindung haben. Ihre gemeinsamen Interessen für Musik, Reisen und gutes Essen machten es leicht, ins Gespräch zu kommen.',
+    year: '15.11.2023',
+    title: 'Wo alles begann',
+    description: 'Drei Jahre lebte Saruga schon in Mainz, Vinith erst seit einem Jahr – trotzdem brauchte es gemeinsame Freunde und ein kleines bisschen Schicksal, damit sich ihre Wege endlich kreuzten. Der erste Eindruck war denkbar unterschiedlich: Er fand sie ganz schön arrogant und wortkarg, sie hielt ihn für sympathisch, rechnete aber nicht damit, ihn je wiederzusehen. Eine Woche später schrieb er ihr – aus einer Nachricht wurden viele, aus gelegentlichem Schreiben täglicher Kontakt. Ganz langsam begann etwas, von dem beide damals noch nicht ahnten, wohin es einmal führen würde.',
     icon: 'heart',
     align: 'left',
   },
   {
     id: '2',
-    year: '2023',
-    title: 'Erste gemeinsame Reise',
-    description: 'Ein Jahr nach unserem ersten Kennenlernen reisten wir gemeinsam nach Sri Lanka – Saruga zeigte Vinith die Heimat ihrer Familie, und er verliebte sich sofort in die Kultur, das Essen und natürlich in sie noch mehr. Diese Reise besiegelte unsere Beziehung.',
-    icon: 'plane',
+    year: '07.01.2024',
+    title: 'Aus uns wurde Wir',
+    description: 'Eine WhatsApp-Nachricht genügte: Hast du am 07.01. Zeit und Lust auf ein Date? Das Timing hätte besser sein können – Saruga war krank und gerade in Saarbrücken. Abgesagt wurde trotzdem nicht. Vinith kam nicht nur zum Date, sondern mit einer kleinen Tüte voller Tee, Wärmekissen und Schokolade im Gepäck – eine Geste, die ihr bis heute im Gedächtnis geblieben ist. Danach ging es gemeinsam nach Frankfurt zu Anjappar, wo bei gutem Essen geredet wurde, bis es draußen dunkel wurde. Als Saruga schließlich den Rückweg vorschlug, hatte Vinith noch etwas vor: Nach einer ziemlich süßen Rede fragte er, ob sie mit ihm zusammen sein möchte. Aus zwei Menschen, die sich wenige Wochen zuvor zufällig kennengelernt hatten, wurde ganz offiziell ein Wir.',
+    icon: 'message',
     align: 'right',
   },
   {
     id: '3',
-    year: '2024',
-    title: 'Der Heiratsantrag',
-    description: 'Bei einem romantischen Sonnenuntergang auf Mallorca kniete Vinith nieder und fragte Saruga, ob sie ihn heiraten möchte. Mit Tränen der Freude und einem lauten "Ja!" begann ein neues Kapitel unserer Geschichte. Ein Ring, der zwei Kulturen vereint.',
-    icon: 'ring',
+    year: '08.02.2026',
+    title: 'Wenn aus zwei Menschen zwei Familien werden',
+    description: 'Ende Januar sprachen die Eltern miteinander und entschieden gemeinsam, dass der nächste große Schritt beginnen durfte. Am 08. Februar trafen sich beide Familien zum ersten Mal offiziell bei Vinith zu Hause. Nach tamilischer Tradition brachte die Familie der Braut kunstvoll dekorierte Silbertabletts mit Geschenken mit – Kokosnuss, Blumen, Obst, Kleidung, Süßspeisen und mehr. Die Familie des Bräutigams empfing sie herzlich mit einem festlich geschmückten Empfangstisch, und natürlich wurde ausgiebig gegessen, von der Vorspeise bis zum Dessert. Weil es an diesem Tag gleich doppelt etwas zu feiern gab, durfte auch eine Torte zum bestandenen Masterabschluss des Bräutigams nicht fehlen. Ein Tag voller Traditionen – und der Tag, an dem sich nicht nur zwei Menschen, sondern auch zwei Familien näherkamen.',
+    icon: 'family',
     align: 'left',
   },
   {
     id: '4',
-    year: '17. Oktober 2026',
-    title: 'Standesamtliche Trauung',
-    description: 'Der offizielle erste Schritt: Wir geben uns das Ja-Wort vor dem deutschen Standesamt, umgeben von unseren engsten Familienmitgliedern und besten Freunden. Ein intimer und bewegender Moment, der uns offiziell zu Mann und Frau macht.',
-    icon: 'certificate',
+    year: '21.03.2026',
+    title: 'Nichayathartham',
+    description: 'Diesmal besuchte die Familie des Bräutigams die Braut und ihre Familie – auch sie brachte liebevoll vorbereitete Geschenktabletts mit. Nachdem alle Platz genommen hatten, wurde Saruga zum ersten Mal offiziell den Eltern und der ganzen Familie von Vinith vorgestellt. Er kam nicht mit leeren Händen: ein Blumenstrauß für seine zukünftige Braut. Danach wurde gemeinsam gesprochen, gelacht und natürlich wieder ausgiebig gegessen, bevor die Nichayathartham-Torte angeschnitten wurde. Zum Abschluss wurde der ganzen Familie offiziell das Datum ihrer Hochzeit verkündet: der 17. Oktober 2026.',
+    icon: 'flower',
     align: 'right',
   },
   {
     id: '5',
-    year: '2027',
-    title: 'Tamilische Hochzeitsfeier',
-    description: 'Das große Fest! Nach tamilischer Tradition werden wir in einer farbenprächtigen Zeremonie mit Familie und Freunden aus aller Welt unsere Liebe feiern. Traditionelle Musik, wunderschöne Kleidung und köstliches tamilisches Essen erwarten euch.',
-    icon: 'celebration',
+    year: '09.07.2026',
+    title: 'Die Frage aller Fragen',
+    description: 'Eigentlich sollte an diesem Abend nur die bestandene staatliche Pflichtfachprüfung der Braut gefeiert werden. Nach einem schönen Essen ging es weiter in den Deutsch-Französischen Garten – Sonnenuntergang, ein kleiner Spaziergang. So der Plan. Tatsächlich verliefen sich beide gleich zweimal, während in der Ferne plötzlich Lichter und tamilische Musik zu hören waren – und Vinith auffällig ruhig und nervös wurde. Vor einer wunderschön dekorierten Kulisse wurde klar, was hier gerade passierte: Nach und nach kamen die liebsten Menschen hervor – Geschwister, Eltern, Cousinen und Cousins. Der Traumring, die Location, die Dekoration und vor allem die Menschen, die beiden am meisten bedeuten – für Saruga war es der Antrag, den sie sich immer gewünscht hatte. Und die Antwort auf die Frage aller Fragen war natürlich: Ja.',
+    icon: 'ring',
     align: 'left',
+  },
+  {
+    id: '6',
+    year: '17.10.2026',
+    title: 'Unser Ja',
+    description: 'Von einem zufälligen ersten Treffen über unzählige Nachrichten, das erste Date, zwei Familien, die zusammenfanden, das Nichayathartham und einen unvergesslichen Antrag – so führt unsere Geschichte hierher. Am 17. Oktober 2026 sagen wir Ja. Doch diese Geschichte gehört nicht nur uns – an diesem Tag seid auch ihr ein Teil davon. Was habt ihr an diesem Tag erlebt, was ist euch besonders in Erinnerung geblieben? Teilt eure Erinnerungen, Gedanken und Lieblingsmomente mit uns auf der Erinnerungen-Seite dieser Website – dann können wir diesen Tag später nicht nur durch unsere, sondern auch durch eure Augen noch einmal erleben.',
+    icon: 'certificate',
+    align: 'right',
   },
 ]
 
 export const faqItems: FAQItem[] = [
   {
     id: '1',
-    question: 'Wann und wo findet die standesamtliche Trauung statt?',
-    answer: 'Die standesamtliche Trauung findet am 17. Oktober 2026 um 9:30 Uhr statt. Die genaue Adresse ist auf der Einladung vermerkt.',
-  },
-  {
-    id: '2',
-    question: 'Was soll ich zur standesamtlichen Trauung anziehen?',
-    answer: 'Der Dresscode ist festlich. Wir freuen uns, wenn die Damen in hellen Farben erscheinen – Weiß bitte der Braut überlassen! Die Herren sind im Anzug herzlich willkommen.',
+    question: 'Wann und wo findet der Empfang statt?',
+    answer: 'Der Empfang findet am 17. Oktober 2026 um 16:30 Uhr statt. Die genaue Adresse ist auf der Einladung vermerkt.',
   },
   {
     id: '3',
@@ -110,11 +105,6 @@ export const faqItems: FAQItem[] = [
     answer: 'Eine tamilische Hochzeit ist eine farbenfrohe, mehrstündige Zeremonie mit vielen Ritualen, Musik und Tanz. Die Braut trägt einen prächtigen roten Sari, und es gibt besondere Zeremonien wie das Anlegen des Thaali (Heiratskette). Gäste können traditionelle Kleidung oder festliche westliche Kleidung tragen.',
   },
   {
-    id: '5',
-    question: 'Gibt es Hotelmöglichkeiten in der Nähe?',
-    answer: 'Ja! In der Nähe des Standesamts empfehlen wir das Hotel Stadtpalais (5 min zu Fuß) und das Boutique Hotel am Park (10 min). Bitte reserviert frühzeitig, da die Zimmer begrenzt sind. Sonderpreise für unsere Gäste auf Anfrage.',
-  },
-  {
     id: '6',
     question: 'Sind Kinder willkommen?',
     answer: 'Kinder sind herzlich willkommen! Bitte gebt bei eurer Anmeldung an, ob und wie viele Kinder ihr mitbringt, damit wir entsprechend planen können. Bei der tamilischen Feier 2027 wird es einen eigenen Bereich für die kleinen Gäste geben.',
@@ -122,7 +112,7 @@ export const faqItems: FAQItem[] = [
   {
     id: '7',
     question: 'Wie kann ich meine Teilnahme bestätigen?',
-    answer: 'Bitte meldet euch bis zum 1. September 2026 über das Kontaktformular auf dieser Website oder direkt bei uns per E-Mail oder Telefon an. Wir brauchen eure Rückmeldung für die Planung.',
+    answer: 'Bitte meldet euch bis zum 1. September 2026 direkt bei uns per E-Mail oder Telefon an. Wir brauchen eure Rückmeldung für die Planung.',
   },
 ]
 
@@ -139,25 +129,25 @@ export const memoryGameImages: string[] = [
 export const quizQuestions: QuizQuestion[] = [
   {
     id: '1',
-    question: 'Wo haben sich Saruga und Vinith zum ersten Mal getroffen?',
-    options: ['In einem Café in München', 'Auf einem Freundesabend in Hamburg', 'In der Universität', 'Beim Sport'],
-    correctIndex: 1,
+    question: 'In welcher Stadt haben sich Saruga und Vinith kennengelernt?',
+    options: ['Mainz', 'Frankfurt', 'Hamburg', 'Saarbrücken'],
+    correctIndex: 0,
   },
   {
     id: '2',
-    question: 'Wohin reisten Saruga und Vinith für ihre erste gemeinsame Reise?',
-    options: ['Nach Indien', 'Nach Sri Lanka', 'Nach Thailand', 'Nach Mallorca'],
-    correctIndex: 1,
-  },
-  {
-    id: '3',
-    question: 'Wo hat Vinith Saruga um ihre Hand angehalten?',
-    options: ['In Hamburg', 'In Sri Lanka', 'Auf Mallorca', 'In Paris'],
+    question: 'Wo war das erste richtige Date von Saruga und Vinith?',
+    options: ['Bei ihr zu Hause', 'Im Deutsch-Französischen Garten', 'Bei Anjappar in Frankfurt', 'In einem Café in Mainz'],
     correctIndex: 2,
   },
   {
+    id: '3',
+    question: 'Wo hat Vinith Saruga einen Antrag gemacht?',
+    options: ['Auf Mallorca', 'Im Deutsch-Französischen Garten', 'In Sri Lanka', 'Zuhause'],
+    correctIndex: 1,
+  },
+  {
     id: '4',
-    question: 'Wann findet die standesamtliche Trauung statt?',
+    question: 'Wann findet der Empfang statt?',
     options: ['15. Oktober 2026', '17. Oktober 2026', '20. Oktober 2026', '1. November 2026'],
     correctIndex: 1,
   },
@@ -183,8 +173,29 @@ export const quizQuestions: QuizQuestion[] = [
     id: '8',
     question: 'In welchem Jahr haben sich Saruga und Vinith kennengelernt?',
     options: ['2021', '2022', '2023', '2024'],
-    correctIndex: 1,
+    correctIndex: 2,
   },
+]
+
+// "Wer von uns...?" – Gäste stimmen ab, wer von beiden eher zutrifft.
+// Die Antwortmöglichkeiten sind für alle Fragen identisch (Braut, Bräutigam, Beide).
+export const whoGameOptions: string[] = [couple.bride, couple.groom, 'Beide']
+
+export const whoQuestions: WhoQuestion[] = [
+  { id: '1', question: 'Wer hat beim ersten Treffen mehr geredet?' },
+  { id: '2', question: 'Wer hatte beim ersten Treffen den besseren ersten Eindruck vom anderen?' },
+  { id: '3', question: 'Wer hat zuerst geschrieben?' },
+  { id: '4', question: 'Wer braucht länger, um sich fertig zu machen?' },
+  { id: '5', question: 'Wer ist romantischer?' },
+  { id: '6', question: 'Wer plant lieber alles im Voraus?' },
+  { id: '7', question: 'Wer ist spontaner?' },
+  { id: '8', question: 'Wer entschuldigt sich nach einem Streit zuerst?' },
+  { id: '9', question: 'Wer kann schlechter verlieren?' },
+  { id: '10', question: 'Wer klaut dem anderen Essen vom Teller?' },
+  { id: '11', question: 'Wer schläft schneller ein?' },
+  { id: '12', question: 'Wer ist morgens besser gelaunt?' },
+  { id: '13', question: 'Wer ist ordentlicher?' },
+  { id: '14', question: 'Wer ist der größere Dickkopf?' },
 ]
 
 export const galleryImages: GalleryImage[] = [
@@ -355,7 +366,6 @@ export const navigationItems = [
   { label: 'Startseite', href: '/' },
   { label: 'Unsere Geschichte', href: '/story' },
   { label: 'Hochzeitsinfos', href: '/info' },
-  { label: 'Einladungen', href: '/einladungen' },
   { label: 'Galerie', href: '/gallery' },
   { label: 'Quiz', href: '/quiz' },
   { label: 'Gästespiel', href: '/memory-spiel' },

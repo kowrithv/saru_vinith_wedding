@@ -47,6 +47,19 @@ export interface FAQItem {
   answer: string
 }
 
+export interface WhoQuestion {
+  id: string
+  question: string
+}
+
+export interface WhoVoteRecord {
+  id: string
+  questionId: string
+  option: string
+  voterName: string
+  createdAt: string
+}
+
 export interface WeddingEvent {
   id: string
   title: string
@@ -55,8 +68,9 @@ export interface WeddingEvent {
   time: string
   venue: string
   address: string
-  dresscode: string
   description: string
+  lat?: number
+  lng?: number
 }
 
 export interface NavItem {

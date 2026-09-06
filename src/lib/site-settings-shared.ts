@@ -1,7 +1,6 @@
 export type PageKey =
   | 'story'
   | 'info'
-  | 'einladungen'
   | 'gallery'
   | 'quiz'
   | 'faq'
@@ -22,7 +21,6 @@ export interface SiteSettings {
 export const pageLabels: Record<PageKey, string> = {
   story: 'Unsere Geschichte',
   info: 'Hochzeitsinfos',
-  einladungen: 'Einladungen',
   gallery: 'Galerie',
   quiz: 'Quiz',
   faq: 'FAQ',

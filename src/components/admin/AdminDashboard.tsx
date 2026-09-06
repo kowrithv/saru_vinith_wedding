@@ -8,6 +8,7 @@ import toast from 'react-hot-toast'
 import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
 import SectionTitle from '@/components/ui/SectionTitle'
+import WhoGameAdmin from '@/components/admin/WhoGameAdmin'
 import { cn } from '@/lib/utils'
 import {
   pageKeys,
@@ -16,9 +17,11 @@ import {
   type SiteSettings,
   type PageKey,
 } from '@/lib/site-settings-shared'
+import type { WhoGameData } from '@/lib/who-game'
 
 interface AdminDashboardProps {
   initialSettings: SiteSettings
+  initialWhoGameData: WhoGameData
 }
 
 function toDatetimeLocalValue(iso: string | null): string {
@@ -34,7 +37,7 @@ function fromDatetimeLocalValue(value: string): string | null {
   return new Date(value).toISOString()
 }
 
-export default function AdminDashboard({ initialSettings }: AdminDashboardProps) {
+export default function AdminDashboard({ initialSettings, initialWhoGameData }: AdminDashboardProps) {
   const router = useRouter()
   const [settings, setSettings] = useState<SiteSettings>(initialSettings)
   const [isSaving, setIsSaving] = useState(false)
@@ -181,6 +184,8 @@ export default function AdminDashboard({ initialSettings }: AdminDashboardProps)
               {isSaving ? 'Speichert...' : 'Speichern'}
             </Button>
           </div>
+
+          <WhoGameAdmin initialData={initialWhoGameData} />
         </motion.div>
       </div>
     </div>

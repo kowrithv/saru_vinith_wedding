@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Clock } from 'lucide-react'
 import { calculateTimeUntil } from '@/lib/utils'
-import { civilWedding } from '@/lib/config'
+import { receptionEvent } from '@/lib/config'
 
 interface CountdownUnitProps {
   value: number
@@ -69,7 +69,7 @@ export default function Countdown() {
     setMounted(true)
 
     const updateCountdown = () => {
-      const result = calculateTimeUntil(civilWedding.date, '14:00')
+      const result = calculateTimeUntil(receptionEvent.date, '16:30')
       setTimeLeft(result)
     }
 
@@ -105,10 +105,10 @@ export default function Countdown() {
             <span>Noch so lange bis zum großen Tag</span>
           </div>
           <h2 className="font-serif text-3xl md:text-4xl font-semibold text-dark-blue">
-            Countdown zur Trauung
+            Countdown zum Empfang
           </h2>
           <p className="mt-2 text-gray-500 text-sm">
-            {civilWedding.displayDate} um {civilWedding.time}
+            {receptionEvent.displayDate} um {receptionEvent.time}
           </p>
         </motion.div>
 
@@ -122,7 +122,7 @@ export default function Countdown() {
               Wir sind verheiratet! 🎉
             </p>
             <p className="mt-4 text-gray-600">
-              {civilWedding.displayDate} – Ein Tag, den wir nie vergessen werden
+              {receptionEvent.displayDate} – Ein Tag, den wir nie vergessen werden
             </p>
           </motion.div>
         ) : (
@@ -145,7 +145,7 @@ export default function Countdown() {
           transition={{ delay: 0.5, duration: 0.6 }}
           className="mt-10 text-xs text-gray-400 font-medium tracking-wide"
         >
-          {civilWedding.venue} · {civilWedding.address}
+          {receptionEvent.venue} · {receptionEvent.address}
         </motion.p>
       </div>
     </section>

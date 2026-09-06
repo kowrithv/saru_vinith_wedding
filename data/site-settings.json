@@ -8,10 +8,6 @@
       "enabled": true,
       "revealAt": null
     },
-    "einladungen": {
-      "enabled": true,
-      "revealAt": null
-    },
     "gallery": {
       "enabled": true,
       "revealAt": null
@@ -33,7 +29,7 @@
       "revealAt": null
     },
     "contact": {
-      "enabled": true,
+      "enabled": false,
       "revealAt": null
     },
     "memory-spiel": {

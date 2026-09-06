@@ -2,9 +2,9 @@
 
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import { Calendar, ChevronDown, Heart, Mail } from 'lucide-react'
+import { Calendar, ChevronDown, Heart } from 'lucide-react'
 import Button from '@/components/ui/Button'
-import { couple, civilWedding, traditionalWedding } from '@/lib/config'
+import { couple, receptionEvent, traditionalWedding, showTraditionalWeddingTab } from '@/lib/config'
 
 function FloralOrnament({ className }: { className?: string }) {
   return (
@@ -163,22 +163,24 @@ export default function Hero() {
                 <Calendar size={18} className="text-white" />
               </div>
               <div className="text-left">
-                <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">Standesamt</p>
-                <p className="text-dark-blue font-semibold text-sm">{civilWedding.displayDate}</p>
-                <p className="text-xs text-gray-500">{civilWedding.time} · {civilWedding.venue}</p>
+                <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">Empfang</p>
+                <p className="text-dark-blue font-semibold text-sm">{receptionEvent.displayDate}</p>
+                <p className="text-xs text-gray-500">{receptionEvent.time} · {receptionEvent.venue}</p>
               </div>
             </div>
 
-            <div className="flex items-center gap-3 bg-white/80 backdrop-blur-sm border border-baby-blue/40 rounded-2xl px-6 py-4 shadow-sm">
-              <div className="w-10 h-10 bg-baby-blue rounded-xl flex items-center justify-center flex-shrink-0">
-                <Heart size={18} className="text-dark-blue" />
+            {showTraditionalWeddingTab && (
+              <div className="flex items-center gap-3 bg-white/80 backdrop-blur-sm border border-baby-blue/40 rounded-2xl px-6 py-4 shadow-sm">
+                <div className="w-10 h-10 bg-baby-blue rounded-xl flex items-center justify-center flex-shrink-0">
+                  <Heart size={18} className="text-dark-blue" />
+                </div>
+                <div className="text-left">
+                  <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">Tamilische Hochzeit</p>
+                  <p className="text-dark-blue font-semibold text-sm">{traditionalWedding.displayDate}</p>
+                  <p className="text-xs text-gray-500">{traditionalWedding.venue}</p>
+                </div>
               </div>
-              <div className="text-left">
-                <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">Tamilische Hochzeit</p>
-                <p className="text-dark-blue font-semibold text-sm">{traditionalWedding.displayDate}</p>
-                <p className="text-xs text-gray-500">{traditionalWedding.venue}</p>
-              </div>
-            </div>
+            )}
           </motion.div>
 
           {/* CTA Buttons */}
@@ -189,12 +191,6 @@ export default function Hero() {
             <Link href="/info">
               <Button variant="primary" size="lg">
                 Hochzeitsinfos
-              </Button>
-            </Link>
-            <Link href="/einladungen">
-              <Button variant="gold" size="lg">
-                <Mail size={16} />
-                Einladungen
               </Button>
             </Link>
             <Link href="/story">

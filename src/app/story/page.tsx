@@ -1,7 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { Heart, Plane, Gem, FileText, Stars } from 'lucide-react'
+import { Heart, Plane, Gem, FileText, Stars, MessageCircle, Users, Flower2 } from 'lucide-react'
 import SectionTitle from '@/components/ui/SectionTitle'
 import { storyTimeline } from '@/lib/config'
 
@@ -13,6 +13,9 @@ const iconMap: Record<string, LucideIcon> = {
   ring: Gem,
   certificate: FileText,
   celebration: Stars,
+  message: MessageCircle,
+  family: Users,
+  flower: Flower2,
 }
 
 const fadeInUp = {

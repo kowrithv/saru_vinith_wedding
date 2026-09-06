@@ -50,3 +50,8 @@ next-env.d.ts
 # Guest-uploaded gallery photos (runtime content, not source)
 public/uploads/
 data/gallery-uploads.json
+
+# Google service account keys (never commit secrets!)
+*.json.key
+sv-wedding-*.json
+google-service-account*.json

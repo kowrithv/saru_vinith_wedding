@@ -11,7 +11,7 @@ import Button from '@/components/ui/Button'
 import { galleryImages } from '@/lib/config'
 import type { GalleryUpload } from '@/lib/gallery-uploads'
 
-const categories = ['Alle', 'Kennenlernen', 'Verlobung', 'Paarfotos', 'Standesamt', 'Empfang']
+const categories = ['Alle', 'Kennenlernen', 'Verlobung', 'Paarfotos', 'Empfang']
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 20 },
@@ -234,7 +234,7 @@ export default function GalleryPage() {
                         className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-dark-blue focus:ring-1 focus:ring-dark-blue outline-none transition-colors text-sm"
                       />
                       <p className="text-xs text-gray-400 mt-1">
-                        Ordnet deine Fotos automatisch der richtigen Veranstaltung zu (Standesamt oder Empfang).
+                        Ordnet deine Fotos automatisch der richtigen Veranstaltung zu.
                       </p>
                     </div>
 

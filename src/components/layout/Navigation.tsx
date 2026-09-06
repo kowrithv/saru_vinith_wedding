@@ -248,7 +248,7 @@ export default function Navigation() {
               {/* Bottom decoration */}
               <div className="text-center text-xs text-gray-400 mt-6">
                 <p>17. Oktober 2026</p>
-                <p className="mt-1">Standesamtliche Trauung</p>
+                <p className="mt-1">Empfang & Feier</p>
               </div>
             </div>
           </motion.div>

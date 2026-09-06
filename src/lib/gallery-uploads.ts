@@ -1,6 +1,7 @@
 import { promises as fs } from 'fs'
 import path from 'path'
 import { generateId } from '@/lib/utils'
+import { uploadToDrive } from '@/lib/google-drive'
 
 export interface GalleryUpload {
   id: string
@@ -61,6 +62,18 @@ export async function saveGalleryUploads(
     const id = generateId()
     const filename = `${id}.${extension}`
     await fs.writeFile(path.join(UPLOAD_DIR, filename), file.buffer)
+
+    const driveFolderId = process.env.GOOGLE_DRIVE_GALLERY_FOLDER_ID
+    if (driveFolderId) {
+      // uploadToDrive fängt eigene Fehler ab (gibt null zurück) – ein Drive-Problem
+      // darf den Upload für den Gast nie verhindern.
+      await uploadToDrive({
+        buffer: file.buffer,
+        filename: `${uploaderName} - ${filename}`,
+        mimeType: file.mimeType,
+        folderId: driveFolderId,
+      })
+    }
 
     entries.push({
       id,

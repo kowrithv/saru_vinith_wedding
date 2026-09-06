@@ -24,7 +24,7 @@ export const metadata: Metadata = {
     default: 'Saruga & Vinith – Unsere Hochzeit',
     template: '%s | Saruga & Vinith',
   },
-  description: 'Wir heiraten! Saruga und Vinith laden euch ein, diesen besonderen Tag mit ihnen zu feiern. Standesamtliche Trauung am 17. Oktober 2026 und traditionelle tamilische Hochzeit 2027.',
+  description: 'Wir heiraten! Saruga und Vinith laden euch ein, diesen besonderen Tag mit ihnen zu feiern. Empfang am 17. Oktober 2026 und traditionelle tamilische Hochzeit 2027.',
   keywords: ['Hochzeit', 'Wedding', 'Saruga', 'Vinith', 'Tamil', 'German', '2026'],
   openGraph: {
     title: 'Saruga & Vinith – Unsere Hochzeit',

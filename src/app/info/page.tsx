@@ -6,7 +6,6 @@ import {
   Calendar,
   Clock,
   MapPin,
-  Shirt,
   Car,
   Hotel,
   Gift,
@@ -17,9 +16,10 @@ import {
 } from 'lucide-react'
 import SectionTitle from '@/components/ui/SectionTitle'
 import Card from '@/components/ui/Card'
-import { civilWedding, traditionalWedding } from '@/lib/config'
+import VenueMap from '@/components/sections/VenueMap'
+import { receptionEvent, traditionalWedding, showTraditionalWeddingTab } from '@/lib/config'
 
-type TabId = 'civil' | 'traditional'
+type TabId = 'reception' | 'traditional'
 
 interface InfoItem {
   icon: LucideIcon
@@ -28,11 +28,11 @@ interface InfoItem {
   sublabel?: string
 }
 
-const civilSchedule = [
-  { time: '13:30 Uhr', event: 'Einlass & Empfang der Gäste' },
-  { time: '14:00 Uhr', event: 'Standesamtliche Trauungszeremonie' },
-  { time: '15:00 Uhr', event: 'Sektempfang & Gratulationen' },
-  { time: '16:00 Uhr', event: 'Gemeinsames Abendessen (kleiner Kreis)' },
+const receptionSchedule = [
+  { time: '16:30 Uhr', event: 'Einlass & Empfang der Gäste' },
+  { time: 'TBA', event: 'Sektempfang & Gratulationen' },
+  { time: 'TBA', event: 'Gemeinsames Abendessen' },
+  { time: 'TBA', event: 'Party & Tanz' },
 ]
 
 const traditionalSchedule = [
@@ -72,7 +72,7 @@ function InfoCard({ icon: Icon, label, value, sublabel }: InfoItem) {
 }
 
 export default function InfoPage() {
-  const [activeTab, setActiveTab] = useState<TabId>('civil')
+  const [activeTab, setActiveTab] = useState<TabId>('reception')
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-champagne-light/20 pt-24 pb-16">
@@ -85,47 +85,49 @@ export default function InfoPage() {
           <motion.div variants={fadeInUp}>
             <SectionTitle
               title="Hochzeitsinfos"
-              subtitle="Alles was ihr wissen müsst – von Dresscode bis Parkplätze."
+              subtitle="Alles was ihr wissen müsst – von Uhrzeit bis Parkplätze."
             />
           </motion.div>
 
           {/* Tab buttons */}
-          <motion.div variants={fadeInUp} className="flex justify-center mb-10">
-            <div className="inline-flex bg-gray-100 rounded-2xl p-1.5 gap-1">
-              <button
-                onClick={() => setActiveTab('civil')}
-                className={`px-5 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
-                  activeTab === 'civil'
-                    ? 'bg-dark-blue text-white shadow-sm'
-                    : 'text-gray-600 hover:text-dark-blue'
-                }`}
-              >
-                <span className="flex items-center gap-2">
-                  <Calendar size={15} />
-                  Standesamt
-                </span>
-              </button>
-              <button
-                onClick={() => setActiveTab('traditional')}
-                className={`px-5 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
-                  activeTab === 'traditional'
-                    ? 'bg-dark-blue text-white shadow-sm'
-                    : 'text-gray-600 hover:text-dark-blue'
-                }`}
-              >
-                <span className="flex items-center gap-2">
-                  <Heart size={15} />
-                  Tamilische Hochzeit
-                </span>
-              </button>
-            </div>
-          </motion.div>
+          {showTraditionalWeddingTab && (
+            <motion.div variants={fadeInUp} className="flex justify-center mb-10">
+              <div className="inline-flex bg-gray-100 rounded-2xl p-1.5 gap-1">
+                <button
+                  onClick={() => setActiveTab('reception')}
+                  className={`px-5 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
+                    activeTab === 'reception'
+                      ? 'bg-dark-blue text-white shadow-sm'
+                      : 'text-gray-600 hover:text-dark-blue'
+                  }`}
+                >
+                  <span className="flex items-center gap-2">
+                    <Calendar size={15} />
+                    Empfang
+                  </span>
+                </button>
+                <button
+                  onClick={() => setActiveTab('traditional')}
+                  className={`px-5 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
+                    activeTab === 'traditional'
+                      ? 'bg-dark-blue text-white shadow-sm'
+                      : 'text-gray-600 hover:text-dark-blue'
+                  }`}
+                >
+                  <span className="flex items-center gap-2">
+                    <Heart size={15} />
+                    Tamilische Hochzeit
+                  </span>
+                </button>
+              </div>
+            </motion.div>
+          )}
 
           {/* Tab Content */}
           <AnimatePresence mode="wait">
-            {activeTab === 'civil' ? (
+            {!showTraditionalWeddingTab || activeTab === 'reception' ? (
               <motion.div
-                key="civil"
+                key="reception"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
@@ -139,34 +141,40 @@ export default function InfoPage() {
                     </div>
                     <div>
                       <p className="text-champagne/60 text-xs font-medium uppercase tracking-wider">17. Oktober 2026</p>
-                      <h2 className="font-serif text-2xl md:text-3xl font-semibold text-white">{civilWedding.title}</h2>
-                      <p className="text-white/70 text-sm mt-1">{civilWedding.description}</p>
+                      <h2 className="font-serif text-2xl md:text-3xl font-semibold text-white">{receptionEvent.title}</h2>
+                      <p className="text-white/70 text-sm mt-1">{receptionEvent.description}</p>
                     </div>
                   </div>
                 </Card>
 
                 {/* Info grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
-                  <InfoCard icon={Calendar} label="Datum" value={civilWedding.displayDate} />
-                  <InfoCard icon={Clock} label="Uhrzeit" value={civilWedding.time} />
+                  <InfoCard icon={Calendar} label="Datum" value={receptionEvent.displayDate} />
+                  <InfoCard icon={Clock} label="Uhrzeit" value={receptionEvent.time} />
                   <InfoCard
                     icon={MapPin}
                     label="Ort"
-                    value={civilWedding.venue}
-                    sublabel={civilWedding.address}
+                    value={receptionEvent.venue}
+                    sublabel={receptionEvent.address}
                   />
-                  <InfoCard icon={Shirt} label="Dresscode" value={civilWedding.dresscode} />
                   <InfoCard
                     icon={Car}
                     label="Parken"
-                    value={['Parkhaus Rathaus (5 min)', 'Straßenparkplätze in der Nähe']}
-                  />
-                  <InfoCard
-                    icon={Hotel}
-                    label="Hotels in der Nähe"
-                    value={['Hotel Stadtpalais (5 min)', 'Boutique Hotel am Park (10 min)']}
+                    value="Parkplätze direkt an der Begegnungsstätte"
                   />
                 </div>
+
+                {/* Map */}
+                {receptionEvent.lat && receptionEvent.lng && (
+                  <div className="mb-8">
+                    <VenueMap
+                      lat={receptionEvent.lat}
+                      lng={receptionEvent.lng}
+                      label={receptionEvent.venue}
+                      address={receptionEvent.address}
+                    />
+                  </div>
+                )}
 
                 {/* Schedule */}
                 <Card padding="lg">
@@ -175,7 +183,7 @@ export default function InfoPage() {
                     Ablauf des Tages
                   </h3>
                   <div className="space-y-4">
-                    {civilSchedule.map((item, index) => (
+                    {receptionSchedule.map((item, index) => (
                       <motion.div
                         key={index}
                         initial={{ opacity: 0, x: -10 }}
@@ -256,7 +264,6 @@ export default function InfoPage() {
                     value={traditionalWedding.venue}
                     sublabel={traditionalWedding.address}
                   />
-                  <InfoCard icon={Shirt} label="Dresscode" value={traditionalWedding.dresscode} />
                   <InfoCard
                     icon={Car}
                     label="Parken"

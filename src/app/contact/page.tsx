@@ -122,7 +122,7 @@ export default function ContactPage() {
                   </li>
                   <li className="flex items-center gap-2">
                     <div className="w-1.5 h-1.5 bg-gold rounded-full" />
-                    Standesamt: 17. Oktober 2026
+                    Empfang: 17. Oktober 2026
                   </li>
                   <li className="flex items-center gap-2">
                     <div className="w-1.5 h-1.5 bg-gold rounded-full" />
@@ -208,8 +208,6 @@ export default function ContactPage() {
                       <option value="">Betreff auswählen...</option>
                       <option value="rsvp">Anmeldung / RSVP</option>
                       <option value="question">Allgemeine Frage</option>
-                      <option value="hotel">Hotel & Unterkunft</option>
-                      <option value="dresscode">Dresscode</option>
                       <option value="gift">Geschenke</option>
                       <option value="other">Sonstiges</option>
                     </select>
