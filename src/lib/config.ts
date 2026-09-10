@@ -121,9 +121,12 @@ export const faqItems: FAQItem[] = [
 // (z.B. '/memory-spiel/foto-4.png'). Bis zu 8 Fotos werden genutzt, fehlende Paare
 // werden automatisch mit Icons aufgefüllt.
 export const memoryGameImages: string[] = [
-  '/memory-spiel/foto-1.png',
-  '/memory-spiel/foto-2.png',
-  '/memory-spiel/foto-3.png',
+  '/memory-spiel/memory-1.jpg',
+  '/memory-spiel/memory-2.jpg',
+  '/memory-spiel/memory-3.jpg',
+  '/memory-spiel/memory-4.jpg',
+  '/memory-spiel/memory-5.jpg',
+  '/memory-spiel/memory-6.jpg',
 ]
 
 export const quizQuestions: QuizQuestion[] = [
