@@ -295,16 +295,10 @@ export default function HomeContent() {
               Wir können es kaum erwarten!
             </motion.h2>
             <motion.p variants={fadeInUp} className="text-white/70 text-base md:text-lg leading-relaxed mb-8">
-              Freut euch mit uns auf diesen besonderen Tag. Meldet euch an, teilt eure
+              Freut euch mit uns auf diesen besonderen Tag. Teilt eure
               Erinnerungen und seid Teil unserer Geschichte.
             </motion.p>
             <motion.div variants={fadeInUp} className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <a href="mailto:hallo@saru-vinith.de">
-                <Button variant="gold" size="lg">
-                  Anmelden per E-Mail
-                  <ArrowRight size={16} />
-                </Button>
-              </a>
               <Link href="/memories">
                 <Button
                   variant="ghost"
