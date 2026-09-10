@@ -1,0 +1,11 @@
+services:
+  web:
+    image: ghcr.io/kowrithv/saru_vinith_wedding:latest
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env.production
+    volumes:
+      - ./data:/app/data
+      - ./public/uploads:/app/public/uploads

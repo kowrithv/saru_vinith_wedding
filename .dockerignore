@@ -1,0 +1,15 @@
+node_modules
+.next
+.git
+.github
+.env
+.env.local
+.env*.local
+npm-debug.log*
+*.tsbuildinfo
+data/gallery-uploads.json
+data/who-votes.json
+data/site-settings.json
+public/uploads
+.DS_Store
+README.md
