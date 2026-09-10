@@ -101,7 +101,7 @@ npm run start
 | `.env.example` | Vorlage für `.env.local` bzw. `.env.production` mit allen Variablen (ohne echte Werte) |
 | `src/lib/config.ts` | Alle Inhalte: Datum/Ort, Zeitstrahl, FAQ, Quiz-Fragen, „Wer von uns“-Fragen, Navigation |
 | `data/site-settings.json` | Speichert, welche Seiten sichtbar sind (wird über den Admin-Bereich verwaltet) |
-| `data/gallery-uploads.json`, `data/who-votes.json` | Von Gästen erzeugte Daten (Foto-Uploads, Quiz-Stimmen) |
+| `data/gallery-uploads.json`, `data/who-votes.json`, `data/memories.json` | Von Gästen erzeugte Daten (Foto-Uploads, Quiz-Stimmen, Erinnerungen) |
 
 ---
 

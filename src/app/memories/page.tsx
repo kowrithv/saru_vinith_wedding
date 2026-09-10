@@ -9,11 +9,9 @@ import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
 import { mockMemories } from '@/lib/config'
 import { Memory } from '@/types'
-import { generateId } from '@/lib/utils'
 
 type TabType = 'text' | 'photo' | 'video'
 
-const STORAGE_KEY = 'saru_vinith_memories'
 const MAX_PHOTO_BYTES = 8 * 1024 * 1024
 const MAX_VIDEO_BYTES = 30 * 1024 * 1024
 
@@ -153,7 +151,7 @@ function MemoryLightbox({ memory, onClose }: { memory: Memory; onClose: () => vo
 
 export default function MemoriesPage() {
   const [activeTab, setActiveTab] = useState<TabType>('text')
-  const [memories, setMemories] = useState<Memory[]>([])
+  const [memories, setMemories] = useState<Memory[]>(mockMemories)
   const [name, setName] = useState('')
   const [content, setContent] = useState('')
   const [dragOver, setDragOver] = useState(false)
@@ -165,28 +163,17 @@ export default function MemoriesPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY)
-    if (stored) {
-      try {
-        setMemories(JSON.parse(stored))
-      } catch {
-        setMemories(mockMemories)
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(mockMemories))
-      }
-    } else {
-      setMemories(mockMemories)
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(mockMemories))
-    }
+    fetch('/api/memories', { cache: 'no-store' })
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data: Memory[]) => {
+        setMemories(
+          [...data, ...mockMemories].sort(
+            (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          )
+        )
+      })
+      .catch(() => {})
   }, [])
-
-  const saveMemories = (newMemories: Memory[]) => {
-    setMemories(newMemories)
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(newMemories))
-    } catch {
-      toast.error('Speicher ist voll – bitte kleinere Fotos/Videos verwenden.')
-    }
-  }
 
   const handleFileSelect = (file: File) => {
     const isImage = file.type.startsWith('image/')
@@ -258,18 +245,24 @@ export default function MemoriesPage() {
       }
     }
 
-    const newMemory: Memory = {
-      id: generateId(),
-      name: name.trim(),
-      type: activeTab,
-      content: content.trim(),
-      mediaUrl,
-      date: new Date().toISOString().split('T')[0],
-      createdAt: new Date().toISOString(),
+    try {
+      const response = await fetch('/api/memories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name.trim(), type: activeTab, content: content.trim(), mediaUrl }),
+      })
+      const data = await response.json()
+      if (!response.ok) {
+        toast.error(data?.error || 'Speichern fehlgeschlagen.')
+        setIsSubmitting(false)
+        return
+      }
+      setMemories((prev) => [data as Memory, ...prev])
+    } catch {
+      toast.error('Speichern fehlgeschlagen. Bitte versuch es erneut.')
+      setIsSubmitting(false)
+      return
     }
-
-    const updated = [newMemory, ...memories]
-    saveMemories(updated)
 
     setName('')
     setContent('')

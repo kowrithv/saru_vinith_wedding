@@ -9,6 +9,7 @@ node_modules
 npm-debug.log*
 *.tsbuildinfo
 data/gallery-uploads.json
+data/memories.json
 public/uploads
 .DS_Store
 README.md
