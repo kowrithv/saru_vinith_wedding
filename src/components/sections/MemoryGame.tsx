@@ -18,14 +18,27 @@ const STORAGE_KEY = 'saru_vinith_memory_best'
 
 type CardFace = { kind: 'image'; src: string } | { kind: 'icon'; Icon: LucideIcon }
 
-// Uses real photos from memoryGameImages first (see src/lib/config.ts), and
-// fills any remaining pairs with icons so the board always has 8 pairs.
-const FACES: CardFace[] = [
-  ...memoryGameImages.slice(0, TOTAL_PAIRS).map((src): CardFace => ({ kind: 'image', src })),
-  ...FALLBACK_ICONS.slice(0, Math.max(0, TOTAL_PAIRS - memoryGameImages.length)).map(
+function shuffle<T>(items: T[]): T[] {
+  const copy = [...items]
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[copy[i], copy[j]] = [copy[j], copy[i]]
+  }
+  return copy
+}
+
+// Picks a random TOTAL_PAIRS photos from memoryGameImages (see src/lib/config.ts)
+// each game, so extra photos still get a turn instead of always using the
+// first few, and fills any remaining pairs with icons if there aren't enough.
+function pickFaces(): CardFace[] {
+  const images = shuffle(memoryGameImages)
+    .slice(0, TOTAL_PAIRS)
+    .map((src): CardFace => ({ kind: 'image', src }))
+  const icons = FALLBACK_ICONS.slice(0, Math.max(0, TOTAL_PAIRS - images.length)).map(
     (Icon): CardFace => ({ kind: 'icon', Icon })
-  ),
-]
+  )
+  return [...images, ...icons]
+}
 
 interface MemoryCard {
   id: string
@@ -38,16 +51,12 @@ interface BestScore {
   seconds: number
 }
 
-function createShuffledDeck(): MemoryCard[] {
-  const pairs = FACES.flatMap((_, faceIndex) => [
+function createShuffledDeck(faces: CardFace[]): MemoryCard[] {
+  const pairs = faces.flatMap((_, faceIndex) => [
     { id: generateId(), faceIndex, isMatched: false },
     { id: generateId(), faceIndex, isMatched: false },
   ])
-  for (let i = pairs.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[pairs[i], pairs[j]] = [pairs[j], pairs[i]]
-  }
-  return pairs
+  return shuffle(pairs)
 }
 
 function formatTime(totalSeconds: number): string {
@@ -57,6 +66,7 @@ function formatTime(totalSeconds: number): string {
 }
 
 export default function MemoryGame() {
+  const [faces, setFaces] = useState<CardFace[]>([])
   const [cards, setCards] = useState<MemoryCard[]>([])
   const [flippedIds, setFlippedIds] = useState<string[]>([])
   const [locked, setLocked] = useState(false)
@@ -68,7 +78,9 @@ export default function MemoryGame() {
   const [burstTrigger, setBurstTrigger] = useState(0)
 
   const startNewGame = () => {
-    setCards(createShuffledDeck())
+    const newFaces = pickFaces()
+    setFaces(newFaces)
+    setCards(createShuffledDeck(newFaces))
     setFlippedIds([])
     setLocked(false)
     setMoves(0)
@@ -185,7 +197,7 @@ export default function MemoryGame() {
           {/* Board */}
           <div className="grid grid-cols-4 gap-2.5 sm:gap-3">
             {gridCards.map((card) => {
-              const face = FACES[card.faceIndex]
+              const face = faces[card.faceIndex]
               const visible = isCardVisible(card)
               return (
                 <button
