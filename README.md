@@ -123,12 +123,6 @@ cd saru_vinith_wedding
 
 cp .env.example .env.production   # danach mit den echten Werten füllen
 
-# Der Container läuft aus Sicherheitsgründen nicht als root, sondern als
-# Benutzer 1001. Die gemounteten Ordner brauchen deshalb einmalig die
-# passenden Rechte, sonst schlagen Foto-Uploads fehl:
-mkdir -p data public/uploads
-sudo chown -R 1001:1001 data public/uploads
-
 docker compose pull               # aktuelles Image von GitHub holen
 docker compose up -d              # Website starten
 ```
@@ -136,6 +130,11 @@ docker compose up -d              # Website starten
 Die Website läuft danach auf `http://<server>:3000`. Für einen anderen Port die
 linke Zahl in der `ports`-Zeile der `docker-compose.yml` anpassen (z. B.
 `"8080:3000"`).
+
+Der Container läuft aus Sicherheitsgründen nicht als root, sondern als Benutzer
+1001 – der Entrypoint korrigiert die Rechte auf `./data` und
+`./public/uploads` aber bei jedem Start automatisch, ein manuelles `chown` auf
+dem Server ist nicht nötig.
 
 ### Updates einspielen
 

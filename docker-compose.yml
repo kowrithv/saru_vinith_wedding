@@ -8,9 +8,9 @@
 # Image lokal selbst bauen (statt es von GitHub zu laden):
 #   docker build -t ghcr.io/kowrithv/saru_vinith_wedding:latest .
 #
-# Einmalig vor dem ersten Start (der Container laeuft als Benutzer 1001 und
-# braucht Schreibrechte auf den gemounteten Ordnern):
-#   mkdir -p data public/uploads && sudo chown -R 1001:1001 data public/uploads
+# Der Container laeuft als Benutzer 1001, der Entrypoint (docker-entrypoint.sh)
+# korrigiert die Rechte auf ./data und ./public/uploads bei jedem Start selbst -
+# kein manuelles chown auf dem Server noetig.
 
 services:
   web:
