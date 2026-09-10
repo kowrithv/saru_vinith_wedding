@@ -1,11 +1,43 @@
+# Hochzeitswebsite Saruga & Vinith
+#
+#   docker compose pull          # neuestes Image von GitHub holen
+#   docker compose up -d         # Website starten (http://localhost:3000)
+#   docker compose logs -f       # Logs ansehen
+#   docker compose down          # Website stoppen
+#
+# Image lokal selbst bauen (statt es von GitHub zu laden):
+#   docker build -t ghcr.io/kowrithv/saru_vinith_wedding:latest .
+#
+# Einmalig vor dem ersten Start (der Container laeuft als Benutzer 1001 und
+# braucht Schreibrechte auf den gemounteten Ordnern):
+#   mkdir -p data public/uploads && sudo chown -R 1001:1001 data public/uploads
+
 services:
   web:
-    image: ghcr.io/kowrithv/saru_vinith_wedding:latest
+    # Wird von GitHub Actions gebaut und veroeffentlicht
+    # (.github/workflows/docker-build.yml).
+    # Andere Version starten:  IMAGE_TAG=v1.0.0 docker compose up -d
+    image: ghcr.io/kowrithv/saru_vinith_wedding:${IMAGE_TAG:-latest}
+    container_name: saru-vinith-wedding
     restart: unless-stopped
     ports:
+      # Linke Zahl = Port auf dem Server. Fuer z. B. Port 8080 auf "8080:3000" aendern.
       - "3000:3000"
+    # Passwoerter und Google-Drive-Zugangsdaten (Vorlage: .env.example)
     env_file:
-      - .env.production
+      - path: .env.production
+        required: false
     volumes:
+      # Seiten-Sichtbarkeit, Quiz-Stimmen und Foto-Uploads ueberleben Updates.
       - ./data:/app/data
       - ./public/uploads:/app/public/uploads
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3000/api/settings').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3

@@ -8,6 +8,8 @@ Diese Website begleitet die Hochzeit von Saruga & Vinith. Sie enthält alle Info
 - [Passwörter](#passwörter)
 - [Admin-Bereich nutzen](#admin-bereich-nutzen)
 - [Lokal betreiben](#lokal-betreiben)
+- [Deployment mit Docker](#deployment-mit-docker)
+- [CI/CD (GitHub Actions)](#cicd-github-actions)
 - [Sonstiges](#sonstiges)
 
 ---
@@ -96,9 +98,127 @@ npm run start
 | Datei | Zweck |
 |---|---|
 | `.env.local` | Passwörter, Secrets, Google-Drive-Zugangsdaten – niemals ins Git-Repository commiten |
+| `.env.example` | Vorlage für `.env.local` bzw. `.env.production` mit allen Variablen (ohne echte Werte) |
 | `src/lib/config.ts` | Alle Inhalte: Datum/Ort, Zeitstrahl, FAQ, Quiz-Fragen, „Wer von uns“-Fragen, Navigation |
 | `data/site-settings.json` | Speichert, welche Seiten sichtbar sind (wird über den Admin-Bereich verwaltet) |
 | `data/gallery-uploads.json`, `data/who-votes.json` | Von Gästen erzeugte Daten (Foto-Uploads, Quiz-Stimmen) |
+
+---
+
+## Deployment mit Docker
+
+Die Website läuft als fertiges Docker-Image. GitHub Actions baut das Image bei
+jeder Änderung am Hauptbranch automatisch und legt es in der GitHub Container
+Registry ab:
+
+```
+ghcr.io/kowrithv/saru_vinith_wedding:latest
+```
+
+### Erste Einrichtung auf dem Server
+
+```bash
+git clone https://github.com/kowrithv/saru_vinith_wedding.git
+cd saru_vinith_wedding
+
+cp .env.example .env.production   # danach mit den echten Werten füllen
+
+# Der Container läuft aus Sicherheitsgründen nicht als root, sondern als
+# Benutzer 1001. Die gemounteten Ordner brauchen deshalb einmalig die
+# passenden Rechte, sonst schlagen Foto-Uploads fehl:
+mkdir -p data public/uploads
+sudo chown -R 1001:1001 data public/uploads
+
+docker compose pull               # aktuelles Image von GitHub holen
+docker compose up -d              # Website starten
+```
+
+Die Website läuft danach auf `http://<server>:3000`. Für einen anderen Port die
+linke Zahl in der `ports`-Zeile der `docker-compose.yml` anpassen (z. B.
+`"8080:3000"`).
+
+### Updates einspielen
+
+```bash
+docker compose pull && docker compose up -d
+```
+
+Eine bestimmte Version statt der neuesten starten:
+
+```bash
+IMAGE_TAG=v1.0.0 docker compose pull
+IMAGE_TAG=v1.0.0 docker compose up -d
+```
+
+### Gästedaten bleiben erhalten
+
+Zwei Ordner werden vom Server in den Container gemountet, damit ein Update
+keine Daten löscht:
+
+| Ordner auf dem Server | Im Container | Inhalt |
+|---|---|---|
+| `./data` | `/app/data` | Seiten-Sichtbarkeit, „Wer von uns?“-Stimmen |
+| `./public/uploads` | `/app/public/uploads` | Von Gästen hochgeladene Fotos |
+
+Für ein Backup reicht es, diese beiden Ordner zu sichern.
+
+### Nützliche Befehle
+
+```bash
+docker compose logs -f       # Logs mitlesen
+docker compose ps            # Status inkl. Healthcheck
+docker compose restart       # Neu starten
+docker compose down          # Stoppen (Daten in ./data bleiben erhalten)
+```
+
+> **Wichtig:** Nach jeder Änderung an `.env.production` muss der Container mit
+> `docker compose up -d` neu erstellt werden – ein `restart` allein übernimmt
+> die neuen Werte nicht immer.
+
+---
+
+## CI/CD (GitHub Actions)
+
+Zwei Workflows liegen unter `.github/workflows/`:
+
+| Workflow | Läuft wann | Was er tut |
+|---|---|---|
+| `ci.yml` | bei jedem Push und Pull Request | `npm ci`, Typprüfung (`tsc --noEmit`), `npm run lint`, `npm run build` |
+| `docker-build.yml` | bei Push auf `clean-start`, bei Tags `v*.*.*`, oder manuell | baut das Docker-Image und lädt es nach `ghcr.io/kowrithv/saru_vinith_wedding` hoch |
+
+Vergebene Image-Tags:
+
+- `latest` – immer der aktuelle Stand des Hauptbranches
+- `clean-start` – Branch-Name
+- `sha-<kurz-hash>` – der genaue Commit
+- `1.2.3` – wenn ein Git-Tag `v1.2.3` gesetzt wird
+
+Ein Release veröffentlichen:
+
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+Der Workflow braucht keine zusätzlichen Secrets – er meldet sich mit dem
+automatischen `GITHUB_TOKEN` an der Registry an. Damit das klappt, muss unter
+**Settings → Actions → General → Workflow permissions** „Read and write
+permissions“ aktiv sein.
+
+### GitHub Pages
+
+GitHub Pages kann diese Website **nicht** hosten. Pages liefert ausschließlich
+statische Dateien aus, die Seite braucht aber einen laufenden Node-Server für:
+
+- Foto-Uploads in Galerie und Erinnerungen (`/api/gallery/upload`, `/api/memories/upload`)
+- die Live-Abstimmung bei „Wer von uns?“ (`/api/who-votes/vote`)
+- den Admin-Login und das Ein-/Ausblenden von Seiten (`/api/admin/*`)
+- das Speichern der Daten in `data/` und `public/uploads/`
+
+Ein statischer Export (`output: 'export'`) würde genau diese Funktionen
+entfernen. Deshalb wird das Docker-Image oben als Deployment-Weg genutzt – z. B.
+auf einem eigenen Server, einer VM oder bei einem Anbieter, der Docker-Images
+startet.
 
 ---
 

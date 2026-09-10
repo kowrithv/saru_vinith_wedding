@@ -4,12 +4,16 @@ node_modules
 .github
 .env
 .env.local
+.env.production
 .env*.local
 npm-debug.log*
 *.tsbuildinfo
 data/gallery-uploads.json
-data/who-votes.json
-data/site-settings.json
 public/uploads
 .DS_Store
 README.md
+
+# Grosse Quellbilder im Wurzelverzeichnis (Duplikate von public/invitations/)
+/reception.png
+/standesamt_01.png
+/stamdesamt_02.png
