@@ -8,7 +8,6 @@ import {
   MapPin,
   Car,
   Hotel,
-  Gift,
   Info,
   Heart,
   CheckCircle,
@@ -203,21 +202,6 @@ export default function InfoPage() {
                         </div>
                       </motion.div>
                     ))}
-                  </div>
-                </Card>
-
-                {/* Gifts */}
-                <Card variant="champagne" padding="md" className="mt-6">
-                  <div className="flex items-start gap-4">
-                    <Gift size={20} className="text-dark-blue flex-shrink-0 mt-1" />
-                    <div>
-                      <h4 className="font-semibold text-dark-blue mb-1">Geschenke</h4>
-                      <p className="text-sm text-gray-600">
-                        Eure Anwesenheit ist das schönste Geschenk! Falls ihr uns dennoch eine Freude
-                        bereiten möchtet, freuen wir uns über einen Beitrag zu unserem Hochzeitsreise-Fond.
-                        Details erhaltet ihr mit der Einladung.
-                      </p>
-                    </div>
                   </div>
                 </Card>
               </motion.div>
