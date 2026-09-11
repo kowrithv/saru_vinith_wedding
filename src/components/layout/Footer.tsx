@@ -23,8 +23,8 @@ export default async function Footer() {
               </span>
             </div>
             <p className="text-baby-blue text-sm leading-relaxed">
-              Zwei Herzen, zwei Kulturen, eine Liebe. Wir freuen uns, diesen
-              besonderen Moment mit euch zu teilen.
+              Zwei Herzen, eine Liebe. Wir freuen uns, diesen besonderen
+              Moment mit euch zu teilen.
             </p>
             <p className="mt-3 text-gold text-sm font-medium">{couple.hashtag}</p>
           </div>
