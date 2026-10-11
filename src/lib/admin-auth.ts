@@ -1,6 +1,8 @@
 import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto'
 import type Database from 'better-sqlite3'
 
+export const ADMIN_COOKIE_NAME = 'admin_session'
+
 export function hashPassword(password: string): string {
   return createHash('sha256').update(password, 'utf8').digest('hex')
 }
@@ -78,4 +80,19 @@ export function verifyCookieValue(
   }
 
   return expiresAt > now
+}
+
+export function isAdminRequest(request: Request, db: Database.Database): boolean {
+  const cookieHeader = request.headers.get('cookie')
+  if (!cookieHeader) return false
+
+  const match = cookieHeader
+    .split(';')
+    .map((part) => part.trim())
+    .find((part) => part.startsWith(`${ADMIN_COOKIE_NAME}=`))
+  if (!match) return false
+
+  const value = match.slice(ADMIN_COOKIE_NAME.length + 1)
+  const secret = getOrCreateAdminSecret(db)
+  return verifyCookieValue(value, secret)
 }

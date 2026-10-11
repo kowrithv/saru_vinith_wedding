@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { createDb } from './db'
 import {
+  ADMIN_COOKIE_NAME,
   getOrCreateAdminSecret,
   hashPassword,
+  isAdminRequest,
   signCookieValue,
   verifyCookieValue,
   verifyPassword,
@@ -86,5 +88,53 @@ describe('signCookieValue / verifyCookieValue', () => {
     const tampered = `${expiresAtPart}.ab`
     expect(() => verifyCookieValue(tampered, 'secret')).not.toThrow()
     expect(verifyCookieValue(tampered, 'secret')).toBe(false)
+  })
+})
+
+describe('isAdminRequest', () => {
+  function requestWithCookie(value?: string): Request {
+    const headers = new Headers()
+    if (value !== undefined) {
+      headers.set('cookie', `${ADMIN_COOKIE_NAME}=${value}`)
+    }
+    return new Request('http://localhost/api/guestbook/1', { headers })
+  }
+
+  it('accepts a request with a valid, unexpired admin cookie', () => {
+    const db = createDb(':memory:')
+    const secret = getOrCreateAdminSecret(db)
+    const expiresAt = Date.now() + 1000
+    const value = signCookieValue(expiresAt, secret)
+
+    expect(isAdminRequest(requestWithCookie(value), db)).toBe(true)
+    db.close()
+  })
+
+  it('rejects a request with no cookie at all', () => {
+    const db = createDb(':memory:')
+    getOrCreateAdminSecret(db)
+    expect(isAdminRequest(requestWithCookie(undefined), db)).toBe(false)
+    db.close()
+  })
+
+  it('rejects a request with an expired cookie', () => {
+    const db = createDb(':memory:')
+    const secret = getOrCreateAdminSecret(db)
+    const expiresAt = Date.now() - 1000
+    const value = signCookieValue(expiresAt, secret)
+
+    expect(isAdminRequest(requestWithCookie(value), db)).toBe(false)
+    db.close()
+  })
+
+  it('rejects a request with a tampered cookie', () => {
+    const db = createDb(':memory:')
+    const secret = getOrCreateAdminSecret(db)
+    const expiresAt = Date.now() + 1000
+    const value = signCookieValue(expiresAt, secret)
+    const tampered = value.slice(0, -1) + (value.endsWith('0') ? '1' : '0')
+
+    expect(isAdminRequest(requestWithCookie(tampered), db)).toBe(false)
+    db.close()
   })
 })

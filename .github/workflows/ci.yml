@@ -43,6 +43,11 @@ jobs:
         run: npm run build
         env:
           NEXT_TELEMETRY_DISABLED: '1'
+          # Nur für den Build-Vorgang (Prerendering) nötig, kein echtes
+          # Geheimnis - die echten Werte kommen zur Laufzeit aus der
+          # Server-Umgebung (docker-compose/.env.production).
+          ADMIN_PASSWORD: ci-build-only
+          UPLOAD_PASSWORD_EMPFANG: ci-build-only
 
   docker:
     name: Build and push Docker image

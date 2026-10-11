@@ -1,4 +1,4 @@
-const REQUIRED_KEYS = ['ADMIN_PASSWORD'] as const
+const REQUIRED_KEYS = ['ADMIN_PASSWORD', 'UPLOAD_PASSWORD_EMPFANG'] as const
 
 export class MissingEnvError extends Error {
   readonly missing: string[]
@@ -12,6 +12,7 @@ export class MissingEnvError extends Error {
 
 export interface AppEnv {
   adminPassword: string
+  uploadPasswordEmpfang: string
 }
 
 export function validateEnv(
@@ -23,5 +24,6 @@ export function validateEnv(
   }
   return {
     adminPassword: source.ADMIN_PASSWORD as string,
+    uploadPasswordEmpfang: source.UPLOAD_PASSWORD_EMPFANG as string,
   }
 }

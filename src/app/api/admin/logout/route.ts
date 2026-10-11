@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { ADMIN_COOKIE_NAME } from '../login/route'
+import { ADMIN_COOKIE_NAME } from '@/lib/admin-auth'
 
 export async function POST(): Promise<Response> {
   const response = NextResponse.json({ success: true })

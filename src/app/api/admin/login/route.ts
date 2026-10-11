@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getDb } from '@/lib/db'
 import {
+  ADMIN_COOKIE_NAME,
   ADMIN_SESSION_DURATION_MS,
   getOrCreateAdminSecret,
   signCookieValue,
@@ -9,8 +10,6 @@ import {
 } from '@/lib/admin-auth'
 import { RateLimiter } from '@/lib/rate-limit'
 import { getClientKey } from '@/lib/client-ip'
-
-export const ADMIN_COOKIE_NAME = 'admin_session'
 
 const loginSchema = z.object({ password: z.string().min(1) })
 
