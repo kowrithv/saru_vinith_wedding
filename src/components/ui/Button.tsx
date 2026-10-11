@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils'
 interface ButtonProps {
   children: ReactNode
   onClick?: () => void
+  type?: 'button' | 'submit'
   variant?: 'primary' | 'secondary'
   size?: 'sm' | 'md' | 'lg'
   disabled?: boolean
@@ -24,6 +25,7 @@ const variantClasses = {
 export default function Button({
   children,
   onClick,
+  type = 'button',
   variant = 'primary',
   size = 'md',
   disabled = false,
@@ -31,7 +33,7 @@ export default function Button({
 }: ButtonProps) {
   return (
     <button
-      type="button"
+      type={type}
       onClick={onClick}
       disabled={disabled}
       className={cn(

@@ -21,4 +21,14 @@ describe('Button', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Weiter' }))
     expect(onClick).not.toHaveBeenCalled()
   })
+
+  it('renders as a submit button when type="submit" is passed', () => {
+    render(<Button type="submit">Absenden</Button>)
+    expect(screen.getByRole('button', { name: 'Absenden' })).toHaveAttribute('type', 'submit')
+  })
+
+  it('defaults to type="button" when no type is passed', () => {
+    render(<Button>Weiter</Button>)
+    expect(screen.getByRole('button', { name: 'Weiter' })).toHaveAttribute('type', 'button')
+  })
 })
