@@ -1,0 +1,55 @@
+import { describe, expect, it, vi } from 'vitest'
+import { render, screen, waitFor } from '@testing-library/react'
+import VenueMap from './VenueMap'
+
+const mergeOptions = vi.fn()
+
+vi.mock('leaflet', () => ({
+  default: {
+    Icon: { Default: { mergeOptions, prototype: {} } },
+    map: vi.fn(() => ({ remove: vi.fn() })),
+    tileLayer: vi.fn(() => ({ addTo: vi.fn() })),
+    marker: vi.fn(() => ({
+      addTo: vi.fn(() => ({ bindPopup: vi.fn(() => ({ openPopup: vi.fn() })) })),
+    })),
+  },
+}))
+
+describe('VenueMap', () => {
+  const props = {
+    lat: 51.196771,
+    lng: 6.213148,
+    label: 'Begegnungsstätte Niederkrüchten',
+    address: 'Oberkrüchtener Weg 42, 41372 Niederkrüchten',
+  }
+
+  it('links to Google Maps directions with the correct coordinates', () => {
+    render(<VenueMap {...props} />)
+    const link = screen.getByRole('link', { name: /Route planen/i })
+    expect(link).toHaveAttribute(
+      'href',
+      'https://www.google.com/maps/dir/?api=1&destination=51.196771,6.213148'
+    )
+  })
+
+  it('links to OpenStreetMap with the correct coordinates', () => {
+    render(<VenueMap {...props} />)
+    const link = screen.getByRole('link', { name: /OpenStreetMap/i })
+    expect(link).toHaveAttribute(
+      'href',
+      'https://www.openstreetmap.org/?mlat=51.196771&mlon=6.213148#map=17/51.196771/6.213148'
+    )
+  })
+
+  it('configures Leaflet marker icons from the app origin, never an external CDN', async () => {
+    render(<VenueMap {...props} />)
+    await waitFor(() => expect(mergeOptions).toHaveBeenCalled())
+    const options = mergeOptions.mock.calls[0][0]
+    expect(options.iconUrl).toBe('/leaflet/marker-icon.png')
+    expect(options.iconRetinaUrl).toBe('/leaflet/marker-icon-2x.png')
+    expect(options.shadowUrl).toBe('/leaflet/marker-shadow.png')
+    ;[options.iconUrl, options.iconRetinaUrl, options.shadowUrl].forEach((url) => {
+      expect(url.startsWith('http')).toBe(false)
+    })
+  })
+})
