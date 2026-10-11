@@ -1,0 +1,166 @@
+'use client'
+
+import { useEffect, useState, type FormEvent } from 'react'
+import { MessageSquare, Send, User } from 'lucide-react'
+import SectionTitle from '@/components/ui/SectionTitle'
+import Card from '@/components/ui/Card'
+import Button from '@/components/ui/Button'
+
+interface GuestbookEntry {
+  id: number
+  name: string
+  message: string
+  createdAt: string
+}
+
+function initialsOf(name: string): string {
+  return name
+    .split(' ')
+    .map((part) => part[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2)
+}
+
+function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('de-DE', { day: '2-digit', month: 'short', year: 'numeric' })
+}
+
+export default function GuestbookPage() {
+  const [entries, setEntries] = useState<GuestbookEntry[]>([])
+  const [name, setName] = useState('')
+  const [message, setMessage] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [submitting, setSubmitting] = useState(false)
+
+  useEffect(() => {
+    fetch('/api/guestbook')
+      .then((res) => (res.ok ? res.json() : { entries: [] }))
+      .then((data: { entries: GuestbookEntry[] }) => setEntries(data.entries))
+      .catch(() => {})
+  }, [])
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault()
+    setError(null)
+
+    const trimmedMessage = message.trim()
+    if (!name.trim()) {
+      setError('Bitte gib deinen Namen ein.')
+      return
+    }
+    if (trimmedMessage.length < 10) {
+      setError('Deine Nachricht ist zu kurz. Bitte schreib mindestens 10 Zeichen.')
+      return
+    }
+
+    setSubmitting(true)
+    try {
+      const response = await fetch('/api/guestbook', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name.trim(), message: trimmedMessage }),
+      })
+      if (!response.ok) {
+        setError('Eintrag konnte nicht gespeichert werden. Bitte versuch es erneut.')
+        return
+      }
+      const data = (await response.json()) as { entry: GuestbookEntry }
+      setEntries((prev) => [data.entry, ...prev])
+      setName('')
+      setMessage('')
+    } catch {
+      setError('Eintrag konnte nicht gespeichert werden. Bitte versuch es erneut.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <div className="pt-24 pb-16">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6">
+        <SectionTitle
+          title="Gästebuch"
+          subtitle="Hinterlasst uns eine Nachricht, einen Wunsch oder eine Erinnerung – für immer in unserem Herzen."
+        />
+
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+          <div className="lg:col-span-2">
+            <Card padding="lg" className="sticky top-24">
+              <div className="flex items-center gap-3 mb-5">
+                <div className="w-10 h-10 bg-dark-blue rounded-xl flex items-center justify-center">
+                  <MessageSquare size={18} className="text-white" />
+                </div>
+                <h3 className="font-serif text-xl font-semibold text-dark-blue">Eintrag hinterlassen</h3>
+              </div>
+
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label htmlFor="guestbook-name" className="block text-sm font-medium text-gray-700 mb-1.5">
+                    <User size={14} className="inline mr-1" />
+                    Dein Name
+                  </label>
+                  <input
+                    id="guestbook-name"
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Wie heißt du?"
+                    maxLength={60}
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-dark-blue focus:ring-1 focus:ring-dark-blue outline-none transition-colors text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="guestbook-message" className="block text-sm font-medium text-gray-700 mb-1.5">
+                    <MessageSquare size={14} className="inline mr-1" />
+                    Deine Nachricht
+                  </label>
+                  <textarea
+                    id="guestbook-message"
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    placeholder="Schreib dem Brautpaar eine Nachricht, einen Wunsch oder eine nette Erinnerung..."
+                    rows={5}
+                    maxLength={500}
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-dark-blue focus:ring-1 focus:ring-dark-blue outline-none transition-colors text-sm resize-none"
+                  />
+                  <p className="text-xs text-gray-400 text-right mt-1">{message.length}/500</p>
+                </div>
+
+                {error && <p className="text-sm text-red-600">{error}</p>}
+
+                <Button type="submit" size="lg" disabled={submitting} className="w-full">
+                  <Send size={16} />
+                  {submitting ? 'Wird eingetragen...' : 'Ins Gästebuch eintragen'}
+                </Button>
+              </form>
+            </Card>
+          </div>
+
+          <div className="lg:col-span-3 space-y-4">
+            {entries.length === 0 && (
+              <p className="text-sm text-gray-400">Noch keine Einträge – sei der/die Erste!</p>
+            )}
+            {entries.map((entry) => (
+              <Card key={entry.id}>
+                <div className="flex items-start gap-4">
+                  <div className="w-11 h-11 rounded-full bg-champagne text-dark-blue flex items-center justify-center font-semibold text-sm flex-shrink-0">
+                    {initialsOf(entry.name)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <p className="font-semibold text-dark-blue text-sm truncate">{entry.name}</p>
+                      <p className="text-xs text-gray-400 flex-shrink-0">{formatDate(entry.createdAt)}</p>
+                    </div>
+                    <p className="text-sm text-gray-600 leading-relaxed">{entry.message}</p>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
