@@ -2,6 +2,8 @@ import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
 import { Playfair_Display, Inter } from 'next/font/google'
 import './globals.css'
+import Navigation from '@/components/layout/Navigation'
+import Footer from '@/components/layout/Footer'
 
 const playfair = Playfair_Display({
   subsets: ['latin'],
@@ -31,7 +33,9 @@ export default function RootLayout({
   return (
     <html lang="de" className={`${playfair.variable} ${inter.variable}`}>
       <body className="font-sans antialiased bg-white text-gray-900">
-        {children}
+        <Navigation />
+        <main className="min-h-screen">{children}</main>
+        <Footer />
       </body>
     </html>
   )
