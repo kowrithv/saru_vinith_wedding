@@ -9,4 +9,9 @@ describe('HomePage', () => {
       screen.getByRole('heading', { level: 1, name: /saruga.*vinith/i })
     ).toBeInTheDocument()
   })
+
+  it('does not render its own <main> - the root layout owns that landmark', () => {
+    const { container } = render(<HomePage />)
+    expect(container.querySelector('main')).not.toBeInTheDocument()
+  })
 })

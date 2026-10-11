@@ -34,6 +34,11 @@ export default function RootLayout({
     <html lang="de" className={`${playfair.variable} ${inter.variable}`}>
       <body className="font-sans antialiased bg-white text-gray-900">
         <Navigation />
+        {/* Die Navigation ist "fixed" und überlagert daher den Seitenanfang -
+            jede Seite ist dafür verantwortlich, selbst genug Abstand nach
+            oben zu lassen (Konvention: pt-24 pb-16 auf dem äußersten
+            Element der Seite, siehe src/app/page.tsx). Hier KEIN
+            pt-* ergänzen, sonst doppelter Abstand. */}
         <main className="min-h-screen">{children}</main>
         <Footer />
       </body>

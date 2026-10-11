@@ -46,7 +46,12 @@ export default function Navigation() {
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 md:h-20">
-            <Link href="/" className="flex items-center gap-2" aria-label="Zur Startseite">
+            <Link
+              href="/"
+              className="flex items-center gap-2"
+              aria-label="Zur Startseite"
+              onClick={() => setIsOpen(false)}
+            >
               <Heart size={18} className="text-gold fill-gold" />
               <span className="font-serif text-xl font-semibold tracking-wide text-dark-blue">S &amp; V</span>
             </Link>
@@ -103,6 +108,7 @@ export default function Navigation() {
                       <li key={item.href}>
                         <Link
                           href={item.href}
+                          onClick={() => setIsOpen(false)}
                           className={cn(
                             'flex items-center px-4 py-3.5 rounded-xl text-base font-medium transition-colors duration-200',
                             isActive

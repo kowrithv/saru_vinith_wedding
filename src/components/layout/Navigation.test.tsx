@@ -47,15 +47,27 @@ describe('Navigation', () => {
     expect(screen.getAllByRole('link', { name: 'Gästebuch' }).length).toBeGreaterThanOrEqual(2)
   })
 
-  it('closes the mobile menu when the route changes', () => {
+  it('closes the mobile menu when the route changes', async () => {
     mockPathname = '/'
     const { rerender } = render(<Navigation />)
-    // Menü öffnen, indem wir seinen internen State nicht direkt anfassen können -
-    // stattdessen prüfen wir das Verhalten über den Pathname-Wechsel-Effekt:
-    // nach einem Pathname-Wechsel muss der "Menü öffnen"-Button wieder da sein,
-    // nicht "Menü schließen" (d.h. isOpen wurde zurückgesetzt).
+    const toggle = screen.getByRole('button', { name: /Menü öffnen/i })
+    await userEvent.click(toggle)
+    expect(screen.getByRole('button', { name: /Menü schließen/i })).toBeInTheDocument()
+
     mockPathname = '/story'
     rerender(<Navigation />)
+    expect(screen.getByRole('button', { name: /Menü öffnen/i })).toBeInTheDocument()
+  })
+
+  it('closes the mobile menu when a link inside it is clicked, even without a route change', async () => {
+    mockPathname = '/'
+    render(<Navigation />)
+    const toggle = screen.getByRole('button', { name: /Menü öffnen/i })
+    await userEvent.click(toggle)
+    expect(screen.getByRole('button', { name: /Menü schließen/i })).toBeInTheDocument()
+
+    const mobileLink = screen.getAllByRole('link', { name: 'Gästebuch' })[1]
+    await userEvent.click(mobileLink)
     expect(screen.getByRole('button', { name: /Menü öffnen/i })).toBeInTheDocument()
   })
 })
