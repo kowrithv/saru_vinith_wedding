@@ -66,6 +66,29 @@ describe('usePolling', () => {
     expect(fetchFn).toHaveBeenCalledTimes(3)
   })
 
+  it('resumes immediately even if hidden for less than the next scheduled poll', () => {
+    const fetchFn = vi.fn()
+    render(<Harness fetchFn={fetchFn} />)
+    // Nach vier Abrufen beträgt die Backoff-Verzögerung 8000ms.
+    vi.advanceTimersByTime(1000)
+    vi.advanceTimersByTime(2000)
+    vi.advanceTimersByTime(4000)
+    expect(fetchFn).toHaveBeenCalledTimes(4)
+
+    // Kurz versteckt (2s) - deutlich kürzer als die laufende 8s-Verzögerung.
+    setHidden(true)
+    vi.advanceTimersByTime(2000)
+    setHidden(false)
+
+    // Muss sofort erneut abrufen, nicht erst nach Ablauf der ursprünglich
+    // geplanten 8s-Verzögerung.
+    expect(fetchFn).toHaveBeenCalledTimes(5)
+
+    // Und wieder im kürzesten Intervall weiterlaufen (zurückgesetzt auf minDelayMs).
+    vi.advanceTimersByTime(1000)
+    expect(fetchFn).toHaveBeenCalledTimes(6)
+  })
+
   it('stops calling fetchFn after unmount', () => {
     const fetchFn = vi.fn()
     const { unmount } = render(<Harness fetchFn={fetchFn} />)

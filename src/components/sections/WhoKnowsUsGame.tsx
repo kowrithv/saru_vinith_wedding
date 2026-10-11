@@ -64,21 +64,20 @@ export default function WhoKnowsUsGame() {
   const handleVote = async (option: string) => {
     if (hasVoted || !currentQuestion) return
 
-    saveLocalVote(currentQuestion.id, option)
-    setMyVotes((prev) => ({ ...prev, [currentQuestion.id]: option }))
-
     try {
       const response = await fetch('/api/who-votes/vote', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ questionId: currentQuestion.id, voterId: getDeviceId(), option }),
       })
-      if (response.ok) {
-        const data = (await response.json()) as { tally: Record<string, number> }
-        setTally((prev) => ({ ...prev, [currentQuestion.id]: data.tally }))
-      }
+      if (!response.ok) return // Nicht bestätigt - nichts lokal vermerken, Gast kann es erneut versuchen.
+
+      const data = (await response.json()) as { tally: Record<string, number> }
+      saveLocalVote(currentQuestion.id, option)
+      setMyVotes((prev) => ({ ...prev, [currentQuestion.id]: option }))
+      setTally((prev) => ({ ...prev, [currentQuestion.id]: data.tally }))
     } catch {
-      // Stimme bleibt lokal gespeichert, auch wenn der Server gerade nicht erreichbar ist.
+      // Netzwerkfehler - nichts lokal vermerken, Gast kann es erneut versuchen.
     }
   }
 

@@ -1,5 +1,5 @@
 import SectionTitle from '@/components/ui/SectionTitle'
-import MemoryGame from '@/components/sections/MemoryGame'
+import MemoryGame from '@/components/sections/MemoryGameClient'
 
 export default function MemorySpielPage() {
   return (

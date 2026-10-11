@@ -79,6 +79,33 @@ describe('WhoKnowsUsGame', () => {
     expect(screen.queryByRole('button', { name: whoGameOptions[1] })).not.toBeInTheDocument()
   })
 
+  it('does not mark the question as answered when the vote request fails, so the guest can retry', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network down')))
+
+    render(<WhoKnowsUsGame />)
+    await userEvent.click(screen.getByRole('button', { name: whoGameOptions[0] }))
+
+    // Die Abstimmungs-Buttons müssen weiterhin da sein - kein lokal
+    // vermerktes "schon abgestimmt", wenn der Server es nie bestätigt hat.
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: whoGameOptions[0] })).toBeInTheDocument()
+    })
+    whoGameOptions.forEach((option) => {
+      expect(screen.getByRole('button', { name: option })).toBeInTheDocument()
+    })
+  })
+
+  it('does not mark the question as answered when the server responds with an error status', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, json: async () => ({}) }))
+
+    render(<WhoKnowsUsGame />)
+    await userEvent.click(screen.getByRole('button', { name: whoGameOptions[0] }))
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: whoGameOptions[0] })).toBeInTheDocument()
+    })
+  })
+
   it('advances to the next question and shows a finish screen after the last one', async () => {
     render(<WhoKnowsUsGame />)
     for (let i = 0; i < whoQuestions.length; i++) {

@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import MemorySpielPage from './page'
 
-vi.mock('@/components/sections/MemoryGame', () => ({
+vi.mock('@/components/sections/MemoryGameClient', () => ({
   default: () => <div data-testid="memory-game-stub" />,
 }))
 

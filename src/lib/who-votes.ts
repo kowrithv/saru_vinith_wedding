@@ -49,9 +49,12 @@ export function castVote(
     return { tally: tallyForQuestion(db, questionId), alreadyVoted: false }
   } catch (error) {
     if ((error as { code?: string }).code === 'SQLITE_CONSTRAINT_UNIQUE') {
-      // Dieses Gerät hat für diese Frage schon abgestimmt (z. B. nach
-      // gelöschtem localStorage erneut versucht) - die bestehende Stimme
-      // bleibt gültig, es wird nur der aktuelle Stand zurückgegeben.
+      // Dieselbe voterId hat für diese Frage schon abgestimmt (z. B. ein
+      // erneuter Versuch desselben Clients nach einem Netzwerkfehler, oder
+      // mehrere offene Tabs). Schützt NICHT gegen ein Gerät, das
+      // localStorage gezielt löscht - dabei entsteht eine neue voterId
+      // (device-id.ts), die diese Prüfung nicht greift. Die bestehende
+      // Stimme bleibt gültig, es wird nur der aktuelle Stand zurückgegeben.
       return { tally: tallyForQuestion(db, questionId), alreadyVoted: true }
     }
     throw error

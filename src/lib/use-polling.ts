@@ -21,21 +21,28 @@ export function usePolling(fetchFn: () => void, options: UsePollingOptions = {})
     let delay = minDelayMs
     let stopped = false
 
-    const tick = () => {
-      if (stopped || document.hidden) {
+    const clearPending = () => {
+      if (timeoutId !== undefined) {
+        clearTimeout(timeoutId)
         timeoutId = undefined
-        return
       }
+    }
+
+    const tick = () => {
+      if (stopped || document.hidden) return
       fetchFnRef.current()
       timeoutId = setTimeout(tick, delay)
       delay = Math.min(delay * backoffFactor, maxDelayMs)
     }
 
     const handleVisibilityChange = () => {
-      if (!document.hidden && timeoutId === undefined && !stopped) {
-        delay = minDelayMs
-        tick()
-      }
+      // Egal ob gerade versteckt oder sichtbar: ein noch laufender Timer aus
+      // dem jeweils anderen Zustand ist nicht mehr gültig - immer zuerst
+      // aufräumen, statt am alten Intervall festzuhalten.
+      clearPending()
+      if (document.hidden || stopped) return
+      delay = minDelayMs
+      tick()
     }
 
     tick()
@@ -43,7 +50,7 @@ export function usePolling(fetchFn: () => void, options: UsePollingOptions = {})
 
     return () => {
       stopped = true
-      if (timeoutId) clearTimeout(timeoutId)
+      clearPending()
       document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
   }, [minDelayMs, maxDelayMs, backoffFactor])
