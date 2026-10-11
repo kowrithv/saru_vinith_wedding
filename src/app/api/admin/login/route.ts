@@ -8,6 +8,7 @@ import {
   verifyPassword,
 } from '@/lib/admin-auth'
 import { RateLimiter } from '@/lib/rate-limit'
+import { getClientKey } from '@/lib/client-ip'
 
 export const ADMIN_COOKIE_NAME = 'admin_session'
 
@@ -17,10 +18,6 @@ const loginLimiter = new RateLimiter({
   maxAttempts: 5,
   windowMs: 15 * 60 * 1000,
 })
-
-function getClientKey(request: Request): string {
-  return request.headers.get('x-forwarded-for') ?? 'local'
-}
 
 export async function POST(request: Request): Promise<Response> {
   const clientKey = getClientKey(request)

@@ -1,3 +1,10 @@
+# TODO sobald Domain/Cloudflare-Zone feststehen: "trusted_proxies" mit den
+# aktuellen Cloudflare-IP-Bereichen setzen (https://www.cloudflare.com/ips/)
+# und "client_ip_headers CF-Connecting-IP", damit Caddy die echte Gast-IP
+# statt der Cloudflare-Edge-IP an die App weiterreicht. Bis dahin liest
+# src/lib/client-ip.ts den Header "cf-connecting-ip" direkt (siehe dort) -
+# funktioniert bereits korrekt, sobald Cloudflare als Proxy davor steht,
+# unabhängig von dieser Caddy-Einstellung.
 {$DOMAIN:localhost} {
 	reverse_proxy web:3000
 }
