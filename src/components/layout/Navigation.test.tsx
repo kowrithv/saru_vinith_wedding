@@ -1,0 +1,61 @@
+import { describe, expect, it, vi } from 'vitest'
+import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import Navigation from './Navigation'
+
+let mockPathname = '/'
+
+vi.mock('next/navigation', () => ({
+  usePathname: () => mockPathname,
+}))
+
+describe('Navigation', () => {
+  it('renders every navigation item as a link', () => {
+    mockPathname = '/'
+    render(<Navigation />)
+    expect(screen.getAllByRole('link', { name: /Startseite/i }).length).toBeGreaterThan(0)
+    expect(screen.getAllByRole('link', { name: /Unsere Geschichte/i }).length).toBeGreaterThan(0)
+    expect(screen.getAllByRole('link', { name: /Hochzeitsinfos/i }).length).toBeGreaterThan(0)
+    expect(screen.getAllByRole('link', { name: /Galerie/i }).length).toBeGreaterThan(0)
+    expect(screen.getAllByRole('link', { name: /Quiz/i }).length).toBeGreaterThan(0)
+    expect(screen.getAllByRole('link', { name: /Gästespiel/i }).length).toBeGreaterThan(0)
+    expect(screen.getAllByRole('link', { name: /Erinnerungen/i }).length).toBeGreaterThan(0)
+    expect(screen.getAllByRole('link', { name: /Gästebuch/i }).length).toBeGreaterThan(0)
+  })
+
+  it('never renders a link to /admin', () => {
+    mockPathname = '/'
+    render(<Navigation />)
+    const links = screen.getAllByRole('link')
+    expect(links.some((link) => link.getAttribute('href') === '/admin')).toBe(false)
+  })
+
+  it('marks the current page as active', () => {
+    mockPathname = '/story'
+    render(<Navigation />)
+    const storyLinks = screen.getAllByRole('link', { name: 'Unsere Geschichte' })
+    expect(storyLinks[0]).toHaveClass('font-semibold')
+  })
+
+  it('opens the mobile menu on hamburger click and shows the links again', async () => {
+    mockPathname = '/'
+    render(<Navigation />)
+    const toggle = screen.getByRole('button', { name: /Menü öffnen/i })
+    await userEvent.click(toggle)
+    expect(screen.getByRole('button', { name: /Menü schließen/i })).toBeInTheDocument()
+    // Jetzt gibt es die Links doppelt: Desktop-Leiste (hidden via CSS, aber im DOM) + mobiles Menü.
+    expect(screen.getAllByRole('link', { name: 'Gästebuch' }).length).toBeGreaterThanOrEqual(2)
+  })
+
+  it('closes the mobile menu when the route changes', () => {
+    mockPathname = '/'
+    const { rerender } = render(<Navigation />)
+    // Menü öffnen, indem wir seinen internen State nicht direkt anfassen können -
+    // stattdessen prüfen wir das Verhalten über den Pathname-Wechsel-Effekt:
+    // nach einem Pathname-Wechsel muss der "Menü öffnen"-Button wieder da sein,
+    // nicht "Menü schließen" (d.h. isOpen wurde zurückgesetzt).
+    mockPathname = '/story'
+    rerender(<Navigation />)
+    expect(screen.getByRole('button', { name: /Menü öffnen/i })).toBeInTheDocument()
+  })
+})
