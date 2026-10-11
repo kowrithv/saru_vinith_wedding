@@ -1,0 +1,216 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { LogOut, ShieldAlert, Trash2 } from 'lucide-react'
+import Card from '@/components/ui/Card'
+import SectionTitle from '@/components/ui/SectionTitle'
+import { cn } from '@/lib/utils'
+
+interface GuestbookEntry {
+  id: number
+  name: string
+  message: string
+  createdAt: string
+}
+
+interface MemoryEntry {
+  id: number
+  name: string
+  message: string
+  photoKey: string | null
+  createdAt: string
+}
+
+interface AdminDashboardProps {
+  initialLocked: boolean
+}
+
+function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('de-DE', { day: '2-digit', month: 'short', year: 'numeric' })
+}
+
+export default function AdminDashboard({ initialLocked }: AdminDashboardProps) {
+  const router = useRouter()
+  const [guestbookEntries, setGuestbookEntries] = useState<GuestbookEntry[]>([])
+  const [memoryEntries, setMemoryEntries] = useState<MemoryEntry[]>([])
+  const [locked, setLocked] = useState(initialLocked)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetch('/api/guestbook')
+      .then((res) => (res.ok ? res.json() : { entries: [] }))
+      .then((data: { entries: GuestbookEntry[] }) => setGuestbookEntries(data.entries))
+      .catch(() => {})
+
+    fetch('/api/memories')
+      .then((res) => (res.ok ? res.json() : { entries: [] }))
+      .then((data: { entries: MemoryEntry[] }) => setMemoryEntries(data.entries))
+      .catch(() => {})
+  }, [])
+
+  const deleteGuestbookEntry = async (id: number) => {
+    setDeleteError(null)
+    try {
+      const response = await fetch(`/api/guestbook/${id}`, { method: 'DELETE' })
+      if (!response.ok) {
+        setDeleteError('Löschen fehlgeschlagen. Bitte versuch es erneut.')
+        return
+      }
+      setGuestbookEntries((prev) => prev.filter((entry) => entry.id !== id))
+    } catch {
+      setDeleteError('Löschen fehlgeschlagen. Bitte versuch es erneut.')
+    }
+  }
+
+  const deleteMemoryEntry = async (id: number) => {
+    setDeleteError(null)
+    try {
+      const response = await fetch(`/api/memories/${id}`, { method: 'DELETE' })
+      if (!response.ok) {
+        setDeleteError('Löschen fehlgeschlagen. Bitte versuch es erneut.')
+        return
+      }
+      setMemoryEntries((prev) => prev.filter((entry) => entry.id !== id))
+    } catch {
+      setDeleteError('Löschen fehlgeschlagen. Bitte versuch es erneut.')
+    }
+  }
+
+  const toggleLock = async () => {
+    const next = !locked
+    try {
+      const response = await fetch('/api/admin/write-lock', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ locked: next }),
+      })
+      if (!response.ok) return
+      const data = (await response.json()) as { locked: boolean }
+      setLocked(data.locked)
+    } catch {
+      // Zustand bleibt unverändert, wenn das Umschalten fehlschlägt.
+    }
+  }
+
+  const handleLogout = async () => {
+    await fetch('/api/admin/logout', { method: 'POST' })
+    router.push('/')
+  }
+
+  return (
+    <div className="pt-24 pb-16">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6">
+        <div className="flex items-start justify-between gap-4 mb-8">
+          <SectionTitle title="Admin" subtitle="Einträge moderieren, Schreib-Sperre umschalten." centered={false} />
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="flex items-center gap-2 text-sm text-gray-500 hover:text-dark-blue transition-colors flex-shrink-0"
+          >
+            <LogOut size={16} />
+            Abmelden
+          </button>
+        </div>
+
+        <Card padding="lg" className="mb-8">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <ShieldAlert size={20} className={locked ? 'text-red-600' : 'text-gray-400'} />
+              <div>
+                <p className="font-semibold text-dark-blue text-sm">Schreib-Sperre</p>
+                <p className="text-xs text-gray-400">
+                  {locked ? 'Neue Einträge sind gesperrt.' : 'Neue Einträge sind erlaubt.'}
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={locked}
+              aria-label="Schreib-Sperre"
+              onClick={toggleLock}
+              className={cn(
+                'w-12 h-7 rounded-full transition-colors relative flex-shrink-0',
+                locked ? 'bg-red-500' : 'bg-gray-200'
+              )}
+            >
+              <span
+                className={cn(
+                  'absolute top-1 w-5 h-5 rounded-full bg-white transition-transform',
+                  locked ? 'translate-x-6' : 'translate-x-1'
+                )}
+              />
+            </button>
+          </div>
+        </Card>
+
+        {deleteError && (
+          <p className="text-sm text-red-600 mb-4" role="alert">
+            {deleteError}
+          </p>
+        )}
+
+        <div className="space-y-8">
+          <div>
+            <h3 className="font-serif text-lg font-semibold text-dark-blue mb-3">
+              Gästebuch ({guestbookEntries.length})
+            </h3>
+            <div className="space-y-3">
+              {guestbookEntries.map((entry) => (
+                <Card key={entry.id}>
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <p className="font-semibold text-dark-blue text-sm">{entry.name}</p>
+                        <p className="text-xs text-gray-400">{formatDate(entry.createdAt)}</p>
+                      </div>
+                      <p className="text-sm text-gray-600">{entry.message}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => deleteGuestbookEntry(entry.id)}
+                      aria-label={`Löschen: Eintrag von ${entry.name}`}
+                      className="text-gray-400 hover:text-red-600 transition-colors flex-shrink-0"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <h3 className="font-serif text-lg font-semibold text-dark-blue mb-3">
+              Erinnerungen ({memoryEntries.length})
+            </h3>
+            <div className="space-y-3">
+              {memoryEntries.map((entry) => (
+                <Card key={entry.id}>
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <p className="font-semibold text-dark-blue text-sm">{entry.name}</p>
+                        <p className="text-xs text-gray-400">{formatDate(entry.createdAt)}</p>
+                      </div>
+                      <p className="text-sm text-gray-600">{entry.message}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => deleteMemoryEntry(entry.id)}
+                      aria-label={`Löschen: Eintrag von ${entry.name}`}
+                      className="text-gray-400 hover:text-red-600 transition-colors flex-shrink-0"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
