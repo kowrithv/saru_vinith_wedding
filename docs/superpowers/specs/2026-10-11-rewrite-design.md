@@ -39,7 +39,7 @@ sie muss für **einen** Tag zuverlässig funktionieren. Das heißt konkret:
 
 ## Stack (bewusst beibehalten, nur Code neu)
 
-Next.js 15 (App Router) · React · TypeScript · Tailwind · SQLite
+Next.js (App Router) · React · TypeScript · Tailwind · SQLite
 (`better-sqlite3`, WAL) · Docker auf dem bestehenden netcup-Server · GitHub
 Actions → GHCR · Cloudflare (Domain + R2 für Fotos).
 
@@ -49,6 +49,24 @@ Betriebsführung (unbeaufsichtigter Server, kein Auto-Restart, unklares TLS).
 Das wird stattdessen direkt behoben (siehe „Sicherheit & Betriebshärtung"),
 ohne eine neue Plattform/DB-Technologie als zusätzliche Unbekannte
 einzuführen.
+
+### Gepinnte Versionen (geprüft am 11.10.2026 gegen npm-Registry und den
+offiziellen `nodejs/release`-Zeitplan, nicht aus dem Trainingsstand)
+
+| Paket | Version | Begründung |
+|---|---|---|
+| Node.js | **24.x LTS „Krypton"** (Docker-Base `node:24-alpine`) | Active LTS bis 20.10.2026, danach Maintenance-LTS bis 30.04.2028 — voll supportet über das Event hinaus. Node 26 wird erst am 28.10.2026 LTS (nach der Hochzeit) und bietet keinen Vorteil, der das Risiko einer „Current"-Linie rechtfertigt. |
+| Next.js | 16.4.0 | Aktuell stabil, verlangt React 19 |
+| React / react-dom | 19.3.0 | Aktuell stabil, Peer-Requirement von Next 16 |
+| TypeScript | **6.0.3**, NICHT `latest` (7.0.2) | `typescript-eslint@8.71.1` (Peer-Dep von `eslint-config-next`) erlaubt nur `typescript: ">=4.8.4 <6.1.0"`. TS 7 ist der neue Go-Compiler, dessen stabile Tooling-API laut Microsoft erst mit 7.1 kommt — damit würde Type-Aware-Linting in der CI riskieren zu brechen. 6.0.3 ist der letzte Patch auf dem ausgereiften, voll kompatiblen Compiler. |
+| Tailwind CSS | 4.3.3 | Aktuell stabil |
+| better-sqlite3 | 13.0.3 | N-API-basiert → ABI-stabil über Node-Hauptversionen, portablere Alpine/musl-Prebuilds |
+| ESLint | 10.12.0 | Erfüllt `eslint-config-next@16.4.0`s Anforderung `eslint >=9.0.0` |
+| eslint-config-next | 16.4.0 | Passend zur Next.js-Version |
+
+Diese Tabelle beim Anlegen von `package.json` exakt so pinnen (keine
+`^`/`~`-Ranges für diese Kernpakete, damit ein `npm ci` auf dem Server nicht
+versehentlich eine neuere, ungetestete Version zieht).
 
 ## Datenmodell (SQLite)
 
