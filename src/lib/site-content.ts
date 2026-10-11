@@ -16,6 +16,7 @@ export const navigationItems: NavigationItem[] = [
   { label: 'Startseite', href: '/' },
   { label: 'Unsere Geschichte', href: '/story' },
   { label: 'Hochzeitsinfos', href: '/info' },
+  { label: 'FAQ', href: '/faq' },
   { label: 'Galerie', href: '/gallery' },
   { label: 'Quiz', href: '/quiz' },
   { label: 'Gästespiel', href: '/memory-spiel' },
