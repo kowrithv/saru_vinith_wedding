@@ -1,0 +1,63 @@
+services:
+  web:
+    build: .
+    image: ghcr.io/kowrithv/saru_vinith_wedding:${IMAGE_TAG:-develop}
+    container_name: saru-vinith-wedding
+    restart: unless-stopped
+    expose:
+      - "3000"
+    env_file:
+      - path: .env.production
+        required: false
+    volumes:
+      - ./data:/app/data
+    labels:
+      - "autoheal=true"
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3000/api/health').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+    deploy:
+      resources:
+        limits:
+          memory: 1500M
+
+  caddy:
+    image: caddy:2.9-alpine
+    container_name: saru-vinith-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - DOMAIN=${DOMAIN:-localhost}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - web
+
+  autoheal:
+    image: willfarrell/autoheal:latest
+    container_name: saru-vinith-autoheal
+    restart: unless-stopped
+    environment:
+      AUTOHEAL_CONTAINER_LABEL: autoheal
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+volumes:
+  caddy_data:
+  caddy_config:
