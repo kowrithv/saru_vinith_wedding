@@ -71,7 +71,10 @@ describe('/api/memories', () => {
     expect(response.status).toBe(400)
   })
 
-  it('blocks a sixth submission from the same IP within the window', async () => {
+  it('blocks the 31st submission from the same IP within the window', async () => {
+    // Venue-WLAN/Mobilfunk-NAT kann viele Gäste hinter derselben IP
+    // zusammenfassen - ein Limit von nur 5 würde die ganze Tischrunde
+    // nach den ersten paar echten Einträgen aussperren (Review-Fund).
     const request = () =>
       new Request('http://localhost/api/memories', {
         method: 'POST',
@@ -83,12 +86,12 @@ describe('/api/memories', () => {
         }),
       })
 
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 30; i++) {
       const response = await POST(request())
       expect(response.status).toBe(201)
     }
 
-    const sixth = await POST(request())
-    expect(sixth.status).toBe(429)
+    const overLimit = await POST(request())
+    expect(overLimit.status).toBe(429)
   })
 })

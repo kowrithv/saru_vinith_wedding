@@ -12,6 +12,20 @@
   - Alle drei Punkte 1:1 aus der alten Seite übernommen, bewusst nicht
     selbst „korrigiert" — das ist eine inhaltliche Entscheidung.
 
+## Vor Go-Live zu erledigen (gefunden im Gästebuch/Erinnerungen-Review)
+
+- **Rate-Limiter umgehbar, solange der Server direkt erreichbar ist:**
+  `getClientKey` vertraut dem `cf-connecting-ip`-Header, den aber auch
+  ein direkter Request an den Server (ohne über Cloudflare zu laufen)
+  frei setzen kann — ein Angreifer kann das Limit so beliebig umgehen.
+  Betrifft vor allem das offene, kennwortlose Gästebuch, dessen einzige
+  Spam-Bremse der Rate-Limiter ist. Muss vor dem Freigeben der Seite für
+  echten Internet-Traffic behoben sein: entweder den Server auf
+  Cloudflare-IP-Bereiche beschränken (Firewall), oder Caddy so
+  konfigurieren, dass es `cf-connecting-ip` von Nicht-Cloudflare-Quellen
+  verwirft/überschreibt (`trusted_proxies`, aktuell nur ein
+  TODO-Kommentar im Caddyfile).
+
 ## Offene externe Abhängigkeiten (aus der Spec)
 
 - R2/Cloudflare-Zugangsdaten für die Foto-Pipeline (Galerie-Plan)
@@ -21,12 +35,11 @@
 
 ## Noch zu planende Subsysteme (Backlog aus der Spec)
 
-- Quiz „Wer von uns?"
-- Memory-Spiel
-- Galerie + R2-Upload-Pipeline (blockiert auf R2-Zugangsdaten)
-- Gästebuch
-- Erinnerungen
-- Admin-Dashboard (Löschen/Moderation, Galerie-Modus-Umschalter)
-- Betriebs-Härtung: SQLite-Backup-Cron, Festplatten-Alarm, Caddy
-  `trusted_proxies` für Cloudflare (aktuell nur TODO-Kommentar im
-  Caddyfile)
+- Galerie + R2-Upload-Pipeline (blockiert auf R2-Zugangsdaten) — dazu
+  gehört auch der Foto-Teil von Erinnerungen, der im
+  Gästebuch/Erinnerungen-Plan bewusst ausgeklammert wurde
+  (`photo_key` bleibt bis dahin immer `null`)
+- Admin-Dashboard-Erweiterung: Galerie-Modus-Schalter + Galerie-Lösch-Liste
+  (der Rest des Admin-Dashboards — Login, Gästebuch-/Erinnerungs-Lösch-Liste,
+  Schreib-Sperre als Notfall-Schalter — ist geplant/in Arbeit)
+- Betriebs-Härtung: SQLite-Backup-Cron, Festplatten-Alarm

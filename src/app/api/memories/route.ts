@@ -12,7 +12,11 @@ const entrySchema = z.object({
 })
 
 const memoriesLimiter = new RateLimiter({
-  maxAttempts: 5,
+  // Deutlich höher als der Login-Limiter (5/15 Min): mehrere Gäste
+  // teilen sich am Empfang oft dieselbe IP (Venue-WLAN, Mobilfunk-NAT) -
+  // ein niedriges Limit würde eine ganze Tischrunde nach wenigen echten
+  // Einträgen aussperren.
+  maxAttempts: 30,
   windowMs: 15 * 60 * 1000,
 })
 
