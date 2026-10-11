@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { GET, POST } from './route'
+import { setWritesLocked } from '@/lib/app-config'
+import { getDb } from '@/lib/db'
 
 function postRequest(body: unknown): Request {
   return new Request('http://localhost/api/memories', {
@@ -93,5 +95,21 @@ describe('/api/memories', () => {
 
     const overLimit = await POST(request())
     expect(overLimit.status).toBe(429)
+  })
+
+  it('rejects a new entry with 423 while writes are locked, but GET still works', async () => {
+    setWritesLocked(getDb(), true)
+
+    const response = await POST(
+      postRequest({
+        name: 'Anna',
+        message: 'Eine Erinnerung während der Sperre.',
+        password: 'empfang-secret',
+      })
+    )
+    expect(response.status).toBe(423)
+
+    const getResponse = await GET()
+    expect(getResponse.status).toBe(200)
   })
 })

@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { getDb } from '@/lib/db'
 import { addMemoryEntry, listMemoryEntries } from '@/lib/memories'
 import { verifyPassword } from '@/lib/admin-auth'
+import { isWritesLocked } from '@/lib/app-config'
 import { RateLimiter } from '@/lib/rate-limit'
 import { getClientKey } from '@/lib/client-ip'
 
@@ -32,6 +33,13 @@ export async function POST(request: Request): Promise<Response> {
     return NextResponse.json(
       { error: 'Zu viele Einträge. Bitte später erneut versuchen.' },
       { status: 429 }
+    )
+  }
+
+  if (isWritesLocked(getDb())) {
+    return NextResponse.json(
+      { error: 'Neue Einträge sind derzeit vorübergehend gesperrt.' },
+      { status: 423 }
     )
   }
 
