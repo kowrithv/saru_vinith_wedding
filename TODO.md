@@ -1,5 +1,12 @@
 # TODO
 
+## Inhalte vor dem Freeze (von euch)
+
+- **Programm auf `/info` hat drei Zeilen mit „TBA":** Sektempfang &
+  Gratulationen, Gemeinsames Abendessen, Party & Tanz
+  (`receptionSchedule` in `src/lib/event-info.ts`). Uhrzeiten eintragen
+  oder die Zeilen entfernen — „TBA" sollte am Hochzeitstag nicht stehen.
+
 ## Vor Go-Live zu erledigen (gefunden im Gästebuch/Erinnerungen-Review)
 
 - **Rate-Limiter umgehbar, solange der Server direkt erreichbar ist:**
@@ -65,12 +72,29 @@
   `accept="image/*"`, Speicher bei 20+ Fotos, Tab im Hintergrund),
   Android-Chrome (HEIC ohne MIME-Typ), langsames WLAN.
 
+## Gefunden im Homepage-Review (zurückgestellt, nicht blockierend)
+
+- **„Wir heiraten!"-Badge** im Hero bleibt auch am Hochzeitstag stehen:
+  der Hero ist jetzt eine Server-Komponente und kennt die Uhrzeit nicht.
+  Der Countdown darunter wechselt dagegen auf „Wir sind verheiratet!".
+- **Weitere `text-gold`-Textstellen mit zu wenig Kontrast** außerhalb der
+  Startseite: Hashtag im Footer und im Mobil-Menü, Zeit-Chips auf `/info`.
+  Dort `text-gold-text` verwenden (Token existiert).
+- **Reduced Motion** ist für die übrigen framer-motion-Seiten (Story u. a.)
+  nicht berücksichtigt; ein `MotionConfig reducedMotion="user"` im Layout
+  würde es global lösen.
+- **Lange Startseite auf dem Handy:** 7 Kacheln ≈ 1.750 px. Kompakte
+  Zeilen (Icon + Titel) unterhalb von `sm` würden es halbieren.
+- **Link-Texte der Kacheln** sind alle „Mehr erfahren"; Aktionstexte je
+  Kachel („Jetzt spielen", „Eintrag schreiben") wären klarer.
+- **„Mehr entdecken" im Hero** sieht anklickbar aus, ist aber kein Anker.
+- Der Plan `2026-10-12-homepage.md` nennt noch 8 Kacheln und die
+  Galerie-Ausnahme (historisch, nicht mehr gültig).
+
 ## Offene externe Abhängigkeiten (aus der Spec)
 
 - R2/Cloudflare-Zugangsdaten für die Foto-Pipeline (Galerie-Plan)
 - TLS/Domain-Entscheidung
-- Git-Push-Zugriff auf `kowrithv/saru_vinith_wedding` (`hartingsdev`
-  bekommt aktuell 403)
 
 ## Noch zu planende Subsysteme (Backlog aus der Spec)
 
