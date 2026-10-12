@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, type ChangeEvent, type FormEvent } from 'react'
-import { Upload, CheckCircle2, XCircle, Loader2, User, KeyRound } from 'lucide-react'
+import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react'
+import { Upload, CheckCircle2, XCircle, Loader2, User, KeyRound, ImageIcon, X } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import { defaultGalleryCategory, galleryCategories } from '@/lib/gallery-categories'
 import { createPlaceholderThumbnailBlob, createThumbnailBlob } from '@/lib/gallery-thumbnail'
@@ -27,6 +27,12 @@ const FILES_PER_GROUP = 3
 
 const GENERIC_UPLOAD_ERROR = 'Hochladen fehlgeschlagen.'
 
+// Ein einzelnes Foto darf höchstens so lange brauchen - danach gilt es als
+// hängengeblieben (Funkloch, Tab im Hintergrund) und lässt sich erneut starten.
+const UPLOAD_TIMEOUT_MS = 5 * 60 * 1000
+const TIMEOUT_MESSAGE = 'Zeitüberschreitung – bitte erneut versuchen.'
+const CANCELLED_MESSAGE = 'Abgebrochen.'
+
 type FileStatus = 'pending' | 'uploading' | 'done' | 'error'
 
 interface SelectedFile {
@@ -36,6 +42,8 @@ interface SelectedFile {
   /** Nicht hochladbar (Typ/Größe): wird übersprungen und nie wiederholt. */
   invalid: boolean
   message?: string
+  /** Vorschau: URL des erzeugten Thumbnails, null = nur Platzhalter, undefined = noch keine. */
+  previewUrl?: string | null
 }
 
 interface UploadTicket {
@@ -45,7 +53,7 @@ interface UploadTicket {
   ticket: string
 }
 
-type UploadResult = { photo: GalleryPhotoView; deleteToken: string } | { error: string }
+type UploadResult = { photo: GalleryPhotoView; deleteToken: string } | { error: string } | { cancelled: true }
 
 function toSelectedFile(file: File): SelectedFile {
   const contentType = resolveImageContentType(file)
@@ -61,22 +69,51 @@ function toSelectedFile(file: File): SelectedFile {
   return { file, contentType, status: 'pending', invalid: false }
 }
 
-async function createThumbnailOrPlaceholder(file: File): Promise<Blob> {
+async function createThumbnailOrPlaceholder(file: File): Promise<{ blob: Blob; isPlaceholder: boolean }> {
   try {
-    return await createThumbnailBlob(file)
+    return { blob: await createThumbnailBlob(file), isPlaceholder: false }
   } catch {
     // Nicht dekodierbar (z. B. HEIC außerhalb von Safari): das Original
     // wird trotzdem hochgeladen, die Galerie zeigt eine neutrale Fläche.
-    return createPlaceholderThumbnailBlob()
+    return { blob: await createPlaceholderThumbnailBlob(), isPlaceholder: true }
   }
 }
 
-async function uploadAndRegister(selected: SelectedFile, ticket: UploadTicket, uploaderName: string): Promise<UploadResult> {
+interface UploadControl {
+  /** Wird beim Klick auf "Abbrechen" ausgelöst. */
+  signal: AbortSignal
+  onPreview: (blob: Blob, isPlaceholder: boolean) => void
+}
+
+async function uploadAndRegister(
+  selected: SelectedFile,
+  ticket: UploadTicket,
+  uploaderName: string,
+  control: UploadControl
+): Promise<UploadResult> {
+  // Je Datei ein eigener Controller: er hängt am Abbrechen-Signal und am
+  // Zeitlimit. (AbortSignal.any gibt es auf älteren iPhones noch nicht.)
+  const fileController = new AbortController()
+  let timedOut = false
+  const onCancel = () => fileController.abort()
+  control.signal.addEventListener('abort', onCancel)
+  const timer = setTimeout(() => {
+    timedOut = true
+    fileController.abort()
+  }, UPLOAD_TIMEOUT_MS)
+  const { signal } = fileController
+
   try {
-    const thumbBlob = await createThumbnailOrPlaceholder(selected.file)
+    const { blob, isPlaceholder } = await createThumbnailOrPlaceholder(selected.file)
+    control.onPreview(blob, isPlaceholder)
     const [thumbResponse, originalResponse] = await Promise.all([
-      fetch(ticket.thumbPutUrl, { method: 'PUT', body: thumbBlob, headers: { 'Content-Type': 'image/jpeg' } }),
-      fetch(ticket.originalPutUrl, { method: 'PUT', body: selected.file, headers: { 'Content-Type': selected.contentType } }),
+      fetch(ticket.thumbPutUrl, { method: 'PUT', body: blob, headers: { 'Content-Type': 'image/jpeg' }, signal }),
+      fetch(ticket.originalPutUrl, {
+        method: 'PUT',
+        body: selected.file,
+        headers: { 'Content-Type': selected.contentType },
+        signal,
+      }),
     ])
     if (!thumbResponse.ok || !originalResponse.ok) {
       return { error: 'Übertragung fehlgeschlagen.' }
@@ -85,6 +122,7 @@ async function uploadAndRegister(selected: SelectedFile, ticket: UploadTicket, u
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ticket: ticket.ticket, uploaderName }),
+      signal,
     })
     if (!completeResponse.ok) {
       const body = await completeResponse.json().catch(() => null)
@@ -92,7 +130,12 @@ async function uploadAndRegister(selected: SelectedFile, ticket: UploadTicket, u
     }
     return (await completeResponse.json()) as { photo: GalleryPhotoView; deleteToken: string }
   } catch {
+    if (timedOut) return { error: TIMEOUT_MESSAGE }
+    if (control.signal.aborted) return { cancelled: true }
     return { error: GENERIC_UPLOAD_ERROR }
+  } finally {
+    clearTimeout(timer)
+    control.signal.removeEventListener('abort', onCancel)
   }
 }
 
@@ -107,9 +150,20 @@ export default function GalleryUploadForm({ isAdmin = false, onUploaded }: Galle
   const [selectedFiles, setSelectedFiles] = useState<SelectedFile[]>([])
   const [formError, setFormError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const abortRef = useRef<AbortController | null>(null)
+  const previewUrlsRef = useRef<string[]>([])
+
+  const releasePreviews = () => {
+    previewUrlsRef.current.forEach((url) => URL.revokeObjectURL(url))
+    previewUrlsRef.current = []
+  }
+
+  // Beim Entfernen des Formulars die Objekt-URLs der Vorschauen freigeben.
+  useEffect(() => releasePreviews, [])
 
   const handleFilesChange = (e: ChangeEvent<HTMLInputElement>) => {
     setFormError(null)
+    releasePreviews()
     setSelectedFiles(Array.from(e.target.files ?? []).map(toSelectedFile))
   }
 
@@ -117,10 +171,14 @@ export default function GalleryUploadForm({ isAdmin = false, onUploaded }: Galle
     setSelectedFiles((prev) => prev.map((f, i) => (i === index ? { ...f, ...changes } : f)))
   }
 
-  const requestTickets = async (files: SelectedFile[]): Promise<{ tickets: UploadTicket[] } | { error: string }> => {
+  const requestTickets = async (
+    files: SelectedFile[],
+    signal: AbortSignal
+  ): Promise<{ tickets: UploadTicket[] } | { error: string }> => {
     const response = await fetch('/api/uploads/request', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      signal,
       body: JSON.stringify({
         ...(isAdmin ? {} : { password }),
         category,
@@ -134,9 +192,25 @@ export default function GalleryUploadForm({ isAdmin = false, onUploaded }: Galle
     return (await response.json()) as { tickets: UploadTicket[] }
   }
 
-  const uploadOneFile = async (index: number, selected: SelectedFile, ticket: UploadTicket) => {
+  const uploadOneFile = async (index: number, selected: SelectedFile, ticket: UploadTicket, signal: AbortSignal) => {
     updateFile(index, { status: 'uploading', message: undefined })
-    const result = await uploadAndRegister(selected, ticket, name.trim())
+    const result = await uploadAndRegister(selected, ticket, name.trim(), {
+      signal,
+      onPreview: (blob, isPlaceholder) => {
+        if (isPlaceholder || typeof URL.createObjectURL !== 'function') {
+          updateFile(index, { previewUrl: null })
+          return
+        }
+        const url = URL.createObjectURL(blob)
+        previewUrlsRef.current.push(url)
+        updateFile(index, { previewUrl: url })
+      },
+    })
+    if ('cancelled' in result) {
+      // Zurück auf "wartet": lässt sich über "Hochladen" erneut starten.
+      updateFile(index, { status: 'pending', message: CANCELLED_MESSAGE })
+      return
+    }
     if ('error' in result) {
       updateFile(index, { status: 'error', message: result.error })
       return
@@ -180,28 +254,43 @@ export default function GalleryUploadForm({ isAdmin = false, onUploaded }: Galle
       return
     }
 
+    const controller = new AbortController()
+    abortRef.current = controller
     setSubmitting(true)
     try {
       for (let start = 0; start < queue.length; start += FILES_PER_GROUP) {
+        if (controller.signal.aborted) break
         const group = queue.slice(start, start + FILES_PER_GROUP)
-        const ticketsResult = await requestTickets(group.map(({ selected }) => selected))
+        const ticketsResult = await requestTickets(
+          group.map(({ selected }) => selected),
+          controller.signal
+        )
         if ('error' in ticketsResult) {
           setFormError(ticketsResult.error)
           break
         }
         await Promise.all(
-          group.map(({ selected, index }, i) => uploadOneFile(index, selected, ticketsResult.tickets[i]))
+          group.map(({ selected, index }, i) =>
+            uploadOneFile(index, selected, ticketsResult.tickets[i], controller.signal)
+          )
         )
       }
     } catch {
-      setFormError('Hochladen fehlgeschlagen. Bitte versuch es erneut.')
+      // Ein Abbruch ist keine Fehlermeldung wert.
+      if (!controller.signal.aborted) {
+        setFormError('Hochladen fehlgeschlagen. Bitte versuch es erneut.')
+      }
     } finally {
+      abortRef.current = null
       setSubmitting(false)
     }
   }
 
+  const cancelUpload = () => abortRef.current?.abort()
+
   const doneCount = selectedFiles.filter((f) => f.status === 'done').length
   const failedCount = selectedFiles.filter((f) => f.status === 'error' && !f.invalid).length
+  const cancelledCount = selectedFiles.filter((f) => f.status === 'pending' && f.message === CANCELLED_MESSAGE).length
   const summaryParts: string[] = []
   if (doneCount > 0) {
     summaryParts.push(`${pluralPhotos(doneCount, 'Foto', 'Fotos')} hochgeladen – danke!`)
@@ -209,6 +298,11 @@ export default function GalleryUploadForm({ isAdmin = false, onUploaded }: Galle
   if (failedCount > 0) {
     summaryParts.push(
       `${pluralPhotos(failedCount, 'Foto konnte', 'Fotos konnten')} nicht hochgeladen werden. Tippe erneut auf „Hochladen“.`
+    )
+  }
+  if (cancelledCount > 0) {
+    summaryParts.push(
+      `${pluralPhotos(cancelledCount, 'Foto', 'Fotos')} abgebrochen – tippe auf „Hochladen“, um sie erneut zu senden.`
     )
   }
   const statusText = submitting
@@ -285,13 +379,26 @@ export default function GalleryUploadForm({ isAdmin = false, onUploaded }: Galle
 
       {selectedFiles.length > 0 && (
         <ul className="space-y-1">
-          {selectedFiles.map(({ file, status, message }, index) => (
+          {selectedFiles.map(({ file, status, message, previewUrl }, index) => (
             <li key={index} className="flex flex-wrap items-center gap-x-2 text-xs text-gray-600">
               {status === 'uploading' && <Loader2 size={14} className="animate-spin text-gray-400" />}
               {status === 'done' && <CheckCircle2 size={14} className="text-green-600" />}
               {status === 'error' && <XCircle size={14} className="text-red-600" />}
               {status === 'pending' && <span className="w-3.5" />}
+              {previewUrl !== undefined && (
+                <span className="w-10 h-10 rounded-lg overflow-hidden bg-champagne/50 flex items-center justify-center flex-shrink-0">
+                  {previewUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={previewUrl} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <span data-testid="upload-preview-fallback" className="text-gray-400">
+                      <ImageIcon size={16} />
+                    </span>
+                  )}
+                </span>
+              )}
               <span className="break-all">{file.name}</span>
+              {status === 'pending' && message && <span className="text-gray-500">{message}</span>}
               {status === 'error' && <span className="text-red-600">{message ?? GENERIC_UPLOAD_ERROR}</span>}
             </li>
           ))}
@@ -314,6 +421,13 @@ export default function GalleryUploadForm({ isAdmin = false, onUploaded }: Galle
         <Upload size={16} />
         {submitting ? 'Wird hochgeladen...' : 'Hochladen'}
       </Button>
+
+      {submitting && (
+        <Button type="button" variant="secondary" size="lg" onClick={cancelUpload} className="w-full">
+          <X size={16} />
+          Abbrechen
+        </Button>
+      )}
     </form>
   )
 }

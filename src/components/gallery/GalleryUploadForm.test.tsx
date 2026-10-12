@@ -21,6 +21,8 @@ interface FakeBackendOptions {
   failPutUrls?: Set<string>
   /** Hält /complete an, bis das Promise aufgelöst wird. */
   holdComplete?: Promise<void>
+  /** R2-PUTs antworten nie - außer das Abbruch-Signal der Anfrage löst aus. */
+  hangPuts?: boolean
 }
 
 // Minimaler Server: vergibt je Datei ein Ticket, erkennt R2-PUTs und beantwortet
@@ -75,6 +77,11 @@ function createFakeBackend(options: FakeBackendOptions = {}) {
       }
     }
     if (url.startsWith('https://r2.example/')) {
+      if (options.hangPuts) {
+        return new Promise((_, reject) => {
+          init?.signal?.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')))
+        })
+      }
       const ok = !options.failPutUrls?.has(url)
       return { ok, status: ok ? 200 : 403 }
     }
@@ -92,7 +99,16 @@ function setupUser() {
 }
 
 describe('GalleryUploadForm', () => {
+  let objectUrlCounter = 0
+  const revokedUrls: string[] = []
+
   beforeEach(() => {
+    objectUrlCounter = 0
+    revokedUrls.length = 0
+    URL.createObjectURL = vi.fn(() => `blob:preview-${++objectUrlCounter}`)
+    URL.revokeObjectURL = vi.fn((url: string) => {
+      revokedUrls.push(url)
+    })
     vi.mocked(createThumbnailBlob).mockReset().mockResolvedValue(new Blob(['thumb']))
     vi.mocked(createPlaceholderThumbnailBlob).mockReset().mockResolvedValue(new Blob(['placeholder']))
   })
@@ -368,5 +384,102 @@ describe('GalleryUploadForm', () => {
       'https://r2.example/original1',
       expect.objectContaining({ headers: { 'Content-Type': 'image/heic' } })
     )
+  })
+
+  it('shows a preview tile built from the generated thumbnail once a file is uploading', async () => {
+    const user = setupUser()
+    createFakeBackend()
+    render(<GalleryUploadForm isAdmin onUploaded={vi.fn()} />)
+    await user.type(screen.getByLabelText(/dein name/i), 'Anna')
+    await user.upload(screen.getByLabelText(/fotos ausw/i), makeFile('a.jpg'))
+    expect(document.querySelector('img')).toBeNull()
+
+    await user.click(screen.getByRole('button', { name: /hochladen/i }))
+
+    await waitFor(() => expect(document.querySelector('img[src^="blob:preview-"]')).not.toBeNull())
+  })
+
+  it('shows a neutral icon instead of a picture when only a placeholder thumbnail exists', async () => {
+    const user = setupUser()
+    createFakeBackend()
+    vi.mocked(createThumbnailBlob).mockRejectedValue(new Error('decode failed'))
+    render(<GalleryUploadForm isAdmin onUploaded={vi.fn()} />)
+    await user.type(screen.getByLabelText(/dein name/i), 'Anna')
+    await user.upload(screen.getByLabelText(/fotos ausw/i), makeFile('IMG_1.heic', 'image/heic'))
+    await user.click(screen.getByRole('button', { name: /hochladen/i }))
+
+    await screen.findByText(/1 foto hochgeladen/i)
+    expect(document.querySelector('img[src^="blob:preview-"]')).toBeNull()
+    expect(screen.getByTestId('upload-preview-fallback')).toBeInTheDocument()
+  })
+
+  it('releases preview URLs when the selection is replaced', async () => {
+    const user = setupUser()
+    createFakeBackend()
+    render(<GalleryUploadForm isAdmin onUploaded={vi.fn()} />)
+    await user.type(screen.getByLabelText(/dein name/i), 'Anna')
+    await user.upload(screen.getByLabelText(/fotos ausw/i), makeFile('a.jpg'))
+    await user.click(screen.getByRole('button', { name: /hochladen/i }))
+    await screen.findByText(/1 foto hochgeladen/i)
+
+    await user.upload(screen.getByLabelText(/fotos ausw/i), makeFile('b.jpg'))
+
+    expect(revokedUrls).toContain('blob:preview-1')
+  })
+
+  it('releases preview URLs when the form unmounts', async () => {
+    const user = setupUser()
+    createFakeBackend()
+    const { unmount } = render(<GalleryUploadForm isAdmin onUploaded={vi.fn()} />)
+    await user.type(screen.getByLabelText(/dein name/i), 'Anna')
+    await user.upload(screen.getByLabelText(/fotos ausw/i), makeFile('a.jpg'))
+    await user.click(screen.getByRole('button', { name: /hochladen/i }))
+    await screen.findByText(/1 foto hochgeladen/i)
+
+    unmount()
+
+    expect(revokedUrls).toContain('blob:preview-1')
+  })
+
+  it('marks a file as failed with a timeout message after five minutes without progress', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    try {
+      const user = userEvent.setup({ applyAccept: false, advanceTimers: vi.advanceTimersByTime })
+      createFakeBackend({ hangPuts: true })
+      render(<GalleryUploadForm isAdmin onUploaded={vi.fn()} />)
+      await user.type(screen.getByLabelText(/dein name/i), 'Anna')
+      await user.upload(screen.getByLabelText(/fotos ausw/i), makeFile('slow.jpg'))
+      await user.click(screen.getByRole('button', { name: /hochladen/i }))
+
+      await vi.advanceTimersByTimeAsync(5 * 60 * 1000 + 1)
+
+      expect(await screen.findByText(/zeitüberschreitung/i)).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /^hochladen$/i })).toBeEnabled()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('cancels running uploads, starts no further group, and lets the files be uploaded again', async () => {
+    const user = setupUser()
+    const backend = createFakeBackend({ hangPuts: true })
+    const files = Array.from({ length: 4 }, (_, i) => makeFile(`photo-${i}.jpg`))
+    render(<GalleryUploadForm isAdmin onUploaded={vi.fn()} />)
+    await user.type(screen.getByLabelText(/dein name/i), 'Anna')
+    await user.upload(screen.getByLabelText(/fotos ausw/i), files)
+    await user.click(screen.getByRole('button', { name: /hochladen/i }))
+    await user.click(await screen.findByRole('button', { name: /abbrechen/i }))
+
+    await waitFor(() => expect(screen.getByRole('button', { name: /^hochladen$/i })).toBeEnabled())
+    // Nur die erste Gruppe (3 Dateien) hat Tickets bekommen, die vierte nie.
+    expect(backend.requestBodies).toHaveLength(1)
+    expect(screen.getByRole('status')).toHaveTextContent(/abgebrochen/i)
+    expect(screen.queryByText(/fehlgeschlagen/i)).not.toBeInTheDocument()
+    expect(screen.getByLabelText(/fotos ausw/i)).toBeEnabled()
+  })
+
+  it('does not show the cancel button while idle', () => {
+    render(<GalleryUploadForm isAdmin onUploaded={vi.fn()} />)
+    expect(screen.queryByRole('button', { name: /abbrechen/i })).not.toBeInTheDocument()
   })
 })
