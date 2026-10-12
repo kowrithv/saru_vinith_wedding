@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useState, type FormEvent } from 'react'
-import { Camera, KeyRound } from 'lucide-react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { Camera, KeyRound, X } from 'lucide-react'
 import SectionTitle from '@/components/ui/SectionTitle'
 import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
@@ -21,6 +21,17 @@ export default function GalleryPage() {
   const [unlockError, setUnlockError] = useState<string | null>(null)
   const [unlocking, setUnlocking] = useState(false)
   const [showUploadForm, setShowUploadForm] = useState(false)
+  const uploadPanelRef = useRef<HTMLDivElement>(null)
+
+  // Der Button schwebt am unteren Bildschirmrand, das Formular steht aber
+  // über dem Raster: ohne Scrollen und Fokus sähe ein Gast, der weiter unten
+  // ist, nach dem Tippen scheinbar nichts passieren.
+  useEffect(() => {
+    if (!showUploadForm) return
+    const panel = uploadPanelRef.current
+    panel?.scrollIntoView?.({ behavior: 'smooth', block: 'start' })
+    panel?.querySelector<HTMLInputElement>('input')?.focus({ preventScroll: true })
+  }, [showUploadForm])
 
   const loadGallery = () => {
     fetch('/api/gallery')
@@ -76,9 +87,11 @@ export default function GalleryPage() {
     )
   }
 
+  // Das Formular bleibt offen: ein Gast lädt meist mehrere Fotos auf einmal
+  // hoch, und das Formular zeigt den Fortschritt und eventuelle Fehler der
+  // übrigen Fotos. Geschlossen wird es nur über den Button.
   const handleUploaded = (photo: GalleryPhotoView) => {
     setData((prev) => (prev.status === 'unlocked' ? { status: 'unlocked', photos: [photo, ...prev.photos] } : prev))
-    setShowUploadForm(false)
   }
 
   return (
@@ -122,19 +135,25 @@ export default function GalleryPage() {
 
         {data.status === 'unlocked' && (
           <>
+            {/* z-30: unter dem Mobil-Menü (z-40), der Navigation und der
+                Lightbox (z-50), sonst läge der Button auf dem geöffneten Menü. */}
             <button
               type="button"
               onClick={() => setShowUploadForm((v) => !v)}
-              className="fixed bottom-6 right-6 z-40 flex items-center gap-2 bg-gold text-dark-blue font-medium px-5 py-3 rounded-full shadow-lg hover:shadow-xl transition-shadow"
+              aria-expanded={showUploadForm}
+              aria-controls="gallery-upload-panel"
+              className="fixed bottom-6 right-6 z-30 flex items-center gap-2 bg-gold text-dark-blue font-medium px-5 py-3 rounded-full shadow-lg hover:shadow-xl transition-shadow"
             >
-              <Camera size={18} />
-              Fotos hochladen
+              {showUploadForm ? <X size={18} /> : <Camera size={18} />}
+              {showUploadForm ? 'Schließen' : 'Fotos hochladen'}
             </button>
 
             {showUploadForm && (
-              <Card padding="lg" className="max-w-xl mx-auto mb-10">
-                <GalleryUploadForm onUploaded={handleUploaded} />
-              </Card>
+              <div id="gallery-upload-panel" ref={uploadPanelRef} className="scroll-mt-28">
+                <Card padding="lg" className="max-w-xl mx-auto mb-10">
+                  <GalleryUploadForm onUploaded={handleUploaded} />
+                </Card>
+              </div>
             )}
 
             <GalleryGrid photos={data.photos} onPhotoDeleted={handlePhotoDeleted} />

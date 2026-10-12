@@ -3,6 +3,35 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import GalleryPage from './page'
 
+// Das Formular hat eigene Tests - hier zählt nur, wie die Seite darauf
+// reagiert (ein Klick auf "stub-upload" meldet ein fertig hochgeladenes Foto).
+vi.mock('@/components/gallery/GalleryUploadForm', () => ({
+  default: ({ onUploaded }: { onUploaded: (photo: unknown) => void }) => (
+    <form aria-label="Upload-Formular">
+      <label>
+        Dein Name
+        <input />
+      </label>
+      <button
+        type="button"
+        onClick={() =>
+          onUploaded({
+            id: 'new-photo',
+            uploaderName: 'Ben',
+            category: 'Party',
+            isOfficial: false,
+            createdAt: '2026-10-12T11:00:00.000Z',
+            thumbUrl: 'https://fotos.example.de/new-photo/thumb.jpg',
+            originalUrl: 'https://fotos.example.de/new-photo/original.jpg',
+          })
+        }
+      >
+        stub-upload
+      </button>
+    </form>
+  ),
+}))
+
 function mockFetchSequence(responses: { status?: number; body: unknown }[]) {
   const fn = vi.fn()
   responses.forEach(({ status = 200, body }) => {
@@ -96,5 +125,52 @@ describe('GalleryPage', () => {
 
     await userEvent.click(screen.getByRole('button', { name: /fotos hochladen/i }))
     expect(screen.getByLabelText(/dein name/i)).toBeInTheDocument()
+  })
+
+  it('adds an uploaded photo to the grid and keeps the form open for the rest of the batch', async () => {
+    mockFetchSequence([{ body: { mode: 'public', unlocked: true, photos: [samplePhoto] } }])
+    render(<GalleryPage />)
+    await waitFor(() => expect(screen.getAllByRole('img')).toHaveLength(1))
+
+    await userEvent.click(screen.getByRole('button', { name: /fotos hochladen/i }))
+    await userEvent.click(screen.getByRole('button', { name: 'stub-upload' }))
+
+    await waitFor(() => expect(screen.getAllByRole('img')).toHaveLength(2))
+    expect(screen.getByRole('form', { name: /upload-formular/i })).toBeInTheDocument()
+  })
+
+  it('turns the floating button into a close toggle that reports its state', async () => {
+    mockFetchSequence([{ body: { mode: 'public', unlocked: true, photos: [] } }])
+    render(<GalleryPage />)
+    const openButton = await screen.findByRole('button', { name: /fotos hochladen/i })
+    expect(openButton).toHaveAttribute('aria-expanded', 'false')
+
+    await userEvent.click(openButton)
+    const closeButton = screen.getByRole('button', { name: /schließen/i })
+    expect(closeButton).toHaveAttribute('aria-expanded', 'true')
+
+    await userEvent.click(closeButton)
+    expect(screen.queryByLabelText(/dein name/i)).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /fotos hochladen/i })).toHaveAttribute('aria-expanded', 'false')
+  })
+
+  it('scrolls the form into view and focuses its first field when it opens', async () => {
+    const scrollIntoView = vi.fn()
+    Element.prototype.scrollIntoView = scrollIntoView
+    mockFetchSequence([{ body: { mode: 'public', unlocked: true, photos: [] } }])
+    render(<GalleryPage />)
+
+    await userEvent.click(await screen.findByRole('button', { name: /fotos hochladen/i }))
+
+    expect(scrollIntoView).toHaveBeenCalled()
+    expect(screen.getByLabelText(/dein name/i)).toHaveFocus()
+  })
+
+  it('keeps the floating button below the mobile menu overlay', async () => {
+    mockFetchSequence([{ body: { mode: 'public', unlocked: true, photos: [] } }])
+    render(<GalleryPage />)
+    const button = await screen.findByRole('button', { name: /fotos hochladen/i })
+    // Das Mobil-Menü liegt auf z-40, die Lightbox und die Navigation auf z-50.
+    expect(button).toHaveClass('z-30')
   })
 })

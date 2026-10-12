@@ -1,6 +1,19 @@
 const SAFE_INTERMEDIATE_MAX_DIMENSION = 4096
 const THUMB_MAX_DIMENSION = 800
 const THUMB_JPEG_QUALITY = 0.8
+const PLACEHOLDER_SIZE = 400
+// Champagner-Ton der Seite (--color-champagne).
+const PLACEHOLDER_COLOR = '#f5e6c8'
+
+function canvasToJpegBlob(canvas: HTMLCanvasElement): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => (blob ? resolve(blob) : reject(new Error('Thumbnail-Erstellung fehlgeschlagen.'))),
+      'image/jpeg',
+      THUMB_JPEG_QUALITY
+    )
+  })
+}
 
 async function resizeBitmap(source: ImageBitmap, maxDimension: number): Promise<ImageBitmap> {
   if (source.width <= maxDimension && source.height <= maxDimension) {
@@ -35,11 +48,23 @@ export async function createThumbnailBlob(file: File): Promise<Blob> {
   ctx.drawImage(thumb, 0, 0)
   thumb.close()
 
-  return new Promise((resolve, reject) => {
-    canvas.toBlob(
-      (blob) => (blob ? resolve(blob) : reject(new Error('Thumbnail-Erstellung fehlgeschlagen.'))),
-      'image/jpeg',
-      THUMB_JPEG_QUALITY
-    )
-  })
+  return canvasToJpegBlob(canvas)
+}
+
+/**
+ * Neutrales Vorschaubild für Fotos, die der Browser nicht dekodieren kann
+ * (z. B. HEIC außerhalb von Safari): das Original wird trotzdem hochgeladen,
+ * die Galerie zeigt statt einer Vorschau diese Fläche.
+ */
+export async function createPlaceholderThumbnailBlob(): Promise<Blob> {
+  const canvas = document.createElement('canvas')
+  canvas.width = PLACEHOLDER_SIZE
+  canvas.height = PLACEHOLDER_SIZE
+  const ctx = canvas.getContext('2d')
+  if (!ctx) {
+    throw new Error('Canvas-Kontext nicht verfügbar.')
+  }
+  ctx.fillStyle = PLACEHOLDER_COLOR
+  ctx.fillRect(0, 0, PLACEHOLDER_SIZE, PLACEHOLDER_SIZE)
+  return canvasToJpegBlob(canvas)
 }

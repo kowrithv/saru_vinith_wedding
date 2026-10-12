@@ -1,10 +1,34 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import AdminDashboard from './AdminDashboard'
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: vi.fn() }),
+}))
+
+// Das Formular hat eigene Tests - hier zählt nur, dass es als Admin-Formular
+// eingebunden ist und ein fertiges Foto in der Liste landet.
+vi.mock('@/components/gallery/GalleryUploadForm', () => ({
+  default: ({ isAdmin, onUploaded }: { isAdmin?: boolean; onUploaded: (photo: unknown) => void }) => (
+    <button
+      type="button"
+      data-admin={String(Boolean(isAdmin))}
+      onClick={() =>
+        onUploaded({
+          id: 'uploaded',
+          uploaderName: 'Saruga',
+          category: 'Verlobung',
+          isOfficial: true,
+          createdAt: '2026-10-12T11:00:00.000Z',
+          thumbUrl: 'https://fotos.example.de/uploaded/thumb.jpg',
+          originalUrl: 'https://fotos.example.de/uploaded/original.jpg',
+        })
+      }
+    >
+      stub-upload
+    </button>
+  ),
 }))
 
 function mockFetchSequence(responses: { status?: number; body: unknown }[]) {
@@ -33,8 +57,13 @@ const annaPhoto = {
 }
 
 describe('AdminDashboard', () => {
+  beforeEach(() => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+  })
+
   afterEach(() => {
     vi.unstubAllGlobals()
+    vi.restoreAllMocks()
   })
 
   it('loads and shows guestbook and memories entries', async () => {
@@ -160,6 +189,8 @@ describe('AdminDashboard', () => {
       expect(screen.getByRole('button', { name: /^kennwort$/i })).toHaveAttribute('aria-pressed', 'true')
     )
     expect(screen.getByRole('switch', { name: /gästebuch/i })).toHaveAttribute('aria-checked', 'false')
+    expect(screen.getByRole('switch', { name: /erinnerungen/i })).toHaveAttribute('aria-checked', 'false')
+    expect(screen.getByRole('switch', { name: /wer-von-uns/i })).toHaveAttribute('aria-checked', 'false')
     expect(fetchMock).toHaveBeenCalledWith(
       '/api/admin/gallery-mode',
       expect.objectContaining({ method: 'POST', body: JSON.stringify({ mode: 'password' }) })
@@ -196,5 +227,79 @@ describe('AdminDashboard', () => {
 
     await waitFor(() => expect(screen.getByText(/löschen fehlgeschlagen/i)).toBeInTheDocument())
     expect(screen.getByRole('img', { name: /foto von anna/i })).toBeInTheDocument()
+  })
+
+  it('shows the gallery delete error inside the gallery section, not only at the top of the page', async () => {
+    mockFetchSequence([
+      { body: { entries: [] } },
+      { body: { entries: [] } },
+      { body: { photos: [annaPhoto] } },
+      { status: 500, body: { error: 'Serverfehler' } },
+    ])
+    render(<AdminDashboard initialLocks={noLocks} initialGalleryMode="public" />)
+    await waitFor(() => expect(screen.getByRole('img', { name: /foto von anna/i })).toBeInTheDocument())
+
+    await userEvent.click(screen.getByRole('button', { name: /löschen.*anna/i }))
+
+    const gallerySection = screen.getByRole('region', { name: /galerie/i })
+    await waitFor(() => expect(within(gallerySection).getByText(/löschen fehlgeschlagen/i)).toBeInTheDocument())
+  })
+
+  it('asks for confirmation before deleting a gallery photo', async () => {
+    const fetchMock = mockFetchSequence([
+      { body: { entries: [] } },
+      { body: { entries: [] } },
+      { body: { photos: [annaPhoto] } },
+      { status: 200, body: { success: true } },
+    ])
+    render(<AdminDashboard initialLocks={noLocks} initialGalleryMode="public" />)
+    await waitFor(() => expect(screen.getByRole('img', { name: /foto von anna/i })).toBeInTheDocument())
+
+    await userEvent.click(screen.getByRole('button', { name: /löschen.*anna/i }))
+
+    expect(window.confirm).toHaveBeenCalledWith(expect.stringMatching(/anna/i))
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/gallery/p1', expect.objectContaining({ method: 'DELETE' })))
+  })
+
+  it('does not delete a gallery photo when the confirmation is declined', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(false)
+    const fetchMock = mockFetchSequence([
+      { body: { entries: [] } },
+      { body: { entries: [] } },
+      { body: { photos: [annaPhoto] } },
+    ])
+    render(<AdminDashboard initialLocks={noLocks} initialGalleryMode="public" />)
+    await waitFor(() => expect(screen.getByRole('img', { name: /foto von anna/i })).toBeInTheDocument())
+
+    await userEvent.click(screen.getByRole('button', { name: /löschen.*anna/i }))
+
+    expect(fetchMock).toHaveBeenCalledTimes(3)
+    expect(screen.getByRole('img', { name: /foto von anna/i })).toBeInTheDocument()
+  })
+
+  it('adds a photo uploaded through the admin form to the list', async () => {
+    mockFetchSequence([{ body: { entries: [] } }, { body: { entries: [] } }, noGalleryPhotos])
+    render(<AdminDashboard initialLocks={noLocks} initialGalleryMode="public" />)
+    const uploadStub = await screen.findByRole('button', { name: 'stub-upload' })
+    expect(uploadStub).toHaveAttribute('data-admin', 'true')
+
+    await userEvent.click(uploadStub)
+
+    expect(await screen.findByRole('img', { name: /foto von saruga/i })).toBeInTheDocument()
+  })
+
+  it('labels each thumbnail with its category and marks official photos', async () => {
+    mockFetchSequence([
+      { body: { entries: [] } },
+      { body: { entries: [] } },
+      { body: { photos: [annaPhoto, { ...annaPhoto, id: 'p2', uploaderName: 'Saruga', category: 'Party', isOfficial: true }] } },
+    ])
+    render(<AdminDashboard initialLocks={noLocks} initialGalleryMode="public" />)
+    await waitFor(() => expect(screen.getByRole('img', { name: /foto von saruga/i })).toBeInTheDocument())
+
+    const gallerySection = screen.getByRole('region', { name: /galerie/i })
+    expect(within(gallerySection).getByText('Hochzeit')).toBeInTheDocument()
+    expect(within(gallerySection).getByText('Party')).toBeInTheDocument()
+    expect(within(gallerySection).getAllByText('Offiziell')).toHaveLength(1)
   })
 })

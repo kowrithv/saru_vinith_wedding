@@ -53,6 +53,9 @@ export default function AdminDashboard({ initialLocks, initialGalleryMode }: Adm
   const [memoryEntries, setMemoryEntries] = useState<MemoryEntry[]>([])
   const [locks, setLocks] = useState<Locks>(initialLocks)
   const [deleteError, setDeleteError] = useState<string | null>(null)
+  // Eigener Fehlerzustand: der allgemeine deleteError steht oben auf der
+  // Seite und wäre beim Löschen eines Fotos weit unten außerhalb des Sichtfelds.
+  const [galleryDeleteError, setGalleryDeleteError] = useState<string | null>(null)
   const [lockError, setLockError] = useState<string | null>(null)
   const [togglingFeature, setTogglingFeature] = useState<keyof Locks | null>(null)
   const [galleryMode, setGalleryMode] = useState<GalleryMode>(initialGalleryMode)
@@ -107,17 +110,22 @@ export default function AdminDashboard({ initialLocks, initialGalleryMode }: Adm
     }
   }
 
-  const deleteGalleryPhoto = async (id: string) => {
-    setDeleteError(null)
+  const deleteGalleryPhoto = async (photo: GalleryPhotoView) => {
+    // Ein gelöschtes Foto ist endgültig weg (Original und Vorschau in R2),
+    // und der kleine Knopf wird beim Scrollen am Handy leicht getroffen.
+    if (!window.confirm(`Foto von ${photo.uploaderName} wirklich endgültig löschen?`)) {
+      return
+    }
+    setGalleryDeleteError(null)
     try {
-      const response = await fetch(`/api/gallery/${id}`, { method: 'DELETE' })
+      const response = await fetch(`/api/gallery/${photo.id}`, { method: 'DELETE' })
       if (!response.ok) {
-        setDeleteError('Löschen fehlgeschlagen. Bitte versuch es erneut.')
+        setGalleryDeleteError('Löschen fehlgeschlagen. Bitte versuch es erneut.')
         return
       }
-      setGalleryPhotos((prev) => prev.filter((photo) => photo.id !== id))
+      setGalleryPhotos((prev) => prev.filter((p) => p.id !== photo.id))
     } catch {
-      setDeleteError('Löschen fehlgeschlagen. Bitte versuch es erneut.')
+      setGalleryDeleteError('Löschen fehlgeschlagen. Bitte versuch es erneut.')
     }
   }
 
@@ -342,8 +350,8 @@ export default function AdminDashboard({ initialLocks, initialGalleryMode }: Adm
             </div>
           </div>
 
-          <div>
-            <h3 className="font-serif text-lg font-semibold text-dark-blue mb-3">
+          <section aria-labelledby="admin-gallery-heading">
+            <h3 id="admin-gallery-heading" className="font-serif text-lg font-semibold text-dark-blue mb-3">
               Galerie ({galleryPhotos.length})
             </h3>
             <Card padding="lg" className="mb-4">
@@ -352,31 +360,46 @@ export default function AdminDashboard({ initialLocks, initialGalleryMode }: Adm
                 onUploaded={(photo) => setGalleryPhotos((prev) => [photo, ...prev])}
               />
             </Card>
+            {galleryDeleteError && (
+              <p className="text-sm text-red-600 mb-3" role="alert">
+                {galleryDeleteError}
+              </p>
+            )}
             <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
               {galleryPhotos.map((photo) => (
-                <div key={photo.id} className="relative">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={photo.thumbUrl}
-                    alt={`Foto von ${photo.uploaderName}`}
-                    loading="lazy"
-                    className="w-full h-24 object-cover rounded-lg"
-                  />
-                  {/* Absichtlich immer sichtbar, nicht nur bei Hover: Hover
-                      gibt es auf Touch-Geräten nicht (gleiche Lehre wie
-                      beim Review der Gast-Galerie). */}
-                  <button
-                    type="button"
-                    onClick={() => deleteGalleryPhoto(photo.id)}
-                    aria-label={`Löschen: Foto von ${photo.uploaderName}`}
-                    className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-1 hover:bg-black/80 transition-colors"
-                  >
-                    <Trash2 size={14} />
-                  </button>
+                <div key={photo.id}>
+                  <div className="relative">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={photo.thumbUrl}
+                      alt={`Foto von ${photo.uploaderName}`}
+                      loading="lazy"
+                      className="w-full h-24 object-cover rounded-lg"
+                    />
+                    {/* Absichtlich immer sichtbar, nicht nur bei Hover: Hover
+                        gibt es auf Touch-Geräten nicht (gleiche Lehre wie
+                        beim Review der Gast-Galerie). */}
+                    <button
+                      type="button"
+                      onClick={() => deleteGalleryPhoto(photo)}
+                      aria-label={`Löschen: Foto von ${photo.uploaderName}`}
+                      className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-2 hover:bg-black/80 transition-colors"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                  <p className="mt-1 flex flex-wrap items-center gap-x-1.5 text-xs text-gray-500">
+                    <span>{photo.category}</span>
+                    {photo.isOfficial && (
+                      <span className="rounded-full bg-champagne px-1.5 py-0.5 text-[10px] font-medium text-dark-blue">
+                        Offiziell
+                      </span>
+                    )}
+                  </p>
                 </div>
               ))}
             </div>
-          </div>
+          </section>
         </div>
       </div>
     </div>
