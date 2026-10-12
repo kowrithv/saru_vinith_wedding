@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import { Camera, LogOut, ShieldAlert, Trash2 } from 'lucide-react'
 import Card from '@/components/ui/Card'
 import SectionTitle from '@/components/ui/SectionTitle'
+import GalleryUploadForm from '@/components/gallery/GalleryUploadForm'
+import type { GalleryPhotoView } from '@/lib/gallery-photo-view'
 import { cn } from '@/lib/utils'
 
 interface GuestbookEntry {
@@ -56,6 +58,7 @@ export default function AdminDashboard({ initialLocks, initialGalleryMode }: Adm
   const [galleryMode, setGalleryMode] = useState<GalleryMode>(initialGalleryMode)
   const [galleryModeError, setGalleryModeError] = useState<string | null>(null)
   const [changingGalleryMode, setChangingGalleryMode] = useState(false)
+  const [galleryPhotos, setGalleryPhotos] = useState<GalleryPhotoView[]>([])
 
   useEffect(() => {
     fetch('/api/guestbook')
@@ -66,6 +69,13 @@ export default function AdminDashboard({ initialLocks, initialGalleryMode }: Adm
     fetch('/api/memories')
       .then((res) => (res.ok ? res.json() : { entries: [] }))
       .then((data: { entries: MemoryEntry[] }) => setMemoryEntries(data.entries))
+      .catch(() => {})
+
+    // Admin sieht die Galerie unabhängig vom Modus (isAdminRequest-Bypass im
+    // Backend), `photos` ist hier also immer ein Array, nie null.
+    fetch('/api/gallery')
+      .then((res) => (res.ok ? res.json() : { photos: [] }))
+      .then((data: { photos: GalleryPhotoView[] | null }) => setGalleryPhotos(data.photos ?? []))
       .catch(() => {})
   }, [])
 
@@ -92,6 +102,20 @@ export default function AdminDashboard({ initialLocks, initialGalleryMode }: Adm
         return
       }
       setMemoryEntries((prev) => prev.filter((entry) => entry.id !== id))
+    } catch {
+      setDeleteError('Löschen fehlgeschlagen. Bitte versuch es erneut.')
+    }
+  }
+
+  const deleteGalleryPhoto = async (id: string) => {
+    setDeleteError(null)
+    try {
+      const response = await fetch(`/api/gallery/${id}`, { method: 'DELETE' })
+      if (!response.ok) {
+        setDeleteError('Löschen fehlgeschlagen. Bitte versuch es erneut.')
+        return
+      }
+      setGalleryPhotos((prev) => prev.filter((photo) => photo.id !== id))
     } catch {
       setDeleteError('Löschen fehlgeschlagen. Bitte versuch es erneut.')
     }
@@ -314,6 +338,42 @@ export default function AdminDashboard({ initialLocks, initialGalleryMode }: Adm
                     </button>
                   </div>
                 </Card>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <h3 className="font-serif text-lg font-semibold text-dark-blue mb-3">
+              Galerie ({galleryPhotos.length})
+            </h3>
+            <Card padding="lg" className="mb-4">
+              <GalleryUploadForm
+                isAdmin
+                onUploaded={(photo) => setGalleryPhotos((prev) => [photo, ...prev])}
+              />
+            </Card>
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+              {galleryPhotos.map((photo) => (
+                <div key={photo.id} className="relative">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={photo.thumbUrl}
+                    alt={`Foto von ${photo.uploaderName}`}
+                    loading="lazy"
+                    className="w-full h-24 object-cover rounded-lg"
+                  />
+                  {/* Absichtlich immer sichtbar, nicht nur bei Hover: Hover
+                      gibt es auf Touch-Geräten nicht (gleiche Lehre wie
+                      beim Review der Gast-Galerie). */}
+                  <button
+                    type="button"
+                    onClick={() => deleteGalleryPhoto(photo.id)}
+                    aria-label={`Löschen: Foto von ${photo.uploaderName}`}
+                    className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-1 hover:bg-black/80 transition-colors"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
               ))}
             </div>
           </div>

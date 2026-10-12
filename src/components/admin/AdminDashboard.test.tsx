@@ -18,6 +18,20 @@ function mockFetchSequence(responses: { status?: number; body: unknown }[]) {
 
 const noLocks = { guestbook: false, memories: false, who_votes: false }
 
+// Die Mount-Fetches laufen in dieser Reihenfolge: Gästebuch, Erinnerungen,
+// Galerie-Fotos. Alles danach (Umschalten, Löschen) hängt hinten an.
+const noGalleryPhotos = { body: { photos: [] } }
+
+const annaPhoto = {
+  id: 'p1',
+  uploaderName: 'Anna',
+  category: 'Hochzeit',
+  isOfficial: false,
+  createdAt: '2026-10-12T10:00:00.000Z',
+  thumbUrl: 'https://fotos.example.de/p1/thumb.jpg',
+  originalUrl: 'https://fotos.example.de/p1/original.jpg',
+}
+
 describe('AdminDashboard', () => {
   afterEach(() => {
     vi.unstubAllGlobals()
@@ -27,6 +41,7 @@ describe('AdminDashboard', () => {
     mockFetchSequence([
       { body: { entries: [{ id: 1, name: 'Anna', message: 'Herzlichen Glückwunsch euch!', createdAt: '2026-10-11T10:00:00.000Z' }] } },
       { body: { entries: [{ id: 5, name: 'Ben', message: 'Schöne Erinnerung an euch.', photoKey: null, createdAt: '2026-10-11T11:00:00.000Z' }] } },
+      noGalleryPhotos,
     ])
 
     render(<AdminDashboard initialLocks={noLocks} initialGalleryMode="public" />)
@@ -36,9 +51,9 @@ describe('AdminDashboard', () => {
   })
 
   it('shows three independent switches, all unlocked by default', async () => {
-    const fetchMock = mockFetchSequence([{ body: { entries: [] } }, { body: { entries: [] } }])
+    const fetchMock = mockFetchSequence([{ body: { entries: [] } }, { body: { entries: [] } }, noGalleryPhotos])
     render(<AdminDashboard initialLocks={noLocks} initialGalleryMode="public" />)
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3))
 
     expect(screen.getByRole('switch', { name: /gästebuch/i })).toHaveAttribute('aria-checked', 'false')
     expect(screen.getByRole('switch', { name: /erinnerungen/i })).toHaveAttribute('aria-checked', 'false')
@@ -49,10 +64,11 @@ describe('AdminDashboard', () => {
     const fetchMock = mockFetchSequence([
       { body: { entries: [] } },
       { body: { entries: [] } },
+      noGalleryPhotos,
       { body: { locks: { guestbook: true, memories: false, who_votes: false } } },
     ])
     render(<AdminDashboard initialLocks={noLocks} initialGalleryMode="public" />)
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3))
 
     await userEvent.click(screen.getByRole('switch', { name: /gästebuch/i }))
 
@@ -71,6 +87,7 @@ describe('AdminDashboard', () => {
     const fetchMock = mockFetchSequence([
       { body: { entries: [{ id: 1, name: 'Anna', message: 'Herzlichen Glückwunsch euch!', createdAt: '2026-10-11T10:00:00.000Z' }] } },
       { body: { entries: [] } },
+      noGalleryPhotos,
       { status: 200, body: { success: true } },
     ])
 
@@ -87,6 +104,7 @@ describe('AdminDashboard', () => {
     mockFetchSequence([
       { body: { entries: [{ id: 1, name: 'Anna', message: 'Herzlichen Glückwunsch euch!', createdAt: '2026-10-11T10:00:00.000Z' }] } },
       { body: { entries: [] } },
+      noGalleryPhotos,
       { status: 500, body: { error: 'Serverfehler' } },
     ])
 
@@ -103,11 +121,12 @@ describe('AdminDashboard', () => {
     const fetchMock = mockFetchSequence([
       { body: { entries: [] } },
       { body: { entries: [] } },
+      noGalleryPhotos,
       { status: 500, body: { error: 'Serverfehler' } },
     ])
 
     render(<AdminDashboard initialLocks={noLocks} initialGalleryMode="public" />)
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3))
 
     const toggle = screen.getByRole('switch', { name: /gästebuch/i })
     await userEvent.click(toggle)
@@ -116,14 +135,10 @@ describe('AdminDashboard', () => {
     expect(toggle).toHaveAttribute('aria-checked', 'false')
   })
 
-  // Wichtig: Task 4 fügt noch KEINEN dritten Fetch-Aufruf hinzu - die
-  // Galerie-Fotos werden erst in Task 5 geladen. Die Mount-Fetches bleiben
-  // hier bei genau zwei (guestbook, memories); der Galerie-Modus kommt aus
-  // der initialGalleryMode-PROP, nicht aus einem eigenen Fetch.
   it('shows the current gallery mode and does not affect the three write-lock switches', async () => {
-    const fetchMock = mockFetchSequence([{ body: { entries: [] } }, { body: { entries: [] } }])
+    const fetchMock = mockFetchSequence([{ body: { entries: [] } }, { body: { entries: [] } }, noGalleryPhotos])
     render(<AdminDashboard initialLocks={noLocks} initialGalleryMode="public" />)
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3))
 
     expect(screen.getByRole('button', { name: /^öffentlich$/i })).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByRole('switch', { name: /gästebuch/i })).toHaveAttribute('aria-checked', 'false')
@@ -133,18 +148,53 @@ describe('AdminDashboard', () => {
     const fetchMock = mockFetchSequence([
       { body: { entries: [] } },
       { body: { entries: [] } },
+      noGalleryPhotos,
       { body: { mode: 'password' } },
     ])
     render(<AdminDashboard initialLocks={noLocks} initialGalleryMode="public" />)
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3))
 
     await userEvent.click(screen.getByRole('button', { name: /^kennwort$/i }))
 
-    await waitFor(() => expect(screen.getByRole('button', { name: /^kennwort$/i })).toHaveAttribute('aria-pressed', 'true'))
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: /^kennwort$/i })).toHaveAttribute('aria-pressed', 'true')
+    )
     expect(screen.getByRole('switch', { name: /gästebuch/i })).toHaveAttribute('aria-checked', 'false')
     expect(fetchMock).toHaveBeenCalledWith(
       '/api/admin/gallery-mode',
       expect.objectContaining({ method: 'POST', body: JSON.stringify({ mode: 'password' }) })
     )
+  })
+
+  it('shows gallery photos and deletes one only after the server confirms', async () => {
+    const fetchMock = mockFetchSequence([
+      { body: { entries: [] } },
+      { body: { entries: [] } },
+      { body: { photos: [annaPhoto] } },
+      { status: 200, body: { success: true } },
+    ])
+    render(<AdminDashboard initialLocks={noLocks} initialGalleryMode="public" />)
+    await waitFor(() => expect(screen.getByRole('img', { name: /foto von anna/i })).toBeInTheDocument())
+
+    await userEvent.click(screen.getByRole('button', { name: /löschen.*anna/i }))
+
+    await waitFor(() => expect(screen.queryByRole('img', { name: /foto von anna/i })).not.toBeInTheDocument())
+    expect(fetchMock).toHaveBeenCalledWith('/api/gallery/p1', expect.objectContaining({ method: 'DELETE' }))
+  })
+
+  it('keeps the gallery photo visible if the server delete fails', async () => {
+    mockFetchSequence([
+      { body: { entries: [] } },
+      { body: { entries: [] } },
+      { body: { photos: [annaPhoto] } },
+      { status: 500, body: { error: 'Serverfehler' } },
+    ])
+    render(<AdminDashboard initialLocks={noLocks} initialGalleryMode="public" />)
+    await waitFor(() => expect(screen.getByRole('img', { name: /foto von anna/i })).toBeInTheDocument())
+
+    await userEvent.click(screen.getByRole('button', { name: /löschen.*anna/i }))
+
+    await waitFor(() => expect(screen.getByText(/löschen fehlgeschlagen/i)).toBeInTheDocument())
+    expect(screen.getByRole('img', { name: /foto von anna/i })).toBeInTheDocument()
   })
 })
