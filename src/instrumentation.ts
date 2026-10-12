@@ -4,6 +4,17 @@ import { MissingEnvError, validateEnv } from '@/lib/env'
 // Vercels Edge Runtime - process.exit() ist dort ohnehin nicht verfügbar.
 export const runtime = 'nodejs'
 
+async function startOpsInBackground(): Promise<void> {
+  // Backup und Alarme nur im echten Server: nicht in Tests, nicht in dev.
+  if (process.env.NODE_ENV !== 'production' || process.env.NEXT_RUNTIME !== 'nodejs') return
+  try {
+    const { startOpsScheduler } = await import('@/lib/ops-scheduler')
+    startOpsScheduler()
+  } catch (error) {
+    console.error('Ops-Scheduler konnte nicht gestartet werden:', error)
+  }
+}
+
 export function register(): void {
   try {
     validateEnv()
@@ -15,4 +26,5 @@ export function register(): void {
     }
     throw error
   }
+  void startOpsInBackground()
 }

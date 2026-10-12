@@ -115,9 +115,8 @@
   bis dahin immer `null`). Die Galerie selbst (Backend, Ansicht, Upload,
   Admin-Modus-Schalter und Lösch-Liste) ist gebaut und mit Mocks getestet;
   echte R2-Zugangsdaten stehen noch aus (siehe oben).
-- Betriebs-Härtung: SQLite-Backup-Cron, Festplatten-Alarm (Spec: stündlich
-  `VACUUM INTO`, rotierend, plus eine Kopie off-box; Disk-Alarm bei 85%).
-  Braucht noch vom Nutzer: Ziel für die Off-Box-Kopie (z. B. ein zweiter
-  Server per rsync/SSH, oder ein Objekt-Storage-Bucket) und einen
-  Alarm-Kanal (z. B. Discord-/Slack-Webhook, E-Mail) — ohne das lässt
-  sich nur die lokale Rotation bauen, nicht die eigentliche Absicherung.
+- Betriebs-Härtung, Rest: Off-Box-Kopie der Sicherungen (die stündliche
+  lokale Sicherung mit Rotation, der Disk-Alarm und die E-Mail-Alarme sind
+  gebaut) und ein externer Uptime-Monitor auf `/api/health`. Braucht vom
+  Nutzer: ein Ziel für die Kopie (zweiter Server per rsync/SSH oder ein
+  privater Objekt-Storage-Bucket) und einen Anbieter für den Monitor.

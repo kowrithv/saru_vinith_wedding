@@ -1,6 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { register } from './instrumentation'
 
+const startOpsScheduler = vi.fn()
+vi.mock('@/lib/ops-scheduler', () => ({ startOpsScheduler: () => startOpsScheduler() }))
+
 const ENV_KEYS = [
   'ADMIN_PASSWORD',
   'UPLOAD_PASSWORD_EMPFANG',
@@ -86,5 +89,46 @@ describe('register', () => {
 
     expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('R2_BUCKET_NAME'))
     expect(exitSpy).toHaveBeenCalledWith(1)
+  })
+})
+
+describe('register (ops scheduler)', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs()
+    vi.restoreAllMocks()
+    startOpsScheduler.mockClear()
+  })
+
+  function setRequiredEnv() {
+    for (const key of ENV_KEYS) vi.stubEnv(key, 'test-value')
+  }
+
+  it('does not start the scheduler outside production', async () => {
+    setRequiredEnv()
+    vi.stubEnv('NODE_ENV', 'test')
+    vi.stubEnv('NEXT_RUNTIME', 'nodejs')
+    register()
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(startOpsScheduler).not.toHaveBeenCalled()
+  })
+
+  it('starts the scheduler in production on the Node runtime', async () => {
+    setRequiredEnv()
+    vi.stubEnv('NODE_ENV', 'production')
+    vi.stubEnv('NEXT_RUNTIME', 'nodejs')
+    register()
+    await vi.waitFor(() => expect(startOpsScheduler).toHaveBeenCalledTimes(1))
+  })
+
+  it('does not start the scheduler when a required variable is missing', async () => {
+    setRequiredEnv()
+    vi.stubEnv('ADMIN_PASSWORD', '')
+    vi.stubEnv('NODE_ENV', 'production')
+    vi.stubEnv('NEXT_RUNTIME', 'nodejs')
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.spyOn(process, 'exit').mockImplementation(() => undefined as never)
+    register()
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(startOpsScheduler).not.toHaveBeenCalled()
   })
 })

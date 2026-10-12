@@ -61,6 +61,9 @@ wirklich auszuprobieren.
 | `ADMIN_SECRET` | nein | Signierschlüssel für Cookies; wird sonst zufällig erzeugt und in der DB gespeichert |
 | `CLOUDFLARE_API_TOKEN` | nein | Recht „Cache Purge“; ohne Wert wird der Cache-Purge beim Löschen übersprungen |
 | `CLOUDFLARE_ZONE_ID` | nein | Zone für den Cache-Purge |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD` | nein | SMTP-Zugang für E-Mail-Alarme (Port Standard 587, STARTTLS; 465 = implizites TLS) |
+| `SMTP_FROM` | nein | Absender der Alarm-Mails |
+| `ALERT_EMAIL_TO` | nein | Empfänger der Alarme, kommagetrennt. Ohne `SMTP_HOST`, `SMTP_FROM` und `ALERT_EMAIL_TO` wird nur ins Log geschrieben |
 | `DOMAIN` | nein | Domain für Caddy (Standard `localhost`) |
 
 Lokal in `.env.local`, auf dem Server in `.env.production`. Beide Dateien
@@ -151,9 +154,27 @@ docker compose restart web           # Neustart
 IMAGE_TAG=<älterer-tag> docker compose up -d   # Rollback auf festes Image-Tag
 ```
 
-**Backup:** Die Datenbank läuft im WAL-Modus – nicht per `cp` kopieren,
-sondern z. B. `sqlite3 data/wedding.db ".backup backup.db"` verwenden. Ein
-automatischer Backup-Job ist noch nicht eingerichtet (siehe `TODO.md`).
+**Backup:** Die App sichert die Datenbank beim Start und danach stündlich nach
+`data/backups/` (`wedding-YYYYMMDD-HHmmss.db`, UTC). Aufbewahrt werden die
+letzten 48 Sicherungen plus die erste jedes Tages der letzten 30 Tage. Jede
+Kopie wird mit `PRAGMA integrity_check` geprüft; schlägt das fehl, kommt ein
+Alarm. Ab 85 % Plattenbelegung kommt ebenfalls ein Alarm. Alarme gehen ins
+Log und, wenn `SMTP_*` und `ALERT_EMAIL_TO` gesetzt sind, per E-Mail (je
+Anlass höchstens alle 6 Stunden). Die Start-Meldung beim Deploy zeigt, dass
+der Mailversand funktioniert.
+
+**Wiederherstellung:**
+
+```bash
+docker compose stop web
+rm -f data/wedding.db-wal data/wedding.db-shm
+cp data/backups/wedding-<Zeitstempel>.db data/wedding.db
+docker compose start web
+```
+
+Die Sicherungen liegen auf derselben Platte wie die Datenbank – sie schützen
+vor Fehlbedienung, **nicht** vor einem Plattenausfall. Eine Kopie auf ein
+zweites System ist noch offen (`TODO.md`).
 
 ## Hilfsskripte
 
