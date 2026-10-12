@@ -88,4 +88,13 @@ describe('GalleryPage', () => {
     render(<GalleryPage />)
     await waitFor(() => expect(screen.getByLabelText(/kennwort vom empfang/i)).toBeInTheDocument())
   })
+
+  it('shows the upload form when the floating button is clicked', async () => {
+    mockFetchSequence([{ body: { mode: 'public', unlocked: true, photos: [] } }])
+    render(<GalleryPage />)
+    await waitFor(() => expect(screen.getByRole('button', { name: /fotos hochladen/i })).toBeInTheDocument())
+
+    await userEvent.click(screen.getByRole('button', { name: /fotos hochladen/i }))
+    expect(screen.getByLabelText(/dein name/i)).toBeInTheDocument()
+  })
 })

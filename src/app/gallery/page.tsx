@@ -1,11 +1,12 @@
 'use client'
 
 import { useEffect, useState, type FormEvent } from 'react'
-import { KeyRound } from 'lucide-react'
+import { Camera, KeyRound } from 'lucide-react'
 import SectionTitle from '@/components/ui/SectionTitle'
 import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
 import GalleryGrid from '@/components/gallery/GalleryGrid'
+import GalleryUploadForm from '@/components/gallery/GalleryUploadForm'
 import type { GalleryPhotoView } from '@/lib/gallery-photo-view'
 
 type GalleryData =
@@ -19,6 +20,7 @@ export default function GalleryPage() {
   const [password, setPassword] = useState('')
   const [unlockError, setUnlockError] = useState<string | null>(null)
   const [unlocking, setUnlocking] = useState(false)
+  const [showUploadForm, setShowUploadForm] = useState(false)
 
   const loadGallery = () => {
     fetch('/api/gallery')
@@ -74,6 +76,11 @@ export default function GalleryPage() {
     )
   }
 
+  const handleUploaded = (photo: GalleryPhotoView) => {
+    setData((prev) => (prev.status === 'unlocked' ? { status: 'unlocked', photos: [photo, ...prev.photos] } : prev))
+    setShowUploadForm(false)
+  }
+
   return (
     <div className="pt-24 pb-16">
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
@@ -113,7 +120,26 @@ export default function GalleryPage() {
           </Card>
         )}
 
-        {data.status === 'unlocked' && <GalleryGrid photos={data.photos} onPhotoDeleted={handlePhotoDeleted} />}
+        {data.status === 'unlocked' && (
+          <>
+            <button
+              type="button"
+              onClick={() => setShowUploadForm((v) => !v)}
+              className="fixed bottom-6 right-6 z-40 flex items-center gap-2 bg-gold text-dark-blue font-medium px-5 py-3 rounded-full shadow-lg hover:shadow-xl transition-shadow"
+            >
+              <Camera size={18} />
+              Fotos hochladen
+            </button>
+
+            {showUploadForm && (
+              <Card padding="lg" className="max-w-xl mx-auto mb-10">
+                <GalleryUploadForm onUploaded={handleUploaded} />
+              </Card>
+            )}
+
+            <GalleryGrid photos={data.photos} onPhotoDeleted={handlePhotoDeleted} />
+          </>
+        )}
       </div>
     </div>
   )
