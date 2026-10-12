@@ -98,6 +98,18 @@
 
 ## Noch zu planende Subsysteme (Backlog aus der Spec)
 
+- **Gästespiel „Liebes-Memory": Gesamt-Bestzeit speichern.** Heute steht die
+  Bestzeit nur pro Gerät im `localStorage` (`memory-spiel-best` in
+  `MemoryGame.tsx`, Züge + Sekunden). Gewünscht ist **eine gemeinsame
+  Bestzeit über alle Gäste** — nur der Highscore, **ohne Namen und ohne
+  Liste der Spiele**. Ansatz: ein Datensatz in `app_config` (oder eigene
+  Mini-Tabelle) mit den besten Werten; `POST` meldet ein Ergebnis und
+  aktualisiert nur, wenn es besser ist (atomar, damit gleichzeitige Spiele
+  nichts überschreiben), `GET` liefert den Rekord; die Seite zeigt ihn
+  neben der eigenen Bestzeit. Vergleichsregel wie lokal: erst weniger Züge,
+  bei Gleichstand weniger Sekunden. Wertebereich serverseitig prüfen
+  (keine negativen oder unmöglich kleinen Werte), Rate-Limiter wie beim
+  Gästebuch. Eigene Spec/Plan nötig.
 - Foto-Teil von Erinnerungen über die R2-Pipeline (im
   Gästebuch/Erinnerungen-Plan bewusst ausgeklammert, `photo_key` bleibt
   bis dahin immer `null`). Die Galerie selbst (Backend, Ansicht, Upload,
