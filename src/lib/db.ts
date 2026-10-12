@@ -2,6 +2,11 @@ import Database from 'better-sqlite3'
 import { mkdirSync } from 'node:fs'
 import path from 'node:path'
 
+function columnExists(db: Database.Database, table: string, column: string): boolean {
+  const columns = db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[]
+  return columns.some((col) => col.name === column)
+}
+
 export function applySchema(db: Database.Database): void {
   db.pragma('journal_mode = WAL')
   db.pragma('synchronous = NORMAL')
@@ -24,6 +29,8 @@ export function applySchema(db: Database.Database): void {
       original_key TEXT NOT NULL,
       uploader_name TEXT NOT NULL,
       delete_token_hash TEXT NOT NULL,
+      category TEXT NOT NULL DEFAULT 'Hochzeit',
+      is_official INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
     );
 
@@ -47,6 +54,17 @@ export function applySchema(db: Database.Database): void {
       value TEXT NOT NULL
     );
   `)
+
+  // Migration für gallery_photos-Tabellen, die vor dieser Erweiterung
+  // angelegt wurden - CREATE TABLE IF NOT EXISTS legt die neuen Spalten
+  // nur bei einer brandneuen Tabelle an. Idempotent, da applySchema bei
+  // jedem createDb()-Aufruf erneut läuft.
+  if (!columnExists(db, 'gallery_photos', 'category')) {
+    db.exec(`ALTER TABLE gallery_photos ADD COLUMN category TEXT NOT NULL DEFAULT 'Hochzeit'`)
+  }
+  if (!columnExists(db, 'gallery_photos', 'is_official')) {
+    db.exec(`ALTER TABLE gallery_photos ADD COLUMN is_official INTEGER NOT NULL DEFAULT 0`)
+  }
 }
 
 export function createDb(dbPath: string): Database.Database {

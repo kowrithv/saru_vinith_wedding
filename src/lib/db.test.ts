@@ -2,7 +2,8 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { existsSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
-import { createDb, getDb } from './db'
+import Database from 'better-sqlite3'
+import { applySchema, createDb, getDb } from './db'
 
 describe('createDb', () => {
   it('creates all five application tables', () => {
@@ -55,6 +56,55 @@ describe('createDb', () => {
     db.close()
 
     rmSync(tempRoot, { recursive: true, force: true })
+  })
+
+  it('creates gallery_photos with category and is_official columns, with correct defaults', () => {
+    const db = createDb(':memory:')
+    db.prepare(
+      `INSERT INTO gallery_photos (id, thumb_key, original_key, uploader_name, delete_token_hash)
+       VALUES (?, ?, ?, ?, ?)`
+    ).run('p1', 't1', 'o1', 'Anna', 'hash1')
+
+    const row = db
+      .prepare('SELECT category, is_official FROM gallery_photos WHERE id = ?')
+      .get('p1') as { category: string; is_official: number }
+
+    expect(row.category).toBe('Hochzeit')
+    expect(row.is_official).toBe(0)
+    db.close()
+  })
+
+  it('applying the schema twice on the same connection does not throw (idempotent migration)', () => {
+    const db = createDb(':memory:')
+    expect(() => applySchema(db)).not.toThrow()
+    db.close()
+  })
+
+  it('migrates an existing gallery_photos table (created before this change) by adding the new columns with working defaults', () => {
+    const db = new Database(':memory:')
+    db.exec(`
+      CREATE TABLE gallery_photos (
+        id TEXT PRIMARY KEY,
+        thumb_key TEXT NOT NULL,
+        original_key TEXT NOT NULL,
+        uploader_name TEXT NOT NULL,
+        delete_token_hash TEXT NOT NULL,
+        created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+      )
+    `)
+    db.prepare(
+      `INSERT INTO gallery_photos (id, thumb_key, original_key, uploader_name, delete_token_hash)
+       VALUES (?, ?, ?, ?, ?)`
+    ).run('old-photo', 't', 'o', 'Anna', 'hash')
+
+    applySchema(db)
+
+    const row = db
+      .prepare('SELECT category, is_official FROM gallery_photos WHERE id = ?')
+      .get('old-photo') as { category: string; is_official: number }
+    expect(row.category).toBe('Hochzeit')
+    expect(row.is_official).toBe(0)
+    db.close()
   })
 })
 
