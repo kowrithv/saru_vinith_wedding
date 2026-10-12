@@ -8,10 +8,13 @@ vi.mock('@/lib/r2', () => ({
   createPresignedPutUrl: vi.fn(async (key: string) => `https://r2.example/${key}?signed`),
 }))
 
-function requestBody(body: unknown, cookieValue?: string): Request {
+function requestBody(body: unknown, cookieValue?: string, clientIp?: string): Request {
   const headers = new Headers({ 'Content-Type': 'application/json' })
   if (cookieValue !== undefined) {
     headers.set('cookie', `${ADMIN_COOKIE_NAME}=${cookieValue}`)
+  }
+  if (clientIp !== undefined) {
+    headers.set('cf-connecting-ip', clientIp)
   }
   return new Request('http://localhost/api/uploads/request', {
     method: 'POST',
@@ -169,5 +172,71 @@ describe('POST /api/uploads/request', () => {
       })
     )
     expect(response.status).toBe(400)
+  })
+
+  // Auf einer gemeinsamen Veranstaltungs-WLAN-IP laden viele Gäste hoch:
+  // erfolgreiche Anfragen dürfen das Kontingent nicht aufbrauchen, sonst
+  // sperrt der Rate-Limiter nach einer Handvoll Gäste alle anderen aus.
+  it('does not count successful requests against the rate limit', async () => {
+    getDb()
+    const statuses: number[] = []
+    for (let i = 0; i < 40; i++) {
+      const response = await POST(
+        requestBody(
+          {
+            password: 'empfang-secret',
+            category: 'Hochzeit',
+            files: [{ filename: 'a.jpg', size: 1000, contentType: 'image/jpeg' }],
+          },
+          undefined,
+          '10.0.0.1'
+        )
+      )
+      statuses.push(response.status)
+    }
+    expect(statuses.every((status) => status === 200)).toBe(true)
+  })
+
+  it('still locks out an address after 30 consecutive wrong passwords', async () => {
+    getDb()
+    const wrong = () =>
+      POST(
+        requestBody(
+          {
+            password: 'falsch',
+            category: 'Hochzeit',
+            files: [{ filename: 'a.jpg', size: 1000, contentType: 'image/jpeg' }],
+          },
+          undefined,
+          '10.0.0.2'
+        )
+      )
+
+    for (let i = 0; i < 30; i++) {
+      expect((await wrong()).status).toBe(401)
+    }
+    expect((await wrong()).status).toBe(429)
+  })
+
+  it('signs a ticket per file with its own photo id', async () => {
+    getDb()
+    const response = await POST(
+      requestBody(
+        {
+          password: 'empfang-secret',
+          category: 'Hochzeit',
+          files: [
+            { filename: 'a.jpg', size: 1000, contentType: 'image/jpeg' },
+            { filename: 'b.heic', size: 2000, contentType: 'image/heic' },
+          ],
+        },
+        undefined,
+        '10.0.0.3'
+      )
+    )
+    const body = (await response.json()) as { tickets: { photoId: string; originalKey: string }[] }
+    expect(body.tickets).toHaveLength(2)
+    expect(body.tickets[0].photoId).not.toBe(body.tickets[1].photoId)
+    expect(body.tickets[1].originalKey).toMatch(/original\.heic$/)
   })
 })

@@ -8,20 +8,8 @@ import { signUploadTicket } from '@/lib/upload-ticket'
 import { RateLimiter } from '@/lib/rate-limit'
 import { getClientKey } from '@/lib/client-ip'
 import { galleryCategories } from '@/lib/gallery-categories'
+import { IMAGE_CONTENT_TYPE_EXTENSIONS as CONTENT_TYPE_EXTENSIONS, MAX_ORIGINAL_BYTES } from '@/lib/gallery-upload-limits'
 
-// Map statt Objekt-Literal: ein Objekt-Literal-Lookup ist für Werte wie
-// "constructor" oder "toString" truthy (Object.prototype-Eigenschaften),
-// obwohl das kein erlaubter Dateityp ist - eine Map hat dieses Problem
-// nicht, da sie kein Prototype-Lookup für beliebige String-Keys macht.
-const CONTENT_TYPE_EXTENSIONS = new Map<string, string>([
-  ['image/jpeg', 'jpg'],
-  ['image/png', 'png'],
-  ['image/webp', 'webp'],
-  ['image/heic', 'heic'],
-  ['image/heif', 'heif'],
-])
-
-const MAX_ORIGINAL_BYTES = 20 * 1024 * 1024
 const MAX_THUMB_BYTES = 2 * 1024 * 1024
 const TICKET_DURATION_MS = 15 * 60 * 1000
 
@@ -61,6 +49,12 @@ export async function POST(request: Request): Promise<Response> {
       return NextResponse.json({ error: 'Falsches Kennwort.' }, { status: 401 })
     }
   }
+
+  // Das Limit soll Kennwort-Raten bremsen, nicht Gäste: viele teilen sich
+  // die IP des Veranstaltungs-WLANs, und ein Upload fragt je Dreiergruppe
+  // Fotos neue Tickets an. Gezählt werden daher nur Fehlversuche - ein
+  // richtiges Kennwort (oder die Admin-Sitzung) setzt den Zähler zurück.
+  uploadsLimiter.reset(clientKey)
 
   for (const file of parsed.data.files) {
     if (!CONTENT_TYPE_EXTENSIONS.has(file.contentType)) {

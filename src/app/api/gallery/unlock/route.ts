@@ -29,6 +29,11 @@ export async function POST(request: Request): Promise<Response> {
     return NextResponse.json({ error: 'Falsches Kennwort.' }, { status: 401 })
   }
 
+  // Nur Fehlversuche sollen das Limit füllen: auf der Feier teilen sich
+  // viele Gäste die IP des WLANs, und jede erfolgreiche Entsperrung würde
+  // sonst das Kontingent für alle anderen aufbrauchen.
+  unlockLimiter.reset(clientKey)
+
   const expiresAt = Date.now() + GALLERY_SESSION_DURATION_MS
   const cookieValue = createGallerySessionCookieValue(db)
   const response = NextResponse.json({ success: true })

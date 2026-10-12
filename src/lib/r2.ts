@@ -35,7 +35,14 @@ export async function createPresignedPutUrl(
     ContentType: contentType,
     ...(contentLength !== undefined ? { ContentLength: contentLength } : {}),
   })
-  return getSignedUrl(getClient(), command, { expiresIn: 15 * 60 })
+  // Der Presigner schließt content-type standardmäßig von der Signatur aus.
+  // Ohne diese Option könnte ein Ticket-Inhaber den Inhaltstyp frei wählen
+  // (z. B. text/html unter original.jpg auf der öffentlichen Foto-Domain);
+  // so muss der PUT exakt den serverseitig geprüften Typ senden.
+  return getSignedUrl(getClient(), command, {
+    expiresIn: 15 * 60,
+    signableHeaders: new Set(['content-type']),
+  })
 }
 
 export interface HeadObjectResult {
