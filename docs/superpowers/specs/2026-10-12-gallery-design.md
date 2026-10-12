@@ -32,12 +32,15 @@ Fotos ebenfalls löschen.
 
 ## Datenmodell
 
-`gallery_photos` existiert bereits im Schema (`src/lib/db.ts`), unverändert:
+`gallery_photos` existiert bereits im Schema (`src/lib/db.ts`):
 
 ```
 gallery_photos (id TEXT PRIMARY KEY, thumb_key TEXT, original_key TEXT,
                  uploader_name TEXT, delete_token_hash TEXT, created_at TEXT)
 ```
+
+(Wird durch die Erweiterung weiter unten um `category`/`is_official`
+ergänzt — siehe „Erweiterung: Kategorien & offizielle Fotos".)
 
 Neuer `app_config`-Key: `gallery_mode` (Wert `'public'` oder `'password'`).
 Fehlt die Zeile (Default direkt nach Erststart), gilt `'public'` — Nutzer-
@@ -196,10 +199,74 @@ Echter End-to-End-Test gegen den echten Bucket ist erst möglich, sobald die
 Zugangsdaten da sind — das ist ein manueller Schritt vor dem Freeze, kein
 automatisierter Test in diesem Plan.
 
+## Erweiterung (2026-10-12, nachträglich): Kategorien & offizielle Fotos
+
+Nutzer-Entscheidung nach Vergleich mit der alten (noch live laufenden)
+Galerie auf `clean-start`: diese hatte Kategorie-Filter
+(„Kennenlernen"/„Verlobung"/„Paarfotos"/„Empfang") über eine Mischung aus
+fest im Code hinterlegten „offiziellen" Fotos (in der alten App nur
+Platzhalter-Stockfotos, nie durch echte Fotos ersetzt) und unkategorisierten
+Gast-Uploads. Diese Erweiterung bringt das Konzept zurück, aber neu
+gebaut: beide Foto-Arten laufen über **dieselbe** `gallery_photos`-Tabelle
+und **dieselbe** R2-Pipeline — kein zweites, paralleles System.
+
+**Schema-Erweiterung** (per `ALTER TABLE`, da `gallery_photos` schon
+existiert und in Produktion ggf. schon Zeilen hat):
+
+```sql
+ALTER TABLE gallery_photos ADD COLUMN category TEXT NOT NULL DEFAULT 'Hochzeit';
+ALTER TABLE gallery_photos ADD COLUMN is_official INTEGER NOT NULL DEFAULT 0;
+```
+
+**Kategorie-Liste:** fest im Code, `src/lib/gallery-categories.ts`
+(genaue Namen legt der Nutzer beim Plan-Review fest, Platzhalter-Vorschlag:
+`['Kennenlernen', 'Verlobung', 'Hochzeit', 'Party']`). Gast wählt beim
+Hochladen eine Kategorie für den **gesamten Batch** (nicht pro Foto - ein
+Gast lädt typischerweise zusammengehörige Fotos eines Moments hoch).
+
+**API-Änderungen:**
+- `POST /api/uploads/request`: Body bekommt `category: z.enum(galleryCategories)`,
+  gültig für alle Fotos des Requests; `password` wird im Schema optional
+  (`z.string().min(1).max(200).optional()`), damit der Admin-Upload-Weg
+  kein Dummy-Kennwort mitschicken muss. Wenn die Anfrage einen gültigen
+  Admin-Cookie trägt (`isAdminRequest`), wird die Gast-Kennwort-Prüfung
+  **übersprungen** (unabhängig davon, ob `password` überhaupt mitgeschickt
+  wurde) und `isOfficial: true` ins Ticket gebunden; sonst bleibt
+  Kennwort-Pflicht bestehen (fehlt es, 401 wie bisher) und `isOfficial:
+  false`. `isOfficial` kommt **nicht** aus dem Request-Body (das wäre vom
+  Client fälschbar) — es wird serverseitig aus dem Admin-Auth-Status
+  abgeleitet und ins HMAC-signierte Ticket geschrieben, genau wie
+  `photoId`/Keys/Größen.
+- `TicketPayload` (`upload-ticket.ts`) bekommt zwei neue Felder: `category:
+  string`, `isOfficial: boolean`.
+- `POST /api/uploads/complete`: schreibt `category`/`isOfficial` aus dem
+  Ticket (nicht aus dem Body) in `gallery_photos`.
+- `addGalleryPhoto`/`listGalleryPhotos`/`getGalleryPhotoById`
+  (`gallery-photos.ts`): `GalleryPhoto` bekommt `category: string`,
+  `isOfficial: boolean`.
+- `GET /api/gallery`: jedes Foto-Objekt enthält jetzt `category`,
+  `isOfficial`.
+- `DELETE /api/gallery/[id]`: unverändert - Admin kann weiterhin jedes
+  Foto löschen, Gast-Token weiterhin nur das eigene (offizielle Fotos
+  haben ohnehin keinen sinnvollen Gast-Token-Besitzer, da sie admin-only
+  hochgeladen werden).
+
+**Sicherheit:** `isOfficial` ausschließlich serverseitig aus
+`isAdminRequest` abgeleitet und signiert ins Ticket gebunden - ein Gast
+kann sein eigenes Foto nicht als „offiziell" markieren, selbst wenn er das
+Feld im Request-Body mitschickt (es wird dort nicht gelesen).
+
+**Frontend (Teil des Folge-Plans „Galerie-Frontend"):** Kategorie-Filter-Chips
+über dem Raster (wie in der alten App bewährt), Kategorie-Dropdown im
+Gast-Upload-Formular, admin-seitiger Upload-Weg ohne Kennwort-Feld (Admin
+ist schon authentifiziert).
+
 ## Offene Punkte für die Implementierungsplanung
 
-- Ob die Implementierung als ein Plan oder zwei (Backend-Pipeline /
-  Frontend-Galerie+Admin) aufgeteilt wird, entscheidet sich beim Schreiben
-  des Plans — abhängig davon, wie groß die Aufgabenliste tatsächlich wird.
+- Exakte Kategorie-Namen: Platzhalter oben, Nutzer bestätigt beim
+  Plan-Review.
 - Exakte Thumbnail-Zielgröße/-Qualität (Pixel, JPEG-Qualität) wird beim
   Implementieren der Client-Komponente festgelegt, nicht hier.
+- Ob die Backend-Erweiterung (Schema/API) und das Galerie-Frontend ein
+  gemeinsamer Plan oder zwei getrennte Pläne werden, entscheidet sich beim
+  Schreiben des Plans.
