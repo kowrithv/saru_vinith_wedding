@@ -26,6 +26,25 @@
   verwirft/überschreibt (`trusted_proxies`, aktuell nur ein
   TODO-Kommentar im Caddyfile).
 
+## Gefunden im Feingranulare-Schreib-Sperre-Review (nicht blockierend)
+
+- **Feature-Namen (`guestbook`/`memories`/`who_votes`) können ohne
+  Testausfall voneinander abweichen:** `z.enum` in
+  `api/admin/write-lock/route.ts` und die drei Durchsetzungs-Routen
+  teilen sich keinen gemeinsamen Typ, der das erzwingt. Ein Test, der
+  über alle drei Features loopt (statt nur `guestbook` zu prüfen),
+  würde das abfangen. Empfehlung: `FEATURES` als `as const`-Array
+  definieren und `z.enum(FEATURES)` darauf aufbauen.
+- **Kein Test für „Wer-von-uns-Ergebnisse lesen funktioniert trotz
+  aktiver Sperre"** (Review-Vorgabe aus dem Plan, im Code korrekt
+  erfüllt — `GET /api/who-votes` prüft die Sperre nicht —, aber nie
+  durch einen Test belegt).
+- **Seltene Wettlaufsituation im Dashboard:** Tippt die Admin-Person
+  zwei Schalter kurz hintereinander an, bevor die erste Server-Antwort
+  da ist, kann eine spät eintreffende Antwort kurzzeitig den falschen
+  Schalter-Zustand anzeigen. Nur Anzeigesache (ein Reload korrigiert
+  es), betrifft nur die eine Admin-Person.
+
 ## Offene externe Abhängigkeiten (aus der Spec)
 
 - R2/Cloudflare-Zugangsdaten für die Foto-Pipeline (Galerie-Plan)
