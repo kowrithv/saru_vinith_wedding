@@ -1,5 +1,5 @@
 import {
-  BookOpen, Calendar, Camera, Gamepad2, MessageSquare, Heart,
+  BookOpen, Calendar, Camera, Gamepad2, MessageSquare, Heart, Trophy,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -26,11 +26,11 @@ export const homeFeatures: HomeFeature[] = [
   {
     icon: Camera,
     title: 'Galerie',
-    description: 'Fotos aus unserem gemeinsamen Leben – vom ersten Treffen bis zur Verlobung.',
+    description: 'Fotos von uns und von eurem Tag – schaut rein und ladet eure eigenen hoch.',
     href: '/gallery',
   },
   {
-    icon: BookOpen,
+    icon: Trophy,
     title: 'Quiz',
     description: 'Wie gut kennt ihr uns? Testet euer Wissen in unserem Hochzeitsquiz!',
     href: '/quiz',

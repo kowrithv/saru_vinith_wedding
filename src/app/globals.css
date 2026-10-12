@@ -19,4 +19,20 @@
   --color-gold: #c9a84c;
   --color-gold-light: #d4b96a;
   --color-gold-dark: #a8892e;
+  /* Gold für Fließtext: --color-gold hat auf Weiß nur ca. 2,3:1 Kontrast,
+     dieser Ton erreicht WCAG AA (4,5:1). --color-gold bleibt für Ornamente. */
+  --color-gold-text: #86691c;
+
+  --animate-fade-up: fade-up 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(24px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
 }

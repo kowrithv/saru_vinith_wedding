@@ -13,7 +13,8 @@ export default function FeatureGrid() {
           subtitle="Alles, was ihr für unsere Hochzeit wissen müsst – und noch mehr."
         />
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        {/* Bei drei Spalten steht eine einzelne letzte Kachel mittig statt links. */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 lg:[&>:last-child:nth-child(3n+1)]:col-start-2 gap-5">
           {homeFeatures.map((feature) => (
             <Link key={feature.title} href={feature.href} className="block h-full">
               <Card hover className="h-full group">

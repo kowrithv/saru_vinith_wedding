@@ -14,10 +14,12 @@ export interface TimeUntil {
   total: number
 }
 
-export function calculateTimeUntil(targetDate: string, targetTime?: string): TimeUntil {
-  const now = new Date()
-  const target = new Date(`${targetDate}T${targetTime ?? '00:00'}:00`)
-  const diff = target.getTime() - now.getTime()
+/**
+ * Zeit bis zu einem absoluten Zeitpunkt (ISO-8601 mit Offset oder "Z").
+ * Ohne Offset würde der String in der Zeitzone des Geräts gelesen.
+ */
+export function calculateTimeUntil(target: string, now: number = Date.now()): TimeUntil {
+  const diff = Date.parse(target) - now
 
   if (diff <= 0) {
     return { days: 0, hours: 0, minutes: 0, seconds: 0, isPast: true, total: 0 }

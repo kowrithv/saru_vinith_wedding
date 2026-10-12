@@ -37,8 +37,10 @@ export default function RootLayout({
         {/* Die Navigation ist "fixed" und überlagert daher den Seitenanfang -
             jede Seite ist dafür verantwortlich, selbst genug Abstand nach
             oben zu lassen (Konvention: pt-24 pb-16 auf dem äußersten
-            Element der Seite, siehe src/app/page.tsx). Hier KEIN
-            pt-* ergänzen, sonst doppelter Abstand. */}
+            Element der Seite, siehe src/app/info/page.tsx). Ausnahme ist
+            die Startseite: der Hero füllt den Bildschirm und bringt sein
+            eigenes pt-20 mit. Hier KEIN pt-* ergänzen, sonst doppelter
+            Abstand. */}
         <main className="min-h-screen">{children}</main>
         <Footer />
       </body>
