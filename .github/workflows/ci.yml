@@ -14,8 +14,37 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # GitHub Actions kann Tag-Pushes nicht nach Branch filtern (`tags:` und
+  # `branches:` sind ODER-verknüpft). Deshalb prüft dieser Job bei Tags, ob
+  # der getaggte Commit in main enthalten ist - sonst werden build und docker
+  # übersprungen. Branch-Pushes, PRs und manuelle Läufe sind nicht betroffen.
+  guard:
+    name: Tag nur auf main
+    runs-on: ubuntu-latest
+    outputs:
+      allowed: ${{ steps.check.outputs.allowed }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check that tag commit is on main
+        id: check
+        run: |
+          if [[ "$GITHUB_REF" != refs/tags/* ]]; then
+            echo "allowed=true" >> "$GITHUB_OUTPUT"
+          elif git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "allowed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "allowed=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Tag $GITHUB_REF_NAME liegt nicht auf main - Build übersprungen."
+          fi
+
   build:
     name: Lint, Typecheck, Test & Build
+    needs: guard
+    if: needs.guard.outputs.allowed == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -61,11 +90,10 @@ jobs:
   docker:
     name: Build and push Docker image
     needs: build
-    if: >
-      github.event_name == 'push' &&
-      (github.ref == 'refs/heads/develop' ||
-       github.ref == 'refs/heads/main' ||
-       startsWith(github.ref, 'refs/tags/v'))
+    # Nur Versions-Tags (v*.*.*) erzeugen ein Package. Dass der Tag auf main
+    # liegt, stellt der guard-Job sicher (build wird sonst übersprungen und
+    # damit auch dieser Job).
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -98,7 +126,6 @@ jobs:
           flavor: |
             latest=false
           tags: |
-            type=ref,event=branch
             type=semver,pattern={{version}}
             type=sha,format=short
 
