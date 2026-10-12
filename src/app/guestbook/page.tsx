@@ -143,14 +143,23 @@ export default function GuestbookPage() {
             {entries.length === 0 && (
               <p className="text-sm text-gray-400">Noch keine Einträge – sei der/die Erste!</p>
             )}
-            {entries.map((entry) => (
-              <Card key={entry.id}>
-                <div className="flex items-start gap-4">
+            {entries.map((entry, index) => (
+              <Card key={entry.id} className="relative overflow-hidden">
+                <span
+                  className="absolute -top-3 -left-1 font-serif text-6xl text-gold/10 leading-none pointer-events-none select-none"
+                  aria-hidden="true"
+                >
+                  &ldquo;
+                </span>
+                <span className="absolute top-4 right-5 font-serif text-xs text-gray-300">
+                  #{index + 1}
+                </span>
+                <div className="flex items-start gap-4 relative">
                   <div className="w-11 h-11 rounded-full bg-champagne text-dark-blue flex items-center justify-center font-semibold text-sm flex-shrink-0">
                     {initialsOf(entry.name)}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2 mb-2">
+                    <div className="flex items-center justify-between gap-2 mb-2 pr-6">
                       <p className="font-semibold text-dark-blue text-sm truncate">{entry.name}</p>
                       <p className="text-xs text-gray-400 flex-shrink-0">{formatDate(entry.createdAt)}</p>
                     </div>
