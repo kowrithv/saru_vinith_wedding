@@ -37,7 +37,7 @@ describe('/api/admin/write-lock', () => {
     expect(response.status).toBe(401)
   })
 
-  it('GET returns the current lock status (false by default) for an admin', async () => {
+  it('GET returns all three lock states (false by default) for an admin', async () => {
     const db = getDb()
     const secret = getOrCreateAdminSecret(db)
     const cookieValue = signCookieValue(Date.now() + 1000, secret)
@@ -45,24 +45,39 @@ describe('/api/admin/write-lock', () => {
     const response = await GET(requestWithCookie('GET', cookieValue))
     expect(response.status).toBe(200)
     const body = await response.json()
-    expect(body.locked).toBe(false)
+    expect(body.locks).toEqual({ guestbook: false, memories: false, who_votes: false })
   })
 
   it('POST rejects a request without a valid admin cookie', async () => {
-    const response = await POST(requestWithCookie('POST', undefined, { locked: true }))
+    const response = await POST(requestWithCookie('POST', undefined, { feature: 'guestbook', locked: true }))
     expect(response.status).toBe(401)
   })
 
-  it('POST updates the lock, and a subsequent GET reflects it', async () => {
+  it('POST updates only the targeted feature, and a subsequent GET reflects it', async () => {
     const db = getDb()
     const secret = getOrCreateAdminSecret(db)
     const cookieValue = signCookieValue(Date.now() + 1000, secret)
 
-    const postResponse = await POST(requestWithCookie('POST', cookieValue, { locked: true }))
+    const postResponse = await POST(
+      requestWithCookie('POST', cookieValue, { feature: 'guestbook', locked: true })
+    )
     expect(postResponse.status).toBe(200)
+    const postBody = await postResponse.json()
+    expect(postBody.locks).toEqual({ guestbook: true, memories: false, who_votes: false })
 
     const getResponse = await GET(requestWithCookie('GET', cookieValue))
-    const body = await getResponse.json()
-    expect(body.locked).toBe(true)
+    const getBody = await getResponse.json()
+    expect(getBody.locks).toEqual({ guestbook: true, memories: false, who_votes: false })
+  })
+
+  it('POST rejects an unknown feature value', async () => {
+    const db = getDb()
+    const secret = getOrCreateAdminSecret(db)
+    const cookieValue = signCookieValue(Date.now() + 1000, secret)
+
+    const response = await POST(
+      requestWithCookie('POST', cookieValue, { feature: 'gallery', locked: true })
+    )
+    expect(response.status).toBe(400)
   })
 })
