@@ -106,6 +106,35 @@ describe('WhoKnowsUsGame', () => {
     })
   })
 
+  it('shows the server error message when voting is locked', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 423,
+        json: async () => ({ error: 'Abstimmen ist derzeit vorübergehend gesperrt.' }),
+      })
+    )
+
+    render(<WhoKnowsUsGame />)
+    await userEvent.click(screen.getByRole('button', { name: whoGameOptions[0] }))
+
+    await waitFor(() =>
+      expect(screen.getByText('Abstimmen ist derzeit vorübergehend gesperrt.')).toBeInTheDocument()
+    )
+  })
+
+  it('shows a generic error message when the vote request fails over the network', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network down')))
+
+    render(<WhoKnowsUsGame />)
+    await userEvent.click(screen.getByRole('button', { name: whoGameOptions[0] }))
+
+    await waitFor(() =>
+      expect(screen.getByText(/abstimmen fehlgeschlagen/i)).toBeInTheDocument()
+    )
+  })
+
   it('advances to the next question and shows a finish screen after the last one', async () => {
     render(<WhoKnowsUsGame />)
     for (let i = 0; i < whoQuestions.length; i++) {

@@ -44,6 +44,7 @@ export default function WhoKnowsUsGame() {
   )
   const [currentIndex, setCurrentIndex] = useState(0)
   const [finished, setFinished] = useState(false)
+  const [voteError, setVoteError] = useState<string | null>(null)
 
   usePolling(() => {
     fetch('/api/who-votes', { cache: 'no-store' })
@@ -63,6 +64,7 @@ export default function WhoKnowsUsGame() {
 
   const handleVote = async (option: string) => {
     if (hasVoted || !currentQuestion) return
+    setVoteError(null)
 
     try {
       const response = await fetch('/api/who-votes/vote', {
@@ -70,7 +72,12 @@ export default function WhoKnowsUsGame() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ questionId: currentQuestion.id, voterId: getDeviceId(), option }),
       })
-      if (!response.ok) return // Nicht bestätigt - nichts lokal vermerken, Gast kann es erneut versuchen.
+      if (!response.ok) {
+        // Nicht bestätigt - nichts lokal vermerken, Gast kann es erneut versuchen.
+        const data = await response.json().catch(() => null)
+        setVoteError(data?.error ?? 'Abstimmen fehlgeschlagen. Bitte versuch es erneut.')
+        return
+      }
 
       const data = (await response.json()) as { tally: Record<string, number> }
       saveLocalVote(currentQuestion.id, option)
@@ -78,6 +85,7 @@ export default function WhoKnowsUsGame() {
       setTally((prev) => ({ ...prev, [currentQuestion.id]: data.tally }))
     } catch {
       // Netzwerkfehler - nichts lokal vermerken, Gast kann es erneut versuchen.
+      setVoteError('Abstimmen fehlgeschlagen. Bitte versuch es erneut.')
     }
   }
 
@@ -164,6 +172,12 @@ export default function WhoKnowsUsGame() {
               )
             })}
           </div>
+        )}
+
+        {voteError && (
+          <p className="text-sm text-red-600 mt-4" role="alert">
+            {voteError}
+          </p>
         )}
 
         <button
