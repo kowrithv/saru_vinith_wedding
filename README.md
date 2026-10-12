@@ -128,13 +128,17 @@ Autoheal):
 
 ```bash
 cp .env.example .env.production      # Werte eintragen
-IMAGE_TAG=v1.0.0 docker compose pull
-IMAGE_TAG=v1.0.0 docker compose up -d
+IMAGE_TAG=1.0.0 docker compose pull
+IMAGE_TAG=1.0.0 docker compose up -d
 ```
 
 - Das Image heißt `ghcr.io/kowrithv/saru_vinith_wedding:<tag>`; CI baut es
-  **nur für Versions-Tags** (`v*.*.*`) auf `main`. Der Tag `latest` wird nie
-  automatisch gesetzt – er gehört der alten Seite (`clean-start`).
+  **nur für Versions-Tags** (`v*.*.*`) auf `main`. Aus dem Git-Tag `v1.0.0`
+  wird der Image-Tag **`1.0.0`** (ohne „v"); zusätzlich gibt es
+  `sha-<kurz>`. Branch-Pushes erzeugen kein Image – der Compose-Standard
+  `IMAGE_TAG=develop` existiert also nicht, `IMAGE_TAG` muss immer gesetzt
+  werden. Der Tag `latest` wird nie automatisch gesetzt – er gehört der
+  alten Seite (`clean-start`).
 - `./data` wird nach `/app/data` gemountet; dort liegt die Datenbank.
 - Health-Check: `GET /api/health`.
 - Caddy liest die Domain aus `DOMAIN`.
