@@ -1,6 +1,9 @@
+import { readFileSync } from 'node:fs'
+import path from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   BACKUP_INTERVAL_MS,
+  defaultBackupDir,
   DISK_ALERT_THRESHOLD,
   DISK_CHECK_INTERVAL_MS,
   diskUsageFraction,
@@ -11,6 +14,18 @@ describe('diskUsageFraction', () => {
   it('computes used blocks relative to all blocks of the file system', () => {
     const statfs = vi.fn(() => ({ blocks: 1000, bavail: 150 })) as never
     expect(diskUsageFraction('/data', statfs)).toBeCloseTo(0.85)
+  })
+})
+
+describe('defaultBackupDir', () => {
+  it('puts the backups next to the database file, keeping a relative path relative', () => {
+    expect(defaultBackupDir('data/wedding.db')).toBe(path.join('data', 'backups'))
+    expect(defaultBackupDir('/var/app/data/wedding.db')).toBe(path.join('/var/app/data', 'backups'))
+  })
+
+  it('does not resolve against the working directory (that makes the Next.js tracer pull the whole project into the standalone build)', () => {
+    const source = readFileSync(path.join(process.cwd(), 'src/lib/ops-scheduler.ts'), 'utf8')
+    expect(source).not.toMatch(/path\.resolve\(|process\.cwd\(/)
   })
 })
 

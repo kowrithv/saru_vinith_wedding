@@ -34,9 +34,13 @@ declare global {
   var __opsScheduler: RunningScheduler | undefined
 }
 
-function defaultBackupDir(): string {
-  const dbPath = process.env.DATABASE_PATH ?? 'data/wedding.db'
-  return path.join(path.dirname(path.resolve(dbPath)), 'backups')
+// Bewusst nicht gegen das Arbeitsverzeichnis aufgelöst: ein so gebildeter,
+// dynamischer Pfad lässt den Next.js-Tracer das ganze Projekt
+// (inkl. data/ und docs/) in den Standalone-Build kopieren. Ein relativer Pfad
+// bleibt relativ und wird vom Prozess ohnehin gegen das Arbeitsverzeichnis
+// geöffnet - genau wie die Datenbank selbst.
+export function defaultBackupDir(dbPath: string = process.env.DATABASE_PATH ?? 'data/wedding.db'): string {
+  return path.join(path.dirname(dbPath), 'backups')
 }
 
 /**
