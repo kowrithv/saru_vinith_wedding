@@ -6,6 +6,7 @@ import { getOrCreateAdminSecret } from '@/lib/admin-auth'
 import { verifyUploadTicket } from '@/lib/upload-ticket'
 import { headObject } from '@/lib/r2'
 import { addGalleryPhoto } from '@/lib/gallery-photos'
+import { toGalleryPhotoView } from '@/lib/gallery-photo-view'
 
 const bodySchema = z.object({
   ticket: z.string().min(1),
@@ -51,5 +52,5 @@ export async function POST(request: Request): Promise<Response> {
     isOfficial: payload.isOfficial,
   })
 
-  return NextResponse.json({ photo, deleteToken }, { status: 201 })
+  return NextResponse.json({ photo: toGalleryPhotoView(photo), deleteToken }, { status: 201 })
 }

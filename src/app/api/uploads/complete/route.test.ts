@@ -32,10 +32,12 @@ function validPayload(): TicketPayload {
 
 describe('POST /api/uploads/complete', () => {
   const originalPath = process.env.DATABASE_PATH
+  const originalR2Base = process.env.R2_PUBLIC_BASE_URL
 
   beforeEach(() => {
     delete globalThis.__appDb
     process.env.DATABASE_PATH = ':memory:'
+    process.env.R2_PUBLIC_BASE_URL = 'https://fotos.example.de'
     mockHeadObject.mockReset()
   })
 
@@ -43,6 +45,7 @@ describe('POST /api/uploads/complete', () => {
     globalThis.__appDb?.close()
     delete globalThis.__appDb
     process.env.DATABASE_PATH = originalPath
+    process.env.R2_PUBLIC_BASE_URL = originalR2Base
   })
 
   it('creates the photo and returns a one-time delete token when sizes match', async () => {
@@ -122,5 +125,21 @@ describe('POST /api/uploads/complete', () => {
     const body = await response.json()
     expect(body.photo.category).toBe('Verlobung')
     expect(body.photo.isOfficial).toBe(true)
+  })
+
+  it('returns thumbUrl/originalUrl instead of raw storage keys', async () => {
+    const db = getDb()
+    const secret = getOrCreateAdminSecret(db)
+    const ticket = signUploadTicket(validPayload(), secret)
+    mockHeadObject.mockImplementation(async (key: string) =>
+      key.includes('thumb') ? { size: 100_000 } : { size: 4_000_000 }
+    )
+
+    const response = await POST(completeRequest({ ticket, uploaderName: 'Anna' }))
+    const body = await response.json()
+    expect(body.photo.thumbUrl).toContain('/gallery/photo-1/thumb.jpg')
+    expect(body.photo.originalUrl).toContain('/gallery/photo-1/original.jpg')
+    expect(body.photo).not.toHaveProperty('thumbKey')
+    expect(body.photo).not.toHaveProperty('originalKey')
   })
 })

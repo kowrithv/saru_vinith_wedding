@@ -15,16 +15,19 @@ function requestWithCookies(cookies: Record<string, string>): Request {
 
 describe('GET /api/gallery', () => {
   const originalPath = process.env.DATABASE_PATH
+  const originalR2Base = process.env.R2_PUBLIC_BASE_URL
 
   beforeEach(() => {
     delete globalThis.__appDb
     process.env.DATABASE_PATH = ':memory:'
+    process.env.R2_PUBLIC_BASE_URL = 'https://fotos.example.de'
   })
 
   afterEach(() => {
     globalThis.__appDb?.close()
     delete globalThis.__appDb
     process.env.DATABASE_PATH = originalPath
+    process.env.R2_PUBLIC_BASE_URL = originalR2Base
   })
 
   it('returns photos when the gallery is public, with no cookie at all', async () => {
@@ -85,5 +88,24 @@ describe('GET /api/gallery', () => {
 
     const body = await (await GET(requestWithCookies({}))).json()
     expect(body.photos[0]).toMatchObject({ category: 'Verlobung', isOfficial: true })
+  })
+
+  it('returns thumbUrl/originalUrl instead of raw storage keys', async () => {
+    const db = getDb()
+    addGalleryPhoto(db, {
+      id: 'p1',
+      thumbKey: 'gallery/p1/thumb.jpg',
+      originalKey: 'gallery/p1/original.jpg',
+      uploaderName: 'Anna',
+      deleteTokenHash: 'h1',
+      category: 'Hochzeit',
+      isOfficial: false,
+    })
+
+    const body = await (await GET(requestWithCookies({}))).json()
+    expect(body.photos[0].thumbUrl).toBe('https://fotos.example.de/gallery/p1/thumb.jpg')
+    expect(body.photos[0].originalUrl).toBe('https://fotos.example.de/gallery/p1/original.jpg')
+    expect(body.photos[0]).not.toHaveProperty('thumbKey')
+    expect(body.photos[0]).not.toHaveProperty('originalKey')
   })
 })
