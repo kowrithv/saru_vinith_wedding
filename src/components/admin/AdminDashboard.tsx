@@ -36,6 +36,8 @@ export default function AdminDashboard({ initialLocked }: AdminDashboardProps) {
   const [memoryEntries, setMemoryEntries] = useState<MemoryEntry[]>([])
   const [locked, setLocked] = useState(initialLocked)
   const [deleteError, setDeleteError] = useState<string | null>(null)
+  const [lockError, setLockError] = useState<string | null>(null)
+  const [togglingLock, setTogglingLock] = useState(false)
 
   useEffect(() => {
     fetch('/api/guestbook')
@@ -79,17 +81,24 @@ export default function AdminDashboard({ initialLocked }: AdminDashboardProps) {
 
   const toggleLock = async () => {
     const next = !locked
+    setLockError(null)
+    setTogglingLock(true)
     try {
       const response = await fetch('/api/admin/write-lock', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ locked: next }),
       })
-      if (!response.ok) return
+      if (!response.ok) {
+        setLockError('Umschalten fehlgeschlagen. Bitte versuch es erneut.')
+        return
+      }
       const data = (await response.json()) as { locked: boolean }
       setLocked(data.locked)
     } catch {
-      // Zustand bleibt unverändert, wenn das Umschalten fehlschlägt.
+      setLockError('Umschalten fehlgeschlagen. Bitte versuch es erneut.')
+    } finally {
+      setTogglingLock(false)
     }
   }
 
@@ -130,8 +139,9 @@ export default function AdminDashboard({ initialLocked }: AdminDashboardProps) {
               aria-checked={locked}
               aria-label="Schreib-Sperre"
               onClick={toggleLock}
+              disabled={togglingLock}
               className={cn(
-                'w-12 h-7 rounded-full transition-colors relative flex-shrink-0',
+                'w-12 h-7 rounded-full transition-colors relative flex-shrink-0 disabled:opacity-50',
                 locked ? 'bg-red-500' : 'bg-gray-200'
               )}
             >
@@ -143,6 +153,11 @@ export default function AdminDashboard({ initialLocked }: AdminDashboardProps) {
               />
             </button>
           </div>
+          {lockError && (
+            <p className="text-sm text-red-600 mt-3" role="alert">
+              {lockError}
+            </p>
+          )}
         </Card>
 
         {deleteError && (

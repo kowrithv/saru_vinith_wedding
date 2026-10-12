@@ -62,7 +62,8 @@ export default function GuestbookPage() {
         body: JSON.stringify({ name: name.trim(), message: trimmedMessage }),
       })
       if (!response.ok) {
-        setError('Eintrag konnte nicht gespeichert werden. Bitte versuch es erneut.')
+        const data = await response.json().catch(() => null)
+        setError(data?.error ?? 'Eintrag konnte nicht gespeichert werden. Bitte versuch es erneut.')
         return
       }
       const data = (await response.json()) as { entry: GuestbookEntry }

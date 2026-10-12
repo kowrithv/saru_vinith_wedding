@@ -63,7 +63,8 @@ export default function MemoriesPage() {
         return
       }
       if (!response.ok) {
-        setError('Erinnerung konnte nicht gespeichert werden. Bitte versuch es erneut.')
+        const data = await response.json().catch(() => null)
+        setError(data?.error ?? 'Erinnerung konnte nicht gespeichert werden. Bitte versuch es erneut.')
         return
       }
       const data = (await response.json()) as { entry: MemoryEntry }

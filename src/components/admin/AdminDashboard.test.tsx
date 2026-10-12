@@ -68,6 +68,23 @@ describe('AdminDashboard', () => {
     expect(screen.getByText('Herzlichen Glückwunsch euch!')).toBeInTheDocument()
   })
 
+  it('shows an error and leaves the lock unchanged when toggling fails', async () => {
+    const fetchMock = mockFetchSequence([
+      { body: { entries: [] } },
+      { body: { entries: [] } },
+      { status: 500, body: { error: 'Serverfehler' } },
+    ])
+
+    render(<AdminDashboard initialLocked={false} />)
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
+
+    const toggle = screen.getByRole('switch', { name: /schreib-sperre/i })
+    await userEvent.click(toggle)
+
+    await waitFor(() => expect(screen.getByText(/umschalten fehlgeschlagen/i)).toBeInTheDocument())
+    expect(toggle).toHaveAttribute('aria-checked', 'false')
+  })
+
   it('toggles the write lock and persists it to the server', async () => {
     const fetchMock = mockFetchSequence([
       { body: { entries: [] } },

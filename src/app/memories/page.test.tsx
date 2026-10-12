@@ -72,6 +72,27 @@ describe('MemoriesPage', () => {
     await waitFor(() => expect(screen.getByText(/falsches kennwort/i)).toBeInTheDocument())
   })
 
+  it('shows the server\'s own error message when posting is locked', async () => {
+    const fetchMock = mockFetchSequence([
+      { body: { entries: [] } },
+      { status: 423, body: { error: 'Neue Einträge sind derzeit vorübergehend gesperrt.' } },
+    ])
+
+    render(<MemoriesPage />)
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
+
+    await userEvent.type(screen.getByLabelText(/Name/i), 'Ben')
+    await userEvent.type(screen.getByLabelText(/Erinnerung/i), 'Ein toller gemeinsamer Abend war das.')
+    await userEvent.type(screen.getByLabelText(/Kennwort/i), 'empfang-secret')
+    await userEvent.click(screen.getByRole('button', { name: /teilen/i }))
+
+    await waitFor(() =>
+      expect(
+        screen.getByText('Neue Einträge sind derzeit vorübergehend gesperrt.')
+      ).toBeInTheDocument()
+    )
+  })
+
   it('carries its own top offset below the fixed navigation', async () => {
     mockFetchSequence([{ body: { entries: [] } }])
     const { container } = render(<MemoriesPage />)

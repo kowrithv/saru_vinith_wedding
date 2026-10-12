@@ -63,6 +63,30 @@ describe('GuestbookPage', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 
+  it('shows the server\'s own error message when posting is locked', async () => {
+    const fetchMock = vi.fn()
+    fetchMock.mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ entries: [] }) })
+    fetchMock.mockResolvedValueOnce({
+      ok: false,
+      status: 423,
+      json: async () => ({ error: 'Neue Einträge sind derzeit vorübergehend gesperrt.' }),
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<GuestbookPage />)
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
+
+    await userEvent.type(screen.getByLabelText(/Name/i), 'Ben')
+    await userEvent.type(screen.getByLabelText(/Nachricht/i), 'Alles Gute euch beiden zusammen!')
+    await userEvent.click(screen.getByRole('button', { name: /eintragen/i }))
+
+    await waitFor(() =>
+      expect(
+        screen.getByText('Neue Einträge sind derzeit vorübergehend gesperrt.')
+      ).toBeInTheDocument()
+    )
+  })
+
   it('carries its own top offset below the fixed navigation', async () => {
     const { container } = render(<GuestbookPage />)
     await waitFor(() => expect(container.firstChild).toHaveClass('pt-24'))
