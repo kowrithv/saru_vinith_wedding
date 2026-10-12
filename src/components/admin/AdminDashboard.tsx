@@ -6,6 +6,7 @@ import { Camera, LogOut, ShieldAlert, Trash2 } from 'lucide-react'
 import Card from '@/components/ui/Card'
 import SectionTitle from '@/components/ui/SectionTitle'
 import GalleryUploadForm from '@/components/gallery/GalleryUploadForm'
+import CollapsibleSection from '@/components/admin/CollapsibleSection'
 import type { GalleryPhotoView } from '@/lib/gallery-photo-view'
 import { cn } from '@/lib/utils'
 
@@ -294,10 +295,7 @@ export default function AdminDashboard({ initialLocks, initialGalleryMode }: Adm
         )}
 
         <div className="space-y-8">
-          <div>
-            <h3 className="font-serif text-lg font-semibold text-dark-blue mb-3">
-              Gästebuch ({guestbookEntries.length})
-            </h3>
+          <CollapsibleSection id="admin-guestbook" title="Gästebuch" count={guestbookEntries.length}>
             <div className="space-y-3">
               {guestbookEntries.map((entry) => (
                 <Card key={entry.id}>
@@ -321,12 +319,9 @@ export default function AdminDashboard({ initialLocks, initialGalleryMode }: Adm
                 </Card>
               ))}
             </div>
-          </div>
+          </CollapsibleSection>
 
-          <div>
-            <h3 className="font-serif text-lg font-semibold text-dark-blue mb-3">
-              Erinnerungen ({memoryEntries.length})
-            </h3>
+          <CollapsibleSection id="admin-memories" title="Erinnerungen" count={memoryEntries.length}>
             <div className="space-y-3">
               {memoryEntries.map((entry) => (
                 <Card key={entry.id}>
@@ -350,12 +345,9 @@ export default function AdminDashboard({ initialLocks, initialGalleryMode }: Adm
                 </Card>
               ))}
             </div>
-          </div>
+          </CollapsibleSection>
 
-          <section aria-labelledby="admin-gallery-heading">
-            <h3 id="admin-gallery-heading" className="font-serif text-lg font-semibold text-dark-blue mb-3">
-              Galerie ({galleryPhotos.length})
-            </h3>
+          <CollapsibleSection id="admin-gallery" title="Galerie" count={galleryPhotos.length} defaultOpen>
             <Card padding="lg" className="mb-4">
               <GalleryUploadForm
                 isAdmin
@@ -401,7 +393,7 @@ export default function AdminDashboard({ initialLocks, initialGalleryMode }: Adm
                 </div>
               ))}
             </div>
-          </section>
+          </CollapsibleSection>
         </div>
       </div>
     </div>

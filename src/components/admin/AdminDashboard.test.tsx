@@ -123,6 +123,7 @@ describe('AdminDashboard', () => {
     render(<AdminDashboard initialLocks={noLocks} initialGalleryMode="public" />)
     await waitFor(() => expect(screen.getByText('Herzlichen Glückwunsch euch!')).toBeInTheDocument())
 
+    await userEvent.click(screen.getByRole('button', { name: /^gästebuch/i }))
     await userEvent.click(screen.getByRole('button', { name: /löschen.*Anna/i }))
 
     await waitFor(() => expect(screen.queryByText('Herzlichen Glückwunsch euch!')).not.toBeInTheDocument())
@@ -140,6 +141,7 @@ describe('AdminDashboard', () => {
     render(<AdminDashboard initialLocks={noLocks} initialGalleryMode="public" />)
     await waitFor(() => expect(screen.getByText('Herzlichen Glückwunsch euch!')).toBeInTheDocument())
 
+    await userEvent.click(screen.getByRole('button', { name: /^gästebuch/i }))
     await userEvent.click(screen.getByRole('button', { name: /löschen.*Anna/i }))
 
     await waitFor(() => expect(screen.getByText(/löschen fehlgeschlagen/i)).toBeInTheDocument())
@@ -324,5 +326,14 @@ describe('AdminDashboard', () => {
       expect.objectContaining({ body: JSON.stringify({ feature: 'gallery_upload', locked: true }) })
     )
     expect(screen.getByRole('switch', { name: /gästebuch/i })).toHaveAttribute('aria-checked', 'false')
+  })
+
+  it('starts with guestbook and memories collapsed and the gallery open', async () => {
+    mockFetchSequence([{ body: { entries: [] } }, { body: { entries: [] } }, noGalleryPhotos])
+    render(<AdminDashboard initialLocks={noLocks} initialGalleryMode="public" />)
+
+    expect(screen.getByRole('button', { name: /^gästebuch/i })).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.getByRole('button', { name: /^erinnerungen/i })).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.getByRole('button', { name: /^galerie \(/i })).toHaveAttribute('aria-expanded', 'true')
   })
 })
