@@ -64,7 +64,7 @@ Vierter Schalter im bestehenden Schreib-Sperren-System.
 | Datei | Aufgabe |
 |---|---|
 | `src/lib/backup.ts` | `createBackup(db, dir, now)`: Online-Backup per `db.backup()`, danach `PRAGMA integrity_check` auf der Kopie; Dateiname `wedding-YYYYMMDD-HHmmss.db` (UTC). `selectBackupsToDelete(names, now)`: reine Funktion. `pruneBackups(dir, now)`. |
-| `src/lib/alerts.ts` | `sendAlert({ key, subject, body })`: schreibt immer ins Log; schickt zusätzlich eine E-Mail, wenn SMTP konfiguriert ist; Abkühlzeit je `key` (6 h), persistiert in `app_config` (überlebt Neustarts). Ein Fehler beim Versand wird geloggt, nie geworfen. |
+| `src/lib/alerts.ts` | `sendAlert({ key, subject, body, cooldownMs? })`: schreibt immer ins Log; schickt zusätzlich eine E-Mail, wenn SMTP konfiguriert ist; Abkühlzeit je `key` (Standard 6 h, die Start-Mail 15 min, damit eine Neustart-Schleife das Postfach nicht flutet), persistiert in `app_config` (überlebt Neustarts). Ein Fehler beim Versand wird geloggt, nie geworfen. |
 | `src/lib/ops-scheduler.ts` | `startOpsScheduler()`: beim Start eine Info-Mail „App gestartet", sofort ein Backup, danach stündlich Backup + Aufräumen und alle 10 Minuten die Plattenprüfung. Timer sind `unref()`, nichts hält den Prozess am Leben. Einmalig je Prozess (`globalThis`-Flag). |
 | `src/instrumentation.ts` | Ruft nach der Env-Prüfung `startOpsScheduler()` per dynamischem Import auf, nur in `NODE_ENV === 'production'` und `NEXT_RUNTIME === 'nodejs'`. Die Env-Prüfung bleibt synchron (bestehende Tests). |
 
