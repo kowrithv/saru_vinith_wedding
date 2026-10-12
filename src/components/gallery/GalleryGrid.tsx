@@ -78,12 +78,16 @@ export default function GalleryGrid({ photos, onPhotoDeleted }: GalleryGridProps
               <img
                 src={photo.thumbUrl}
                 alt={`Foto von ${photo.uploaderName}`}
+                loading="lazy"
                 className="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-105"
               />
               <div className="absolute inset-0 bg-dark-blue/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
                 <ZoomIn size={28} className="text-white" />
               </div>
-              <div className="absolute bottom-2 left-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+              {/* Badge ist absichtlich immer sichtbar, nicht nur bei
+                  group-hover: hover gibt es auf Touch-Geräten nicht, und
+                  die meisten Gäste öffnen die Galerie am Handy. */}
+              <div className="absolute bottom-2 left-2 right-2">
                 <span className="inline-block bg-white/90 text-dark-blue text-xs font-medium px-2 py-1 rounded-full">
                   {photo.isOfficial ? photo.category : `Von ${photo.uploaderName}`}
                 </span>

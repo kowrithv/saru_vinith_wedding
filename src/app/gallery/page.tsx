@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, type FormEvent } from 'react'
+import { KeyRound } from 'lucide-react'
 import SectionTitle from '@/components/ui/SectionTitle'
 import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
@@ -10,6 +11,7 @@ import type { GalleryPhotoView } from '@/lib/gallery-photo-view'
 type GalleryData =
   | { status: 'loading' }
   | { status: 'locked' }
+  | { status: 'error' }
   | { status: 'unlocked'; photos: GalleryPhotoView[] }
 
 export default function GalleryPage() {
@@ -20,11 +22,22 @@ export default function GalleryPage() {
 
   const loadGallery = () => {
     fetch('/api/gallery')
-      .then((res) => (res.ok ? res.json() : { unlocked: false, photos: null }))
-      .then((body: { unlocked: boolean; photos: GalleryPhotoView[] | null }) => {
+      .then((res) => {
+        // Ein echter Server-/Netzwerkfehler ist kein "gesperrt" - sonst
+        // zeigen wir Gästen fälschlich ein Kennwort-Formular, obwohl die
+        // Galerie eigentlich öffentlich ist und nur gerade nicht erreichbar
+        // war.
+        if (!res.ok) {
+          setData({ status: 'error' })
+          return undefined
+        }
+        return res.json() as Promise<{ unlocked: boolean; photos: GalleryPhotoView[] | null }>
+      })
+      .then((body) => {
+        if (!body) return
         setData(body.unlocked && body.photos ? { status: 'unlocked', photos: body.photos } : { status: 'locked' })
       })
-      .catch(() => setData({ status: 'locked' }))
+      .catch(() => setData({ status: 'error' }))
   }
 
   useEffect(() => {
@@ -66,12 +79,22 @@ export default function GalleryPage() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         <SectionTitle title="Galerie" subtitle="Momente, die wir für immer in Erinnerung behalten." />
 
+        {data.status === 'error' && (
+          <Card padding="lg" className="max-w-md mx-auto text-center">
+            <p className="text-sm text-gray-600 mb-4">
+              Galerie konnte nicht geladen werden. Bitte versuch es erneut.
+            </p>
+            <Button onClick={loadGallery}>Erneut versuchen</Button>
+          </Card>
+        )}
+
         {data.status === 'locked' && (
           <Card padding="lg" className="max-w-md mx-auto">
             <form onSubmit={handleUnlock} className="space-y-4">
               <div>
                 <label htmlFor="gallery-password" className="block text-sm font-medium text-gray-700 mb-1.5">
-                  Kennwort
+                  <KeyRound size={14} className="inline mr-1" />
+                  Kennwort vom Empfang
                 </label>
                 <input
                   id="gallery-password"

@@ -75,4 +75,17 @@ describe('GalleryPage', () => {
     const { container } = render(<GalleryPage />)
     await waitFor(() => expect(container.firstChild).toHaveClass('pt-24'))
   })
+
+  it('shows an error state with a retry option, not the password form, when loading fails', async () => {
+    mockFetchSequence([{ status: 500, body: { error: 'Serverfehler' } }])
+    render(<GalleryPage />)
+    await waitFor(() => expect(screen.getByRole('button', { name: /erneut versuchen/i })).toBeInTheDocument())
+    expect(screen.queryByLabelText(/kennwort/i)).not.toBeInTheDocument()
+  })
+
+  it('labels the password field consistently with the rest of the site', async () => {
+    mockFetchSequence([{ body: { mode: 'password', unlocked: false, photos: null } }])
+    render(<GalleryPage />)
+    await waitFor(() => expect(screen.getByLabelText(/kennwort vom empfang/i)).toBeInTheDocument())
+  })
 })

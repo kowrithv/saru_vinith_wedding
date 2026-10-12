@@ -38,6 +38,14 @@ describe('GalleryLightbox', () => {
     expect(screen.getByRole('button', { name: /löschen/i })).toBeInTheDocument()
   })
 
+  it('does not show a delete button when a token exists only for a different photo', () => {
+    saveDeleteToken('p2', 'token-for-p2')
+    render(
+      <GalleryLightbox photos={[photo({ id: 'p1' })]} index={0} onClose={vi.fn()} onNavigate={vi.fn()} onDeleted={vi.fn()} />
+    )
+    expect(screen.queryByRole('button', { name: /löschen/i })).not.toBeInTheDocument()
+  })
+
   it('calls onClose on Escape', () => {
     const onClose = vi.fn()
     render(
@@ -87,10 +95,11 @@ describe('GalleryLightbox', () => {
     expect(onClose).not.toHaveBeenCalled()
   })
 
-  it('deletes the photo and calls onDeleted when the server confirms', async () => {
+  it('deletes the photo and calls onDeleted when confirmed and the server confirms', async () => {
     saveDeleteToken('p1', 'secret-token')
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ success: true }) })
     vi.stubGlobal('fetch', fetchMock)
+    vi.stubGlobal('confirm', vi.fn(() => true))
     const onDeleted = vi.fn()
 
     render(
@@ -104,5 +113,73 @@ describe('GalleryLightbox', () => {
       expect.objectContaining({ method: 'DELETE', body: JSON.stringify({ deleteToken: 'secret-token' }) })
     )
     vi.unstubAllGlobals()
+  })
+
+  it('does not delete when the confirmation is declined', () => {
+    saveDeleteToken('p1', 'secret-token')
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+    vi.stubGlobal('confirm', vi.fn(() => false))
+
+    render(
+      <GalleryLightbox photos={[photo()]} index={0} onClose={vi.fn()} onNavigate={vi.fn()} onDeleted={vi.fn()} />
+    )
+    fireEvent.click(screen.getByRole('button', { name: /löschen/i }))
+
+    expect(fetchMock).not.toHaveBeenCalled()
+    vi.unstubAllGlobals()
+  })
+
+  it('locks body scroll while mounted and restores it on unmount', () => {
+    const { unmount } = render(
+      <GalleryLightbox photos={[photo()]} index={0} onClose={vi.fn()} onNavigate={vi.fn()} onDeleted={vi.fn()} />
+    )
+    expect(document.body.style.overflow).toBe('hidden')
+    unmount()
+    expect(document.body.style.overflow).toBe('')
+  })
+
+  it('moves focus into the dialog on mount and returns it to the trigger on close', () => {
+    const trigger = document.createElement('button')
+    document.body.appendChild(trigger)
+    trigger.focus()
+
+    const { unmount } = render(
+      <GalleryLightbox photos={[photo()]} index={0} onClose={vi.fn()} onNavigate={vi.fn()} onDeleted={vi.fn()} />
+    )
+    expect(document.activeElement).toBe(screen.getByRole('dialog'))
+
+    unmount()
+
+    expect(document.activeElement).toBe(trigger)
+    document.body.removeChild(trigger)
+  })
+
+  it('falls back to the thumbnail when the original fails to load', () => {
+    render(
+      <GalleryLightbox photos={[photo()]} index={0} onClose={vi.fn()} onNavigate={vi.fn()} onDeleted={vi.fn()} />
+    )
+    const img = screen.getByRole('img', { name: /foto von anna/i })
+    expect(img).toHaveAttribute('src', 'https://fotos.example.de/p1/original.jpg')
+    fireEvent.error(img)
+    expect(img).toHaveAttribute('src', 'https://fotos.example.de/p1/thumb.jpg')
+  })
+
+  it('downloads the original via a same-origin blob instead of a cross-origin link', async () => {
+    const blob = new Blob(['fake-image-data'])
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, blob: async () => blob })
+    vi.stubGlobal('fetch', fetchMock)
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:fake-url')
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+
+    render(
+      <GalleryLightbox photos={[photo()]} index={0} onClose={vi.fn()} onNavigate={vi.fn()} onDeleted={vi.fn()} />
+    )
+    fireEvent.click(screen.getByRole('button', { name: /original herunterladen/i }))
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('https://fotos.example.de/p1/original.jpg'))
+    expect(URL.createObjectURL).toHaveBeenCalledWith(blob)
+    vi.unstubAllGlobals()
+    vi.restoreAllMocks()
   })
 })

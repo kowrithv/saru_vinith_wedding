@@ -65,4 +65,15 @@ describe('GalleryGrid', () => {
     rerender(<GalleryGrid photos={[photo({ id: 'p2' })]} onPhotoDeleted={vi.fn()} />)
     expect(screen.getAllByRole('img')).toHaveLength(1)
   })
+
+  it('shows the uploader badge without requiring hover (no opacity-0 gate, invisible on touch devices)', () => {
+    render(<GalleryGrid photos={[photo()]} onPhotoDeleted={vi.fn()} />)
+    const badge = screen.getByText(/von anna/i)
+    expect(badge.closest('div')).not.toHaveClass('opacity-0')
+  })
+
+  it('lazy-loads grid thumbnails', () => {
+    render(<GalleryGrid photos={[photo()]} onPhotoDeleted={vi.fn()} />)
+    expect(screen.getByRole('img')).toHaveAttribute('loading', 'lazy')
+  })
 })
