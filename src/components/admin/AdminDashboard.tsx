@@ -22,22 +22,34 @@ interface MemoryEntry {
   createdAt: string
 }
 
+interface Locks {
+  guestbook: boolean
+  memories: boolean
+  who_votes: boolean
+}
+
 interface AdminDashboardProps {
-  initialLocked: boolean
+  initialLocks: Locks
+}
+
+const FEATURE_LABELS: Record<keyof Locks, string> = {
+  guestbook: 'Gästebuch',
+  memories: 'Erinnerungen',
+  who_votes: 'Wer-von-uns-Abstimmung',
 }
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('de-DE', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
-export default function AdminDashboard({ initialLocked }: AdminDashboardProps) {
+export default function AdminDashboard({ initialLocks }: AdminDashboardProps) {
   const router = useRouter()
   const [guestbookEntries, setGuestbookEntries] = useState<GuestbookEntry[]>([])
   const [memoryEntries, setMemoryEntries] = useState<MemoryEntry[]>([])
-  const [locked, setLocked] = useState(initialLocked)
+  const [locks, setLocks] = useState<Locks>(initialLocks)
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [lockError, setLockError] = useState<string | null>(null)
-  const [togglingLock, setTogglingLock] = useState(false)
+  const [togglingFeature, setTogglingFeature] = useState<keyof Locks | null>(null)
 
   useEffect(() => {
     fetch('/api/guestbook')
@@ -79,26 +91,26 @@ export default function AdminDashboard({ initialLocked }: AdminDashboardProps) {
     }
   }
 
-  const toggleLock = async () => {
-    const next = !locked
+  const toggleLock = async (feature: keyof Locks) => {
+    const next = !locks[feature]
     setLockError(null)
-    setTogglingLock(true)
+    setTogglingFeature(feature)
     try {
       const response = await fetch('/api/admin/write-lock', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ locked: next }),
+        body: JSON.stringify({ feature, locked: next }),
       })
       if (!response.ok) {
         setLockError('Umschalten fehlgeschlagen. Bitte versuch es erneut.')
         return
       }
-      const data = (await response.json()) as { locked: boolean }
-      setLocked(data.locked)
+      const data = (await response.json()) as { locks: Locks }
+      setLocks(data.locks)
     } catch {
       setLockError('Umschalten fehlgeschlagen. Bitte versuch es erneut.')
     } finally {
-      setTogglingLock(false)
+      setTogglingFeature(null)
     }
   }
 
@@ -111,7 +123,7 @@ export default function AdminDashboard({ initialLocked }: AdminDashboardProps) {
     <div className="pt-24 pb-16">
       <div className="max-w-3xl mx-auto px-4 sm:px-6">
         <div className="flex items-start justify-between gap-4 mb-8">
-          <SectionTitle title="Admin" subtitle="Einträge moderieren, Schreib-Sperre umschalten." centered={false} />
+          <SectionTitle title="Admin" subtitle="Einträge moderieren, Schreib-Sperren umschalten." centered={false} />
           <button
             type="button"
             onClick={handleLogout}
@@ -123,38 +135,43 @@ export default function AdminDashboard({ initialLocked }: AdminDashboardProps) {
         </div>
 
         <Card padding="lg" className="mb-8">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <ShieldAlert size={20} className={locked ? 'text-red-600' : 'text-gray-400'} />
-              <div>
-                <p className="font-semibold text-dark-blue text-sm">Schreib-Sperre</p>
-                <p className="text-xs text-gray-400">
-                  {locked ? 'Neue Einträge sind gesperrt.' : 'Neue Einträge sind erlaubt.'}
-                </p>
-              </div>
-            </div>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={locked}
-              aria-label="Schreib-Sperre"
-              onClick={toggleLock}
-              disabled={togglingLock}
-              className={cn(
-                'w-12 h-7 rounded-full transition-colors relative flex-shrink-0 disabled:opacity-50',
-                locked ? 'bg-red-500' : 'bg-gray-200'
-              )}
-            >
-              <span
-                className={cn(
-                  'absolute top-1 w-5 h-5 rounded-full bg-white transition-transform',
-                  locked ? 'translate-x-6' : 'translate-x-1'
-                )}
-              />
-            </button>
+          <div className="space-y-5">
+            {(Object.keys(FEATURE_LABELS) as (keyof Locks)[]).map((feature) => {
+              const isLocked = locks[feature]
+              return (
+                <div key={feature} className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <ShieldAlert size={20} className={isLocked ? 'text-red-600' : 'text-gray-400'} />
+                    <div>
+                      <p className="font-semibold text-dark-blue text-sm">{FEATURE_LABELS[feature]}</p>
+                      <p className="text-xs text-gray-400">{isLocked ? 'Gesperrt.' : 'Erlaubt.'}</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={isLocked}
+                    aria-label={`Schreib-Sperre: ${FEATURE_LABELS[feature]}`}
+                    onClick={() => toggleLock(feature)}
+                    disabled={togglingFeature === feature}
+                    className={cn(
+                      'w-12 h-7 rounded-full transition-colors relative flex-shrink-0 disabled:opacity-50',
+                      isLocked ? 'bg-red-500' : 'bg-gray-200'
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        'absolute top-1 w-5 h-5 rounded-full bg-white transition-transform',
+                        isLocked ? 'translate-x-6' : 'translate-x-1'
+                      )}
+                    />
+                  </button>
+                </div>
+              )
+            })}
           </div>
           {lockError && (
-            <p className="text-sm text-red-600 mt-3" role="alert">
+            <p className="text-sm text-red-600 mt-4" role="alert">
               {lockError}
             </p>
           )}

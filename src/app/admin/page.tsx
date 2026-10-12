@@ -4,10 +4,16 @@ import { useEffect, useState } from 'react'
 import AdminLoginForm from '@/components/admin/AdminLoginForm'
 import AdminDashboard from '@/components/admin/AdminDashboard'
 
+interface Locks {
+  guestbook: boolean
+  memories: boolean
+  who_votes: boolean
+}
+
 type AuthState =
   | { status: 'checking' }
   | { status: 'unauthenticated' }
-  | { status: 'authenticated'; locked: boolean }
+  | { status: 'authenticated'; locks: Locks }
 
 async function checkAuth(): Promise<AuthState> {
   try {
@@ -15,8 +21,8 @@ async function checkAuth(): Promise<AuthState> {
     if (!response.ok) {
       return { status: 'unauthenticated' }
     }
-    const data = (await response.json()) as { locked: boolean }
-    return { status: 'authenticated', locked: data.locked }
+    const data = (await response.json()) as { locks: Locks }
+    return { status: 'authenticated', locks: data.locks }
   } catch {
     return { status: 'unauthenticated' }
   }
@@ -40,5 +46,5 @@ export default function AdminPage() {
     return <AdminLoginForm onSuccess={() => checkAuth().then(setAuth)} />
   }
 
-  return <AdminDashboard initialLocked={auth.locked} />
+  return <AdminDashboard initialLocks={auth.locks} />
 }

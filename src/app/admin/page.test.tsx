@@ -8,8 +8,8 @@ vi.mock('@/components/admin/AdminLoginForm', () => ({
   ),
 }))
 vi.mock('@/components/admin/AdminDashboard', () => ({
-  default: ({ initialLocked }: { initialLocked: boolean }) => (
-    <div data-testid="dashboard-stub">{String(initialLocked)}</div>
+  default: ({ initialLocks }: { initialLocks: { guestbook: boolean; memories: boolean; who_votes: boolean } }) => (
+    <div data-testid="dashboard-stub">{JSON.stringify(initialLocks)}</div>
   ),
 }))
 
@@ -27,10 +27,18 @@ describe('AdminPage', () => {
   it('shows the dashboard with the fetched lock status when already authenticated', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({ locked: true }) })
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ locks: { guestbook: true, memories: false, who_votes: false } }),
+      })
     )
     render(<AdminPage />)
-    await waitFor(() => expect(screen.getByTestId('dashboard-stub')).toHaveTextContent('true'))
+    await waitFor(() =>
+      expect(screen.getByTestId('dashboard-stub')).toHaveTextContent(
+        JSON.stringify({ guestbook: true, memories: false, who_votes: false })
+      )
+    )
   })
 
   it('switches from login to dashboard after a successful login', async () => {
@@ -40,7 +48,11 @@ describe('AdminPage', () => {
 
     vi.stubGlobal(
       'fetch',
-      vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({ locked: false }) })
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ locks: { guestbook: false, memories: false, who_votes: false } }),
+      })
     )
     loginButton.click()
 
