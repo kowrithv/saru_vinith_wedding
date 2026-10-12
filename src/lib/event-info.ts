@@ -1,7 +1,9 @@
 export const receptionEvent = {
   title: 'Empfang & Feier',
+  date: '2026-10-17',
   displayDate: '17. Oktober 2026',
   time: '16:30 Uhr',
+  rawTime: '16:30',
   venue: 'Begegnungsstätte Niederkrüchten',
   address: 'Oberkrüchtener Weg 42, 41372 Niederkrüchten',
   description:
