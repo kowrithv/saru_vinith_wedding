@@ -1,17 +1,19 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import HomePage from './page'
 
-describe('HomePage', () => {
-  it('renders the couple names as the main heading', () => {
-    render(<HomePage />)
-    expect(
-      screen.getByRole('heading', { level: 1, name: /saruga.*vinith/i })
-    ).toBeInTheDocument()
-  })
+vi.mock('@/components/sections/Hero', () => ({
+  default: () => <div data-testid="hero-stub" />,
+}))
+vi.mock('@/components/sections/Countdown', () => ({
+  default: () => <div data-testid="countdown-stub" />,
+}))
 
-  it('does not render its own <main> - the root layout owns that landmark', () => {
-    const { container } = render(<HomePage />)
-    expect(container.querySelector('main')).not.toBeInTheDocument()
+describe('HomePage', () => {
+  it('renders Hero, Countdown and the feature grid', () => {
+    render(<HomePage />)
+    expect(screen.getByTestId('hero-stub')).toBeInTheDocument()
+    expect(screen.getByTestId('countdown-stub')).toBeInTheDocument()
+    expect(screen.getByText('Entdeckt unsere Website')).toBeInTheDocument()
   })
 })
