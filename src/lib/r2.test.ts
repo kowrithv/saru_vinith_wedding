@@ -33,6 +33,17 @@ beforeEach(() => {
   vi.mocked(getSignedUrl).mockReset()
 })
 
+describe('S3 client configuration', () => {
+  it('disables automatic request checksums (R2 does not support the AWS SDK v3 default CRC32 header)', async () => {
+    vi.mocked(getSignedUrl).mockResolvedValue('https://r2.example/signed-put')
+    await createPresignedPutUrl('gallery/abc/original.jpg', 'image/jpeg', 12345)
+
+    expect(S3Client).toHaveBeenCalledWith(
+      expect.objectContaining({ requestChecksumCalculation: 'WHEN_REQUIRED' })
+    )
+  })
+})
+
 describe('createPresignedPutUrl', () => {
   it('signs a PUT command with the given key, content type and length', async () => {
     vi.mocked(getSignedUrl).mockResolvedValue('https://r2.example/signed-put')

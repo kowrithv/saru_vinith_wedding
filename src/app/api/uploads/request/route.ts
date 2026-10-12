@@ -8,13 +8,17 @@ import { signUploadTicket } from '@/lib/upload-ticket'
 import { RateLimiter } from '@/lib/rate-limit'
 import { getClientKey } from '@/lib/client-ip'
 
-const CONTENT_TYPE_EXTENSIONS: Record<string, string> = {
-  'image/jpeg': 'jpg',
-  'image/png': 'png',
-  'image/webp': 'webp',
-  'image/heic': 'heic',
-  'image/heif': 'heif',
-}
+// Map statt Objekt-Literal: ein Objekt-Literal-Lookup ist für Werte wie
+// "constructor" oder "toString" truthy (Object.prototype-Eigenschaften),
+// obwohl das kein erlaubter Dateityp ist - eine Map hat dieses Problem
+// nicht, da sie kein Prototype-Lookup für beliebige String-Keys macht.
+const CONTENT_TYPE_EXTENSIONS = new Map<string, string>([
+  ['image/jpeg', 'jpg'],
+  ['image/png', 'png'],
+  ['image/webp', 'webp'],
+  ['image/heic', 'heic'],
+  ['image/heif', 'heif'],
+])
 
 const MAX_ORIGINAL_BYTES = 20 * 1024 * 1024
 const MAX_THUMB_BYTES = 2 * 1024 * 1024
@@ -53,7 +57,7 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   for (const file of parsed.data.files) {
-    if (!CONTENT_TYPE_EXTENSIONS[file.contentType]) {
+    if (!CONTENT_TYPE_EXTENSIONS.has(file.contentType)) {
       return NextResponse.json({ error: `Dateityp nicht erlaubt: ${file.contentType}` }, { status: 400 })
     }
     if (file.size > MAX_ORIGINAL_BYTES) {
@@ -64,7 +68,7 @@ export async function POST(request: Request): Promise<Response> {
   const secret = getOrCreateAdminSecret(db)
   const tickets = await Promise.all(
     parsed.data.files.map(async (file) => {
-      const extension = CONTENT_TYPE_EXTENSIONS[file.contentType]
+      const extension = CONTENT_TYPE_EXTENSIONS.get(file.contentType) as string
       const photoId = randomUUID()
       const thumbKey = `gallery/${photoId}/thumb.jpg`
       const originalKey = `gallery/${photoId}/original.${extension}`

@@ -12,6 +12,13 @@ function getClient(): S3Client {
         accessKeyId: process.env.R2_ACCESS_KEY_ID ?? '',
         secretAccessKey: process.env.R2_SECRET_ACCESS_KEY ?? '',
       },
+      // AWS SDK v3 signiert PUT-Requests seit einer neueren Version
+      // standardmäßig mit einem zusätzlichen x-amz-checksum-crc32-Header.
+      // R2 ist S3-kompatibel, aber nicht identisch - ein echter Browser-
+      // Upload mit echten Bytes würde die (für einen leeren Body
+      // berechnete) signierte Prüfsumme nicht erfüllen und fehlschlagen.
+      // 'WHEN_REQUIRED' schaltet das automatische Senden ab.
+      requestChecksumCalculation: 'WHEN_REQUIRED',
     })
   }
   return client

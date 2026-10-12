@@ -71,6 +71,17 @@ describe('POST /api/uploads/request', () => {
     expect(response.status).toBe(400)
   })
 
+  it('rejects a content type that collides with an Object prototype property', async () => {
+    getDb()
+    const response = await POST(
+      requestBody({
+        password: 'empfang-secret',
+        files: [{ filename: 'a.jpg', size: 1000, contentType: 'constructor' }],
+      })
+    )
+    expect(response.status).toBe(400)
+  })
+
   it('rejects a file declared larger than the size cap', async () => {
     getDb()
     const response = await POST(

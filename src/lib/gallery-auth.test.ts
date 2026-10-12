@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { createDb } from './db'
 import { GALLERY_COOKIE_NAME, createGallerySessionCookieValue, isGalleryUnlocked } from './gallery-auth'
+import { ADMIN_COOKIE_NAME, getOrCreateAdminSecret, isAdminRequest } from './admin-auth'
 
 function requestWithCookie(cookieValue?: string): Request {
   const headers = new Headers()
@@ -36,6 +37,19 @@ describe('gallery session', () => {
     const db = createDb(':memory:')
     const cookieValue = createGallerySessionCookieValue(db, Date.now() - 8 * 24 * 60 * 60 * 1000)
     expect(isGalleryUnlocked(requestWithCookie(cookieValue), db)).toBe(false)
+    db.close()
+  })
+
+  it('a gallery session cookie value does not also work as an admin cookie', () => {
+    const db = createDb(':memory:')
+    getOrCreateAdminSecret(db)
+    const galleryCookieValue = createGallerySessionCookieValue(db)
+
+    const headers = new Headers()
+    headers.set('cookie', `${ADMIN_COOKIE_NAME}=${galleryCookieValue}`)
+    const requestWithGalleryValueAsAdminCookie = new Request('http://localhost/api/admin/gallery-mode', { headers })
+
+    expect(isAdminRequest(requestWithGalleryValueAsAdminCookie, db)).toBe(false)
     db.close()
   })
 })
