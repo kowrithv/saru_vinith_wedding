@@ -10,19 +10,25 @@ interface Locks {
   who_votes: boolean
 }
 
+type GalleryMode = 'public' | 'password'
+
 type AuthState =
   | { status: 'checking' }
   | { status: 'unauthenticated' }
-  | { status: 'authenticated'; locks: Locks }
+  | { status: 'authenticated'; locks: Locks; galleryMode: GalleryMode }
 
 async function checkAuth(): Promise<AuthState> {
   try {
-    const response = await fetch('/api/admin/write-lock')
-    if (!response.ok) {
+    const [lockResponse, galleryModeResponse] = await Promise.all([
+      fetch('/api/admin/write-lock'),
+      fetch('/api/admin/gallery-mode'),
+    ])
+    if (!lockResponse.ok || !galleryModeResponse.ok) {
       return { status: 'unauthenticated' }
     }
-    const data = (await response.json()) as { locks: Locks }
-    return { status: 'authenticated', locks: data.locks }
+    const lockData = (await lockResponse.json()) as { locks: Locks }
+    const galleryModeData = (await galleryModeResponse.json()) as { mode: GalleryMode }
+    return { status: 'authenticated', locks: lockData.locks, galleryMode: galleryModeData.mode }
   } catch {
     return { status: 'unauthenticated' }
   }
@@ -46,5 +52,5 @@ export default function AdminPage() {
     return <AdminLoginForm onSuccess={() => checkAuth().then(setAuth)} />
   }
 
-  return <AdminDashboard initialLocks={auth.locks} />
+  return <AdminDashboard initialLocks={auth.locks} initialGalleryMode={auth.galleryMode} />
 }

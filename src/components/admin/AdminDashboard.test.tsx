@@ -29,7 +29,7 @@ describe('AdminDashboard', () => {
       { body: { entries: [{ id: 5, name: 'Ben', message: 'Schöne Erinnerung an euch.', photoKey: null, createdAt: '2026-10-11T11:00:00.000Z' }] } },
     ])
 
-    render(<AdminDashboard initialLocks={noLocks} />)
+    render(<AdminDashboard initialLocks={noLocks} initialGalleryMode="public" />)
 
     await waitFor(() => expect(screen.getByText('Herzlichen Glückwunsch euch!')).toBeInTheDocument())
     expect(screen.getByText(/Schöne Erinnerung an euch\./)).toBeInTheDocument()
@@ -37,7 +37,7 @@ describe('AdminDashboard', () => {
 
   it('shows three independent switches, all unlocked by default', async () => {
     const fetchMock = mockFetchSequence([{ body: { entries: [] } }, { body: { entries: [] } }])
-    render(<AdminDashboard initialLocks={noLocks} />)
+    render(<AdminDashboard initialLocks={noLocks} initialGalleryMode="public" />)
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
 
     expect(screen.getByRole('switch', { name: /gästebuch/i })).toHaveAttribute('aria-checked', 'false')
@@ -51,7 +51,7 @@ describe('AdminDashboard', () => {
       { body: { entries: [] } },
       { body: { locks: { guestbook: true, memories: false, who_votes: false } } },
     ])
-    render(<AdminDashboard initialLocks={noLocks} />)
+    render(<AdminDashboard initialLocks={noLocks} initialGalleryMode="public" />)
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
 
     await userEvent.click(screen.getByRole('switch', { name: /gästebuch/i }))
@@ -74,7 +74,7 @@ describe('AdminDashboard', () => {
       { status: 200, body: { success: true } },
     ])
 
-    render(<AdminDashboard initialLocks={noLocks} />)
+    render(<AdminDashboard initialLocks={noLocks} initialGalleryMode="public" />)
     await waitFor(() => expect(screen.getByText('Herzlichen Glückwunsch euch!')).toBeInTheDocument())
 
     await userEvent.click(screen.getByRole('button', { name: /löschen.*Anna/i }))
@@ -90,7 +90,7 @@ describe('AdminDashboard', () => {
       { status: 500, body: { error: 'Serverfehler' } },
     ])
 
-    render(<AdminDashboard initialLocks={noLocks} />)
+    render(<AdminDashboard initialLocks={noLocks} initialGalleryMode="public" />)
     await waitFor(() => expect(screen.getByText('Herzlichen Glückwunsch euch!')).toBeInTheDocument())
 
     await userEvent.click(screen.getByRole('button', { name: /löschen.*Anna/i }))
@@ -106,7 +106,7 @@ describe('AdminDashboard', () => {
       { status: 500, body: { error: 'Serverfehler' } },
     ])
 
-    render(<AdminDashboard initialLocks={noLocks} />)
+    render(<AdminDashboard initialLocks={noLocks} initialGalleryMode="public" />)
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
 
     const toggle = screen.getByRole('switch', { name: /gästebuch/i })
@@ -114,5 +114,37 @@ describe('AdminDashboard', () => {
 
     await waitFor(() => expect(screen.getByText(/umschalten fehlgeschlagen/i)).toBeInTheDocument())
     expect(toggle).toHaveAttribute('aria-checked', 'false')
+  })
+
+  // Wichtig: Task 4 fügt noch KEINEN dritten Fetch-Aufruf hinzu - die
+  // Galerie-Fotos werden erst in Task 5 geladen. Die Mount-Fetches bleiben
+  // hier bei genau zwei (guestbook, memories); der Galerie-Modus kommt aus
+  // der initialGalleryMode-PROP, nicht aus einem eigenen Fetch.
+  it('shows the current gallery mode and does not affect the three write-lock switches', async () => {
+    const fetchMock = mockFetchSequence([{ body: { entries: [] } }, { body: { entries: [] } }])
+    render(<AdminDashboard initialLocks={noLocks} initialGalleryMode="public" />)
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
+
+    expect(screen.getByRole('button', { name: /^öffentlich$/i })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('switch', { name: /gästebuch/i })).toHaveAttribute('aria-checked', 'false')
+  })
+
+  it('switching the gallery mode does not change the write-lock switches', async () => {
+    const fetchMock = mockFetchSequence([
+      { body: { entries: [] } },
+      { body: { entries: [] } },
+      { body: { mode: 'password' } },
+    ])
+    render(<AdminDashboard initialLocks={noLocks} initialGalleryMode="public" />)
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
+
+    await userEvent.click(screen.getByRole('button', { name: /^kennwort$/i }))
+
+    await waitFor(() => expect(screen.getByRole('button', { name: /^kennwort$/i })).toHaveAttribute('aria-pressed', 'true'))
+    expect(screen.getByRole('switch', { name: /gästebuch/i })).toHaveAttribute('aria-checked', 'false')
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/admin/gallery-mode',
+      expect.objectContaining({ method: 'POST', body: JSON.stringify({ mode: 'password' }) })
+    )
   })
 })

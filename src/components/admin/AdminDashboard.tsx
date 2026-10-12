@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { LogOut, ShieldAlert, Trash2 } from 'lucide-react'
+import { Camera, LogOut, ShieldAlert, Trash2 } from 'lucide-react'
 import Card from '@/components/ui/Card'
 import SectionTitle from '@/components/ui/SectionTitle'
 import { cn } from '@/lib/utils'
@@ -28,8 +28,11 @@ interface Locks {
   who_votes: boolean
 }
 
+type GalleryMode = 'public' | 'password'
+
 interface AdminDashboardProps {
   initialLocks: Locks
+  initialGalleryMode: GalleryMode
 }
 
 const FEATURE_LABELS: Record<keyof Locks, string> = {
@@ -42,7 +45,7 @@ function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('de-DE', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
-export default function AdminDashboard({ initialLocks }: AdminDashboardProps) {
+export default function AdminDashboard({ initialLocks, initialGalleryMode }: AdminDashboardProps) {
   const router = useRouter()
   const [guestbookEntries, setGuestbookEntries] = useState<GuestbookEntry[]>([])
   const [memoryEntries, setMemoryEntries] = useState<MemoryEntry[]>([])
@@ -50,6 +53,9 @@ export default function AdminDashboard({ initialLocks }: AdminDashboardProps) {
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [lockError, setLockError] = useState<string | null>(null)
   const [togglingFeature, setTogglingFeature] = useState<keyof Locks | null>(null)
+  const [galleryMode, setGalleryMode] = useState<GalleryMode>(initialGalleryMode)
+  const [galleryModeError, setGalleryModeError] = useState<string | null>(null)
+  const [changingGalleryMode, setChangingGalleryMode] = useState(false)
 
   useEffect(() => {
     fetch('/api/guestbook')
@@ -114,6 +120,29 @@ export default function AdminDashboard({ initialLocks }: AdminDashboardProps) {
     }
   }
 
+  const changeGalleryMode = async (mode: GalleryMode) => {
+    if (mode === galleryMode) return
+    setGalleryModeError(null)
+    setChangingGalleryMode(true)
+    try {
+      const response = await fetch('/api/admin/gallery-mode', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode }),
+      })
+      if (!response.ok) {
+        setGalleryModeError('Umschalten fehlgeschlagen. Bitte versuch es erneut.')
+        return
+      }
+      const data = (await response.json()) as { mode: GalleryMode }
+      setGalleryMode(data.mode)
+    } catch {
+      setGalleryModeError('Umschalten fehlgeschlagen. Bitte versuch es erneut.')
+    } finally {
+      setChangingGalleryMode(false)
+    }
+  }
+
   const handleLogout = async () => {
     await fetch('/api/admin/logout', { method: 'POST' })
     router.push('/')
@@ -173,6 +202,53 @@ export default function AdminDashboard({ initialLocks }: AdminDashboardProps) {
           {lockError && (
             <p className="text-sm text-red-600 mt-4" role="alert">
               {lockError}
+            </p>
+          )}
+
+          <div className="flex items-center justify-between gap-4 pt-5 mt-5 border-t border-gray-100">
+            <div className="flex items-center gap-3">
+              <Camera size={20} className="text-gray-400" />
+              <div>
+                <p className="font-semibold text-dark-blue text-sm">Galerie-Sichtbarkeit</p>
+                <p className="text-xs text-gray-400">
+                  {galleryMode === 'public' ? 'Öffentlich.' : 'Nur mit Kennwort.'}
+                </p>
+              </div>
+            </div>
+            <div
+              className="flex rounded-full border border-gray-200 overflow-hidden"
+              role="group"
+              aria-label="Galerie-Sichtbarkeit"
+            >
+              <button
+                type="button"
+                onClick={() => changeGalleryMode('public')}
+                disabled={changingGalleryMode}
+                aria-pressed={galleryMode === 'public'}
+                className={cn(
+                  'px-4 py-1.5 text-xs font-medium transition-colors',
+                  galleryMode === 'public' ? 'bg-dark-blue text-white' : 'bg-white text-gray-600'
+                )}
+              >
+                Öffentlich
+              </button>
+              <button
+                type="button"
+                onClick={() => changeGalleryMode('password')}
+                disabled={changingGalleryMode}
+                aria-pressed={galleryMode === 'password'}
+                className={cn(
+                  'px-4 py-1.5 text-xs font-medium transition-colors',
+                  galleryMode === 'password' ? 'bg-dark-blue text-white' : 'bg-white text-gray-600'
+                )}
+              >
+                Kennwort
+              </button>
+            </div>
+          </div>
+          {galleryModeError && (
+            <p className="text-sm text-red-600 mt-4" role="alert">
+              {galleryModeError}
             </p>
           )}
         </Card>
