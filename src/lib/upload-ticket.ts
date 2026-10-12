@@ -7,6 +7,8 @@ export interface TicketPayload {
   thumbMaxSize: number
   originalSize: number
   expiresAt: number
+  category: string
+  isOfficial: boolean
 }
 
 export function signUploadTicket(payload: TicketPayload, secret: string): string {

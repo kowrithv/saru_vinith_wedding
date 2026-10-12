@@ -8,12 +8,20 @@ const samplePayload: TicketPayload = {
   thumbMaxSize: 2 * 1024 * 1024,
   originalSize: 4_000_000,
   expiresAt: Date.now() + 15 * 60 * 1000,
+  category: 'Hochzeit',
+  isOfficial: false,
 }
 
 describe('upload ticket signing', () => {
-  it('round-trips a valid ticket', () => {
+  it('round-trips a valid ticket, including category and isOfficial', () => {
     const ticket = signUploadTicket(samplePayload, 'secret')
     expect(verifyUploadTicket(ticket, 'secret')).toEqual(samplePayload)
+  })
+
+  it('round-trips an official ticket', () => {
+    const officialPayload: TicketPayload = { ...samplePayload, category: 'Verlobung', isOfficial: true }
+    const ticket = signUploadTicket(officialPayload, 'secret')
+    expect(verifyUploadTicket(ticket, 'secret')).toEqual(officialPayload)
   })
 
   it('rejects a ticket signed with a different secret', () => {
@@ -24,7 +32,7 @@ describe('upload ticket signing', () => {
   it('rejects a ticket whose payload was altered after signing', () => {
     const ticket = signUploadTicket(samplePayload, 'secret')
     const signature = ticket.slice(ticket.indexOf('.') + 1)
-    const tamperedPayload: TicketPayload = { ...samplePayload, originalSize: 999_999_999 }
+    const tamperedPayload: TicketPayload = { ...samplePayload, isOfficial: true }
     const tamperedEncoded = Buffer.from(JSON.stringify(tamperedPayload), 'utf8').toString('base64url')
 
     expect(verifyUploadTicket(`${tamperedEncoded}.${signature}`, 'secret')).toBeNull()
