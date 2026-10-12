@@ -22,3 +22,14 @@ export function setFeatureLocked(db: Database.Database, feature: LockableFeature
     'INSERT INTO app_config (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value'
   ).run(LOCK_KEYS[feature], locked ? 'true' : 'false')
 }
+
+export function getConfigValue(db: Database.Database, key: string): string | undefined {
+  const row = db.prepare('SELECT value FROM app_config WHERE key = ?').get(key) as { value: string } | undefined
+  return row?.value
+}
+
+export function setConfigValue(db: Database.Database, key: string, value: string): void {
+  db.prepare(
+    'INSERT INTO app_config (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value'
+  ).run(key, value)
+}

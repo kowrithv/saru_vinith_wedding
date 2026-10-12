@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createDb } from './db'
-import { isFeatureLocked, LOCKABLE_FEATURES, setFeatureLocked } from './app-config'
+import { getConfigValue, isFeatureLocked, LOCKABLE_FEATURES, setConfigValue, setFeatureLocked } from './app-config'
 
 describe('app-config feature locks', () => {
   it('defaults to unlocked for each feature independently', () => {
@@ -46,6 +46,18 @@ describe('LOCKABLE_FEATURES', () => {
     expect(isFeatureLocked(db, 'guestbook')).toBe(false)
     setFeatureLocked(db, 'gallery_upload', false)
     expect(isFeatureLocked(db, 'gallery_upload')).toBe(false)
+    db.close()
+  })
+})
+
+describe('config values', () => {
+  it('returns undefined for an unknown key and round-trips a value', () => {
+    const db = createDb(':memory:')
+    expect(getConfigValue(db, 'alert_last_sent:test')).toBeUndefined()
+    setConfigValue(db, 'alert_last_sent:test', '123')
+    expect(getConfigValue(db, 'alert_last_sent:test')).toBe('123')
+    setConfigValue(db, 'alert_last_sent:test', '456')
+    expect(getConfigValue(db, 'alert_last_sent:test')).toBe('456')
     db.close()
   })
 })
