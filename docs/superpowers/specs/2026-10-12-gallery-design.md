@@ -214,6 +214,47 @@ bewährt und übernommen, Rest neu für diesen Rewrite:
   Thumbnail statt Text-Vorschau, plus Kategorie- und „Offiziell"-Badge
   bei `isOfficial`-Fotos.
 
+### 7. Bild-URLs für die Anzeige (technische Ergänzung für das Frontend)
+
+`R2_PUBLIC_BASE_URL` ist eine server-only Variable (kein `NEXT_PUBLIC_`-
+Präfix) — der Client kann sie nicht selbst zu einer Bild-URL
+zusammensetzen. Statt die Variable zu duplizieren oder rohe
+`thumbKey`/`originalKey`-Pfade an den Client zu geben (unnötiges Leaken
+der internen Speicherstruktur), bauen `GET /api/gallery` und
+`POST /api/uploads/complete` die fertigen URLs serverseitig und liefern
+sie statt der Keys aus. Neues, kleines Modul `src/lib/gallery-photo-view.ts`:
+
+```ts
+export interface GalleryPhotoView {
+  id: string
+  uploaderName: string
+  category: string
+  isOfficial: boolean
+  createdAt: string
+  thumbUrl: string
+  originalUrl: string
+}
+
+export function toGalleryPhotoView(photo: GalleryPhoto): GalleryPhotoView {
+  const base = process.env.R2_PUBLIC_BASE_URL ?? ''
+  return {
+    id: photo.id,
+    uploaderName: photo.uploaderName,
+    category: photo.category,
+    isOfficial: photo.isOfficial,
+    createdAt: photo.createdAt,
+    thumbUrl: `${base}/${photo.thumbKey}`,
+    originalUrl: `${base}/${photo.originalKey}`,
+  }
+}
+```
+
+Ändert die Response-Form von `GET /api/gallery` (`photos`-Einträge haben
+jetzt `thumbUrl`/`originalUrl` statt `thumbKey`/`originalKey`) und von
+`POST /api/uploads/complete` (`photo`-Objekt ebenso) — reine
+Präsentationsschicht, das Datenmodell (`gallery_photos`,
+`GalleryPhoto`-Typ in `gallery-photos.ts`) bleibt unverändert.
+
 ## Sicherheit
 
 - Presigned-URL-Ablauf 15 Min, `Content-Length` signiert — kein unbegrenzter
