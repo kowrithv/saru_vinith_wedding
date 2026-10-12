@@ -1,9 +1,11 @@
 import type { ReactNode } from 'react'
+import Link from 'next/link'
 import { cn } from '@/lib/utils'
 
 interface ButtonProps {
   children: ReactNode
   onClick?: () => void
+  href?: string
   type?: 'button' | 'submit'
   variant?: 'primary' | 'secondary'
   size?: 'sm' | 'md' | 'lg'
@@ -25,24 +27,30 @@ const variantClasses = {
 export default function Button({
   children,
   onClick,
+  href,
   type = 'button',
   variant = 'primary',
   size = 'md',
   disabled = false,
   className,
 }: ButtonProps) {
+  const classes = cn(
+    'inline-flex items-center justify-center gap-2 font-medium rounded-full transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100',
+    sizeClasses[size],
+    variantClasses[variant],
+    className
+  )
+
+  if (href) {
+    return (
+      <Link href={href} className={classes}>
+        {children}
+      </Link>
+    )
+  }
+
   return (
-    <button
-      type={type}
-      onClick={onClick}
-      disabled={disabled}
-      className={cn(
-        'inline-flex items-center justify-center gap-2 font-medium rounded-full transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100',
-        sizeClasses[size],
-        variantClasses[variant],
-        className
-      )}
-    >
+    <button type={type} onClick={onClick} disabled={disabled} className={classes}>
       {children}
     </button>
   )

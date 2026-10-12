@@ -31,4 +31,11 @@ describe('Button', () => {
     render(<Button>Weiter</Button>)
     expect(screen.getByRole('button', { name: 'Weiter' })).toHaveAttribute('type', 'button')
   })
+
+  it('renders as a link when href is passed, not a nested button', () => {
+    render(<Button href="/info">Zu den Infos</Button>)
+    const link = screen.getByRole('link', { name: 'Zu den Infos' })
+    expect(link).toHaveAttribute('href', '/info')
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
+  })
 })

@@ -1,0 +1,29 @@
+import { describe, expect, it } from 'vitest'
+import { render, screen } from '@testing-library/react'
+import Hero from './Hero'
+import { couple } from '@/lib/site-content'
+import { receptionEvent } from '@/lib/event-info'
+
+describe('Hero', () => {
+  it('renders both names and the hashtag', () => {
+    render(<Hero />)
+    expect(screen.getByText(couple.bride)).toBeInTheDocument()
+    expect(screen.getByText(couple.groom)).toBeInTheDocument()
+    expect(screen.getByText(couple.hashtag)).toBeInTheDocument()
+  })
+
+  it('renders the reception date and venue', () => {
+    render(<Hero />)
+    expect(screen.getByText(receptionEvent.displayDate)).toBeInTheDocument()
+    expect(screen.getByText(new RegExp(receptionEvent.venue))).toBeInTheDocument()
+  })
+
+  it('links to Info and Story as real navigation links, not nested buttons', () => {
+    render(<Hero />)
+    const infoLink = screen.getByRole('link', { name: /hochzeitsinfos/i })
+    const storyLink = screen.getByRole('link', { name: /unsere geschichte/i })
+    expect(infoLink).toHaveAttribute('href', '/info')
+    expect(storyLink).toHaveAttribute('href', '/story')
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
+  })
+})
