@@ -33,6 +33,38 @@
   Schalter-Zustand anzeigen. Nur Anzeigesache (ein Reload korrigiert
   es), betrifft nur die eine Admin-Person.
 
+## Gefunden im Galerie-Upload-Review (zurückgestellt, nicht blockierend)
+
+- **Upload-Formular ohne Vorschaukacheln:** Die Statusliste zeigt nur
+  Dateinamen (Spec §5 sieht Vorschaubilder vor); die Dateiauswahl ist ein
+  ungestyltes natives Feld, die Karte hat kein Icon/keine Überschrift wie
+  das Erinnerungen-Formular.
+- **Kein Timeout/Abbrechen:** Ein hängender R2-PUT dreht, bis das Netz einen
+  Fehler meldet; der Button bleibt so lange gesperrt.
+- **Abgelaufenes Admin-Cookie (12 h):** Das Admin-Formular zeigt dann
+  „Falsches Kennwort.", obwohl es kein Kennwortfeld hat.
+- **Kennwort-Modus: doppelte Eingabe:** Gäste tippen das Kennwort einmal zum
+  Entsperren und noch einmal zum Hochladen. Bräuchte eine Backend-Änderung
+  (gültige Galerie-Sitzung als Upload-Berechtigung).
+- **Thumbnail-PUT ohne Größenlimit in der Signatur:** Die Größe steht erst
+  nach der Kompression im Browser fest; `/complete` prüft ≤ 2 MB, größere
+  Dateien bleiben als Waisen in R2. Option: Vorschau vor der Ticket-Anfrage
+  erzeugen und `thumbSize` mitsignieren.
+- **Verwaiste R2-Objekte** bei abgebrochenen Uploads (Tab geschlossen, Netz
+  weg): kein Aufräum-Job. Beim Export nach der Hochzeit mit aufräumen oder
+  per Lifecycle-Regel.
+- **Kein Schutz gegen Massen-Uploads mit gültigem Kennwort:** Der
+  Upload-Rate-Limiter zählt nur noch Fehlversuche (sonst sperrt er das
+  gemeinsame Veranstaltungs-WLAN). Kostenobergrenze stattdessen über ein
+  Billing-Alarm in Cloudflare setzen.
+- **Admin-Dashboard wird lang:** Galerie steht unter den kompletten
+  Gästebuch-/Erinnerungen-Listen. Einklappbare Abschnitte oder Sprungmarken;
+  Modus-Buttons nur ca. 28 px hoch; Vorschaubilder nicht vergrößerbar.
+- **Eingabefelder mit 14 px:** iOS zoomt beim Fokus hinein (seitenweit).
+- **Echtgeräte-Test steht aus:** iPhone-Safari (HEIC→JPEG bei
+  `accept="image/*"`, Speicher bei 20+ Fotos, Tab im Hintergrund),
+  Android-Chrome (HEIC ohne MIME-Typ), langsames WLAN.
+
 ## Offene externe Abhängigkeiten (aus der Spec)
 
 - R2/Cloudflare-Zugangsdaten für die Foto-Pipeline (Galerie-Plan)
@@ -42,13 +74,11 @@
 
 ## Noch zu planende Subsysteme (Backlog aus der Spec)
 
-- Galerie + R2-Upload-Pipeline (blockiert auf R2-Zugangsdaten) — dazu
-  gehört auch der Foto-Teil von Erinnerungen, der im
-  Gästebuch/Erinnerungen-Plan bewusst ausgeklammert wurde
-  (`photo_key` bleibt bis dahin immer `null`)
-- Admin-Dashboard-Erweiterung: Galerie-Modus-Schalter + Galerie-Lösch-Liste
-  (der Rest des Admin-Dashboards — Login, Gästebuch-/Erinnerungs-Lösch-Liste,
-  Schreib-Sperre als Notfall-Schalter — ist fertig)
+- Foto-Teil von Erinnerungen über die R2-Pipeline (im
+  Gästebuch/Erinnerungen-Plan bewusst ausgeklammert, `photo_key` bleibt
+  bis dahin immer `null`). Die Galerie selbst (Backend, Ansicht, Upload,
+  Admin-Modus-Schalter und Lösch-Liste) ist gebaut und mit Mocks getestet;
+  echte R2-Zugangsdaten stehen noch aus (siehe oben).
 - Betriebs-Härtung: SQLite-Backup-Cron, Festplatten-Alarm (Spec: stündlich
   `VACUUM INTO`, rotierend, plus eine Kopie off-box; Disk-Alarm bei 85%).
   Braucht noch vom Nutzer: Ziel für die Off-Box-Kopie (z. B. ein zweiter
