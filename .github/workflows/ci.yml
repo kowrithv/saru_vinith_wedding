@@ -52,6 +52,11 @@ jobs:
           # (docker-compose/.env.production).
           ADMIN_PASSWORD: ci-build-only
           UPLOAD_PASSWORD_EMPFANG: ci-build-only
+          R2_ACCOUNT_ID: ci-build-only
+          R2_ACCESS_KEY_ID: ci-build-only
+          R2_SECRET_ACCESS_KEY: ci-build-only
+          R2_BUCKET_NAME: ci-build-only
+          R2_PUBLIC_BASE_URL: https://ci-build-only.example.com
 
   docker:
     name: Build and push Docker image

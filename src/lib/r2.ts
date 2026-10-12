@@ -1,0 +1,57 @@
+import { S3Client, PutObjectCommand, HeadObjectCommand, DeleteObjectsCommand } from '@aws-sdk/client-s3'
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
+
+let client: S3Client | undefined
+
+function getClient(): S3Client {
+  if (!client) {
+    client = new S3Client({
+      region: 'auto',
+      endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+      credentials: {
+        accessKeyId: process.env.R2_ACCESS_KEY_ID ?? '',
+        secretAccessKey: process.env.R2_SECRET_ACCESS_KEY ?? '',
+      },
+    })
+  }
+  return client
+}
+
+export async function createPresignedPutUrl(
+  key: string,
+  contentType: string,
+  contentLength?: number
+): Promise<string> {
+  const command = new PutObjectCommand({
+    Bucket: process.env.R2_BUCKET_NAME,
+    Key: key,
+    ContentType: contentType,
+    ...(contentLength !== undefined ? { ContentLength: contentLength } : {}),
+  })
+  return getSignedUrl(getClient(), command, { expiresIn: 15 * 60 })
+}
+
+export interface HeadObjectResult {
+  size: number
+}
+
+export async function headObject(key: string): Promise<HeadObjectResult | null> {
+  try {
+    const result = await getClient().send(
+      new HeadObjectCommand({ Bucket: process.env.R2_BUCKET_NAME, Key: key })
+    )
+    return { size: result.ContentLength ?? 0 }
+  } catch {
+    return null
+  }
+}
+
+export async function deleteObjects(keys: string[]): Promise<void> {
+  if (keys.length === 0) return
+  await getClient().send(
+    new DeleteObjectsCommand({
+      Bucket: process.env.R2_BUCKET_NAME,
+      Delete: { Objects: keys.map((Key) => ({ Key })) },
+    })
+  )
+}
