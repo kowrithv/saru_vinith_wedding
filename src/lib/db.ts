@@ -1,4 +1,6 @@
 import Database from 'better-sqlite3'
+import { mkdirSync } from 'node:fs'
+import path from 'node:path'
 
 export function applySchema(db: Database.Database): void {
   db.pragma('journal_mode = WAL')
@@ -47,8 +49,15 @@ export function applySchema(db: Database.Database): void {
   `)
 }
 
-export function createDb(path: string): Database.Database {
-  const db = new Database(path)
+export function createDb(dbPath: string): Database.Database {
+  // better-sqlite3 legt die Datei an, aber nicht das Verzeichnis darüber -
+  // in Produktion übernimmt das bislang nur docker-entrypoint.sh (mkdir -p
+  // ./data), lokale Entwicklung hatte dafür kein Äquivalent. ':memory:'
+  // hat kein Verzeichnis - dirname liefert dann '.', ein harmloses No-Op.
+  if (dbPath !== ':memory:') {
+    mkdirSync(path.dirname(dbPath), { recursive: true })
+  }
+  const db = new Database(dbPath)
   applySchema(db)
   return db
 }

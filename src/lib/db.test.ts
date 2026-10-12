@@ -1,4 +1,7 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { existsSync, mkdtempSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
 import { createDb, getDb } from './db'
 
 describe('createDb', () => {
@@ -40,6 +43,18 @@ describe('createDb', () => {
       )
     }
     db.close()
+  })
+
+  it('creates the parent directory if it does not exist yet', () => {
+    const tempRoot = mkdtempSync(path.join(tmpdir(), 'wedding-db-test-'))
+    const nestedPath = path.join(tempRoot, 'data', 'wedding.db')
+    expect(existsSync(path.dirname(nestedPath))).toBe(false)
+
+    const db = createDb(nestedPath)
+    expect(existsSync(nestedPath)).toBe(true)
+    db.close()
+
+    rmSync(tempRoot, { recursive: true, force: true })
   })
 })
 
