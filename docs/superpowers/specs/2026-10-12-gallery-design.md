@@ -154,13 +154,65 @@ gleiches Muster wie `vi.mock('next/navigation')` an anderer Stelle im Code).
 
 ### 4. Galerie-Ansicht
 
-Thumbnail-Raster (Grid, wie bereits bei Erinnerungen etabliert), Klick öffnet
-eine Lightbox mit dem Original direkt (keine dritte, separate
-Großansicht-Version — R2-Egress ist kostenlos) plus „Original
-herunterladen"-Link. Kennwort-Formular bei `mode === 'password'` und nicht
-freigeschaltet, sonst direkt das Raster. Eigene Fotos (über die in
-`localStorage` gespeicherten `deleteToken`s erkennbar) bekommen einen
-Löschen-Button direkt in der Galerie.
+Entscheidungen aus dem Vergleich mit der alten (noch live laufenden)
+Galerie auf `clean-start` — Masonry-Technik und Lightbox-Verhalten dort
+bewährt und übernommen, Rest neu für diesen Rewrite:
+
+- **Raster:** CSS-Masonry wie bereits bei Erinnerungen (`columns-2
+  md:columns-3 lg:columns-4 gap-4` + `break-inside-avoid`), jedes Foto
+  behält sein echtes Seitenverhältnis. Kategorie-Filter-Chips darüber
+  („Alle" + eine Chip pro `galleryCategories`-Eintrag, mit Trefferzahl)
+  filtern **clientseitig** den schon geladenen `photos`-Array — kein
+  erneuter API-Call pro Kategorie-Wechsel. (`galleryCategories` und
+  `isOfficial` sind unten im Abschnitt „Erweiterung: Kategorien &
+  offizielle Fotos" definiert und bereits implementiert — dieser
+  Abschnitt wurde nachträglich ergänzt, nachdem jener schon stand.)
+- **Kachel-Hover:** Zoom-Icon-Overlay (aus der alten App übernommen) plus
+  ein Badge unten: bei `isOfficial`-Fotos die Kategorie, bei Gast-Uploads
+  „Von `<uploaderName>`".
+- **Lightbox:** Vollbild-Dark-Overlay, Chevron-Prev/Next, Tastatur-Nav
+  (←/→/Esc), Bild-Zähler „X / Y" — 1:1 aus der alten, bewährten
+  Implementierung übernommen. Neu dazu: „Original herunterladen"-Link
+  (R2-Egress ist kostenlos, keine dritte Bildversion nötig) und — nur
+  beim eigenen Foto, erkennbar über den für diese ID in `localStorage`
+  gespeicherten `deleteToken` — ein Löschen-Button direkt in der
+  Lightbox.
+- **Kennwort-Gate:** bei `mode === 'password'` und nicht freigeschaltet
+  ersetzt ein einfaches Card-Formular (Stil wie das bestehende
+  Erinnerungen-Kennwortfeld) das komplette Raster, kein Teil-Overlay.
+
+### 5. Upload-UI
+
+- Ein schwebender, goldfarbener Button („Fotos hochladen", fixiert unten
+  rechts) blendet ein Formular-Panel von oben in den Seitenfluss ein
+  (`AnimatePresence` + `height: auto` — dasselbe Toggle-Pattern wie das
+  bestehende Erinnerungen-Formular bzw. die alte Galerie's
+  Toggle-Button+Card; kein echtes Modal, keine Fokus-Trap-Komplexität
+  nötig).
+- Felder: Name, Kennwort (nur im Gast-Kontext sichtbar/Pflicht — siehe
+  Admin-Weg unten), Kategorie-Dropdown (Pflicht, Optionen aus
+  `galleryCategories`), Dateiauswahl (`multiple`, `accept="image/*"`,
+  bis 20 Dateien gemäß Backend-Limit).
+- Jede ausgewählte Datei bekommt eine eigene Vorschau-Kachel mit
+  Fortschrittsbalken + Status-Icon (⏳ mit %, ✓, ✕ mit Fehlertext) — nötig,
+  weil jede Datei einzeln und parallel direkt zu R2 hochgeladen wird
+  (anders als die alte App, die alles in einem FormData-POST an den
+  eigenen Server schickte und nur einen Gesamt-Status kannte).
+- **Admin-Upload-Weg:** dieselbe Komponente ohne Kennwort-Feld, aufgerufen
+  von einem eigenen Einstiegspunkt im Admin-Dashboard (nicht auf der
+  öffentlichen Galerie-Seite). Der Browser schickt den Admin-Cookie
+  automatisch mit; serverseitig entscheidet `isAdminRequest` über
+  `isOfficial` — das Frontend muss dafür nichts Besonderes tun.
+
+### 6. Admin-Erweiterung (Frontend)
+
+- Galerie-Modus als **zweigeteilte Button-Gruppe** („Öffentlich" |
+  „Kennwort") statt eines Ein/Aus-Schalters, da es eine Zwei-Werte-Auswahl
+  ist, kein Lock — visuell als vierte Zeile in derselben Karte wie die
+  drei bestehenden Schreib-Sperren-Schalter.
+- Neue Galerie-Lösch-Liste, analog zu Gästebuch/Erinnerungen, aber mit
+  Thumbnail statt Text-Vorschau, plus Kategorie- und „Offiziell"-Badge
+  bei `isOfficial`-Fotos.
 
 ## Sicherheit
 
