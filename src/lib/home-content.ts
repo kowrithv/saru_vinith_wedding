@@ -1,5 +1,5 @@
 import {
-  BookOpen, Calendar, Camera, Gamepad2, HelpCircle, MessageSquare, Heart,
+  BookOpen, Calendar, Camera, Gamepad2, MessageSquare, Heart,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -22,12 +22,6 @@ export const homeFeatures: HomeFeature[] = [
     title: 'Hochzeitsinfos',
     description: 'Datum, Uhrzeit, Ort und Ablauf des Empfangs auf einen Blick.',
     href: '/info',
-  },
-  {
-    icon: HelpCircle,
-    title: 'FAQ',
-    description: 'Antworten auf die häufigsten Fragen rund um die Hochzeit.',
-    href: '/faq',
   },
   {
     icon: Camera,

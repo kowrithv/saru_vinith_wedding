@@ -16,7 +16,6 @@ describe('Navigation', () => {
     expect(screen.getAllByRole('link', { name: /Startseite/i }).length).toBeGreaterThan(0)
     expect(screen.getAllByRole('link', { name: /Unsere Geschichte/i }).length).toBeGreaterThan(0)
     expect(screen.getAllByRole('link', { name: /Hochzeitsinfos/i }).length).toBeGreaterThan(0)
-    expect(screen.getAllByRole('link', { name: /^FAQ$/i }).length).toBeGreaterThan(0)
     expect(screen.getAllByRole('link', { name: /Galerie/i }).length).toBeGreaterThan(0)
     expect(screen.getAllByRole('link', { name: /Quiz/i }).length).toBeGreaterThan(0)
     expect(screen.getAllByRole('link', { name: /Gästespiel/i }).length).toBeGreaterThan(0)

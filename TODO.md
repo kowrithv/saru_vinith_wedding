@@ -1,17 +1,5 @@
 # TODO
 
-## Inhaltliche Entscheidungen (vor Code-Freeze Do. 15.10. abends)
-
-- **FAQ widerspricht der neuen Info-Seite:**
-  - FAQ #1 sagt „Die genaue Adresse ist auf der Einladung vermerkt" —
-    `/info` zeigt die Adresse inzwischen aber öffentlich inkl. Karte.
-  - FAQ #5 verweist auf „E-Mail oder Telefon" zur Anmeldung — auf der
-    Seite steht aber nirgends eine Telefonnummer.
-  - FAQ #5 nennt als Anmeldefrist „1. September 2026" — aus heutiger
-    Sicht (11.10.2026) bereits vergangen.
-  - Alle drei Punkte 1:1 aus der alten Seite übernommen, bewusst nicht
-    selbst „korrigiert" — das ist eine inhaltliche Entscheidung.
-
 ## Vor Go-Live zu erledigen (gefunden im Gästebuch/Erinnerungen-Review)
 
 - **Rate-Limiter umgehbar, solange der Server direkt erreichbar ist:**
