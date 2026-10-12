@@ -2,11 +2,12 @@ import { randomUUID } from 'node:crypto'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getDb } from '@/lib/db'
-import { verifyPassword, getOrCreateAdminSecret } from '@/lib/admin-auth'
+import { verifyPassword, getOrCreateAdminSecret, isAdminRequest } from '@/lib/admin-auth'
 import { createPresignedPutUrl } from '@/lib/r2'
 import { signUploadTicket } from '@/lib/upload-ticket'
 import { RateLimiter } from '@/lib/rate-limit'
 import { getClientKey } from '@/lib/client-ip'
+import { galleryCategories } from '@/lib/gallery-categories'
 
 // Map statt Objekt-Literal: ein Objekt-Literal-Lookup ist für Werte wie
 // "constructor" oder "toString" truthy (Object.prototype-Eigenschaften),
@@ -31,7 +32,8 @@ const fileSchema = z.object({
 })
 
 const bodySchema = z.object({
-  password: z.string().min(1).max(200),
+  password: z.string().min(1).max(200).optional(),
+  category: z.enum(galleryCategories),
   files: z.array(fileSchema).min(1).max(20),
 })
 
@@ -51,9 +53,13 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   const db = getDb()
-  const uploadPassword = process.env.UPLOAD_PASSWORD_EMPFANG
-  if (!uploadPassword || !verifyPassword(parsed.data.password, uploadPassword)) {
-    return NextResponse.json({ error: 'Falsches Kennwort.' }, { status: 401 })
+  const isOfficial = isAdminRequest(request, db)
+
+  if (!isOfficial) {
+    const uploadPassword = process.env.UPLOAD_PASSWORD_EMPFANG
+    if (!parsed.data.password || !uploadPassword || !verifyPassword(parsed.data.password, uploadPassword)) {
+      return NextResponse.json({ error: 'Falsches Kennwort.' }, { status: 401 })
+    }
   }
 
   for (const file of parsed.data.files) {
@@ -84,7 +90,16 @@ export async function POST(request: Request): Promise<Response> {
       ])
 
       const ticket = signUploadTicket(
-        { photoId, thumbKey, originalKey, thumbMaxSize: MAX_THUMB_BYTES, originalSize: file.size, expiresAt },
+        {
+          photoId,
+          thumbKey,
+          originalKey,
+          thumbMaxSize: MAX_THUMB_BYTES,
+          originalSize: file.size,
+          expiresAt,
+          category: parsed.data.category,
+          isOfficial,
+        },
         secret
       )
 

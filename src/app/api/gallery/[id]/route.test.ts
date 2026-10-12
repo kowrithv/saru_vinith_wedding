@@ -27,6 +27,8 @@ function seedPhoto(db: ReturnType<typeof getDb>, id: string, deleteToken: string
     originalKey: `gallery/${id}/original.jpg`,
     uploaderName: 'Anna',
     deleteTokenHash,
+    category: 'Hochzeit',
+    isOfficial: false,
   })
 }
 

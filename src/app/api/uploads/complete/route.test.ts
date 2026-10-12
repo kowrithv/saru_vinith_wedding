@@ -25,6 +25,8 @@ function validPayload(): TicketPayload {
     thumbMaxSize: 2 * 1024 * 1024,
     originalSize: 4_000_000,
     expiresAt: Date.now() + 60_000,
+    category: 'Hochzeit',
+    isOfficial: false,
   }
 }
 
@@ -106,5 +108,19 @@ describe('POST /api/uploads/complete', () => {
 
     const response = await POST(completeRequest({ ticket, uploaderName: 'Anna' }))
     expect(response.status).toBe(400)
+  })
+
+  it('persists the category and isOfficial flag from the ticket onto the created photo', async () => {
+    const db = getDb()
+    const secret = getOrCreateAdminSecret(db)
+    const ticket = signUploadTicket({ ...validPayload(), category: 'Verlobung', isOfficial: true }, secret)
+    mockHeadObject.mockImplementation(async (key: string) =>
+      key.includes('thumb') ? { size: 100_000 } : { size: 4_000_000 }
+    )
+
+    const response = await POST(completeRequest({ ticket, uploaderName: 'Anna' }))
+    const body = await response.json()
+    expect(body.photo.category).toBe('Verlobung')
+    expect(body.photo.isOfficial).toBe(true)
   })
 })

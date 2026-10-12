@@ -47,6 +47,8 @@ export async function POST(request: Request): Promise<Response> {
     originalKey: payload.originalKey,
     uploaderName: parsed.data.uploaderName,
     deleteTokenHash,
+    category: payload.category,
+    isOfficial: payload.isOfficial,
   })
 
   return NextResponse.json({ photo, deleteToken }, { status: 201 })
