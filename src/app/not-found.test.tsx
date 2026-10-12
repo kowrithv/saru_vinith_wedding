@@ -1,22 +1,37 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { render, screen } from '@testing-library/react'
 import NotFound from './not-found'
 
-const redirectMock = vi.fn((path: string): never => {
-  // Das echte redirect() wirft einen Fehler, der das Rendern abbricht.
-  throw new Error(`NEXT_REDIRECT:${path}`)
-})
+const replaceMock = vi.fn()
 
 vi.mock('next/navigation', () => ({
-  redirect: (path: string) => redirectMock(path),
+  useRouter: () => ({ replace: replaceMock }),
 }))
 
 describe('NotFound', () => {
   beforeEach(() => {
-    redirectMock.mockClear()
+    replaceMock.mockClear()
   })
 
-  it('redirects every unmatched URL to the home page', () => {
-    expect(() => NotFound()).toThrow('NEXT_REDIRECT:/')
-    expect(redirectMock).toHaveBeenCalledWith('/')
+  it('sends the visitor to the home page right away with a history replace', () => {
+    render(<NotFound />)
+    expect(replaceMock).toHaveBeenCalledWith('/')
+  })
+
+  it('falls back to a meta refresh to the home page for visitors without JavaScript', () => {
+    render(<NotFound />)
+    const refresh = document.querySelector('meta[http-equiv="refresh"]')
+    expect(refresh).not.toBeNull()
+    expect(refresh).toHaveAttribute('content', '0;url=/')
+  })
+
+  it('offers a visible link to the home page in case both redirects are blocked', () => {
+    render(<NotFound />)
+    expect(screen.getByRole('link', { name: /zur startseite/i })).toHaveAttribute('href', '/')
+  })
+
+  it('carries its own top offset below the fixed navigation', () => {
+    const { container } = render(<NotFound />)
+    expect(container.firstElementChild).toHaveClass('pt-24')
   })
 })

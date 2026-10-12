@@ -55,6 +55,10 @@ einer Route meldet `tsc` ggf. veraltete Dateien in `.next/types` – dann
   ableiten oder `useSyncExternalStore` nutzen statt `setState` im Effect.
   Hydration: nichts Zeit- oder Zufallsabhängiges im ersten Render
   (`Countdown` ist das Muster).
+- **404-Seite:** `redirect()` in `not-found.tsx` funktioniert nur im Dev-Server
+  (307). Der Produktions-Build rendert die Seite vor und liefert sie mit 404
+  und leerem Body aus – deshalb Router-Replace + Meta-Refresh + Link. Solche
+  Verhalten immer gegen `npm run build` + `next start` prüfen, nicht nur Dev.
 - **Touch:** Bedienelemente nie nur per Hover sichtbar machen.
 - **Download:** `<a download>` wird bei Cross-Origin ignoriert – per Blob laden.
 - **R2/AWS-SDK:** `requestChecksumCalculation: 'WHEN_REQUIRED'` ist nötig.
