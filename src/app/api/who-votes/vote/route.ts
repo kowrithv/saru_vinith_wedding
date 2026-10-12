@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getDb } from '@/lib/db'
 import { castVote } from '@/lib/who-votes'
+import { isFeatureLocked } from '@/lib/app-config'
 
 const voteSchema = z.object({
   questionId: z.string().min(1).max(50),
@@ -10,6 +11,15 @@ const voteSchema = z.object({
 })
 
 export async function POST(request: Request): Promise<Response> {
+  const db = getDb()
+
+  if (isFeatureLocked(db, 'who_votes')) {
+    return NextResponse.json(
+      { error: 'Abstimmen ist derzeit vorübergehend gesperrt.' },
+      { status: 423 }
+    )
+  }
+
   const body = await request.json().catch(() => null)
   const parsed = voteSchema.safeParse(body)
   if (!parsed.success) {
@@ -17,7 +27,7 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   try {
-    const result = castVote(getDb(), parsed.data.questionId, parsed.data.voterId, parsed.data.option)
+    const result = castVote(db, parsed.data.questionId, parsed.data.voterId, parsed.data.option)
     return NextResponse.json(result)
   } catch {
     return NextResponse.json({ error: 'Unbekannte Frage oder Antwort.' }, { status: 400 })

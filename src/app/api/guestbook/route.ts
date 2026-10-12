@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getDb } from '@/lib/db'
 import { addGuestbookEntry, listGuestbookEntries } from '@/lib/guestbook'
-import { isWritesLocked } from '@/lib/app-config'
+import { isFeatureLocked } from '@/lib/app-config'
 import { RateLimiter } from '@/lib/rate-limit'
 import { getClientKey } from '@/lib/client-ip'
 
@@ -35,7 +35,7 @@ export async function POST(request: Request): Promise<Response> {
     )
   }
 
-  if (isWritesLocked(getDb())) {
+  if (isFeatureLocked(getDb(), 'guestbook')) {
     return NextResponse.json(
       { error: 'Neue Einträge sind derzeit vorübergehend gesperrt.' },
       { status: 423 }

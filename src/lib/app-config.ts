@@ -1,16 +1,22 @@
 import type Database from 'better-sqlite3'
 
-const WRITES_LOCKED_KEY = 'writes_locked'
+export type LockableFeature = 'guestbook' | 'memories' | 'who_votes'
 
-export function isWritesLocked(db: Database.Database): boolean {
+const LOCK_KEYS: Record<LockableFeature, string> = {
+  guestbook: 'guestbook_locked',
+  memories: 'memories_locked',
+  who_votes: 'who_votes_locked',
+}
+
+export function isFeatureLocked(db: Database.Database, feature: LockableFeature): boolean {
   const row = db
     .prepare('SELECT value FROM app_config WHERE key = ?')
-    .get(WRITES_LOCKED_KEY) as { value: string } | undefined
+    .get(LOCK_KEYS[feature]) as { value: string } | undefined
   return row?.value === 'true'
 }
 
-export function setWritesLocked(db: Database.Database, locked: boolean): void {
+export function setFeatureLocked(db: Database.Database, feature: LockableFeature, locked: boolean): void {
   db.prepare(
     'INSERT INTO app_config (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value'
-  ).run(WRITES_LOCKED_KEY, locked ? 'true' : 'false')
+  ).run(LOCK_KEYS[feature], locked ? 'true' : 'false')
 }

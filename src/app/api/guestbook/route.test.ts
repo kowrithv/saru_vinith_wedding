@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { GET, POST } from './route'
-import { setWritesLocked } from '@/lib/app-config'
+import { setFeatureLocked } from '@/lib/app-config'
 import { getDb } from '@/lib/db'
 
 function postRequest(body: unknown): Request {
@@ -76,8 +76,8 @@ describe('/api/guestbook', () => {
     expect(overLimit.status).toBe(429)
   })
 
-  it('rejects a new entry with 423 while writes are locked, but GET still works', async () => {
-    setWritesLocked(getDb(), true)
+  it('rejects a new entry with 423 while guestbook writes are locked, but GET still works', async () => {
+    setFeatureLocked(getDb(), 'guestbook', true)
 
     const response = await POST(
       postRequest({ name: 'Anna', message: 'Eine Nachricht während der Sperre.' })
@@ -88,12 +88,22 @@ describe('/api/guestbook', () => {
     expect(getResponse.status).toBe(200)
   })
 
-  it('accepts a new entry again once writes are unlocked', async () => {
-    setWritesLocked(getDb(), true)
-    setWritesLocked(getDb(), false)
+  it('accepts a new entry again once guestbook writes are unlocked', async () => {
+    setFeatureLocked(getDb(), 'guestbook', true)
+    setFeatureLocked(getDb(), 'guestbook', false)
 
     const response = await POST(
       postRequest({ name: 'Anna', message: 'Eine Nachricht nach dem Entsperren.' })
+    )
+    expect(response.status).toBe(201)
+  })
+
+  it('locking memories or who_votes does not block guestbook', async () => {
+    setFeatureLocked(getDb(), 'memories', true)
+    setFeatureLocked(getDb(), 'who_votes', true)
+
+    const response = await POST(
+      postRequest({ name: 'Anna', message: 'Gästebuch bleibt offen.' })
     )
     expect(response.status).toBe(201)
   })
