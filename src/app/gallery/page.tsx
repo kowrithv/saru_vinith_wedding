@@ -13,7 +13,7 @@ type GalleryData =
   | { status: 'loading' }
   | { status: 'locked' }
   | { status: 'error' }
-  | { status: 'unlocked'; photos: GalleryPhotoView[] }
+  | { status: 'unlocked'; photos: GalleryPhotoView[]; uploadsLocked: boolean }
 
 export default function GalleryPage() {
   const [data, setData] = useState<GalleryData>({ status: 'loading' })
@@ -44,11 +44,15 @@ export default function GalleryPage() {
           setData({ status: 'error' })
           return undefined
         }
-        return res.json() as Promise<{ unlocked: boolean; photos: GalleryPhotoView[] | null }>
+        return res.json() as Promise<{ unlocked: boolean; photos: GalleryPhotoView[] | null; uploadsLocked?: boolean }>
       })
       .then((body) => {
         if (!body) return
-        setData(body.unlocked && body.photos ? { status: 'unlocked', photos: body.photos } : { status: 'locked' })
+        setData(
+          body.unlocked && body.photos
+            ? { status: 'unlocked', photos: body.photos, uploadsLocked: Boolean(body.uploadsLocked) }
+            : { status: 'locked' }
+        )
       })
       .catch(() => setData({ status: 'error' }))
   }
@@ -83,7 +87,7 @@ export default function GalleryPage() {
 
   const handlePhotoDeleted = (photoId: string) => {
     setData((prev) =>
-      prev.status === 'unlocked' ? { status: 'unlocked', photos: prev.photos.filter((p) => p.id !== photoId) } : prev
+      prev.status === 'unlocked' ? { ...prev, photos: prev.photos.filter((p) => p.id !== photoId) } : prev
     )
   }
 
@@ -91,7 +95,7 @@ export default function GalleryPage() {
   // hoch, und das Formular zeigt den Fortschritt und eventuelle Fehler der
   // übrigen Fotos. Geschlossen wird es nur über den Button.
   const handleUploaded = (photo: GalleryPhotoView) => {
-    setData((prev) => (prev.status === 'unlocked' ? { status: 'unlocked', photos: [photo, ...prev.photos] } : prev))
+    setData((prev) => (prev.status === 'unlocked' ? { ...prev, photos: [photo, ...prev.photos] } : prev))
   }
 
   return (
@@ -135,25 +139,33 @@ export default function GalleryPage() {
 
         {data.status === 'unlocked' && (
           <>
-            {/* z-30: unter dem Mobil-Menü (z-40), der Navigation und der
-                Lightbox (z-50), sonst läge der Button auf dem geöffneten Menü. */}
-            <button
-              type="button"
-              onClick={() => setShowUploadForm((v) => !v)}
-              aria-expanded={showUploadForm}
-              aria-controls="gallery-upload-panel"
-              className="fixed bottom-6 right-6 z-30 flex items-center gap-2 bg-gold text-dark-blue font-medium px-5 py-3 rounded-full shadow-lg hover:shadow-xl transition-shadow"
-            >
-              {showUploadForm ? <X size={18} /> : <Camera size={18} />}
-              {showUploadForm ? 'Schließen' : 'Fotos hochladen'}
-            </button>
+            {data.uploadsLocked ? (
+              <p role="status" className="max-w-xl mx-auto mb-8 text-center text-sm text-gray-600">
+                Das Hochladen ist gerade pausiert. Die Fotos könnt ihr euch weiterhin ansehen.
+              </p>
+            ) : (
+              <>
+                {/* z-30: unter dem Mobil-Menü (z-40), der Navigation und der
+                    Lightbox (z-50), sonst läge der Button auf dem geöffneten Menü. */}
+                <button
+                  type="button"
+                  onClick={() => setShowUploadForm((v) => !v)}
+                  aria-expanded={showUploadForm}
+                  aria-controls="gallery-upload-panel"
+                  className="fixed bottom-6 right-6 z-30 flex items-center gap-2 bg-gold text-dark-blue font-medium px-5 py-3 rounded-full shadow-lg hover:shadow-xl transition-shadow"
+                >
+                  {showUploadForm ? <X size={18} /> : <Camera size={18} />}
+                  {showUploadForm ? 'Schließen' : 'Fotos hochladen'}
+                </button>
 
-            {showUploadForm && (
-              <div id="gallery-upload-panel" ref={uploadPanelRef} className="scroll-mt-28">
-                <Card padding="lg" className="max-w-xl mx-auto mb-10">
-                  <GalleryUploadForm onUploaded={handleUploaded} />
-                </Card>
-              </div>
+                {showUploadForm && (
+                  <div id="gallery-upload-panel" ref={uploadPanelRef} className="scroll-mt-28">
+                    <Card padding="lg" className="max-w-xl mx-auto mb-10">
+                      <GalleryUploadForm onUploaded={handleUploaded} />
+                    </Card>
+                  </div>
+                )}
+              </>
             )}
 
             <GalleryGrid photos={data.photos} onPhotoDeleted={handlePhotoDeleted} />

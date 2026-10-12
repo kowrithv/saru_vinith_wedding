@@ -8,6 +8,7 @@ interface Locks {
   guestbook: boolean
   memories: boolean
   who_votes: boolean
+  gallery_upload: boolean
 }
 
 type GalleryMode = 'public' | 'password'

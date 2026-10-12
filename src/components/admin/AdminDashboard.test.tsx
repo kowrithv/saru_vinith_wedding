@@ -40,7 +40,7 @@ function mockFetchSequence(responses: { status?: number; body: unknown }[]) {
   return fn
 }
 
-const noLocks = { guestbook: false, memories: false, who_votes: false }
+const noLocks = { guestbook: false, memories: false, who_votes: false, gallery_upload: false }
 
 // Die Mount-Fetches laufen in dieser Reihenfolge: Gästebuch, Erinnerungen,
 // Galerie-Fotos. Alles danach (Umschalten, Löschen) hängt hinten an.
@@ -301,5 +301,28 @@ describe('AdminDashboard', () => {
     expect(within(gallerySection).getByText('Hochzeit')).toBeInTheDocument()
     expect(within(gallerySection).getByText('Party')).toBeInTheDocument()
     expect(within(gallerySection).getAllByText('Offiziell')).toHaveLength(1)
+  })
+
+  it('shows a fourth switch for the photo upload and sends gallery_upload when it is toggled', async () => {
+    const fetchMock = mockFetchSequence([
+      { body: { entries: [] } },
+      { body: { entries: [] } },
+      noGalleryPhotos,
+      { body: { locks: { guestbook: false, memories: false, who_votes: false, gallery_upload: true } } },
+    ])
+    render(<AdminDashboard initialLocks={noLocks} initialGalleryMode="public" />)
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3))
+
+    const toggle = screen.getByRole('switch', { name: /foto-upload/i })
+    expect(toggle).toHaveAttribute('aria-checked', 'false')
+
+    await userEvent.click(toggle)
+
+    await waitFor(() => expect(toggle).toHaveAttribute('aria-checked', 'true'))
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/admin/write-lock',
+      expect.objectContaining({ body: JSON.stringify({ feature: 'gallery_upload', locked: true }) })
+    )
+    expect(screen.getByRole('switch', { name: /gästebuch/i })).toHaveAttribute('aria-checked', 'false')
   })
 })

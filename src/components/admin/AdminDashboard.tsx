@@ -28,6 +28,7 @@ interface Locks {
   guestbook: boolean
   memories: boolean
   who_votes: boolean
+  gallery_upload: boolean
 }
 
 type GalleryMode = 'public' | 'password'
@@ -41,6 +42,7 @@ const FEATURE_LABELS: Record<keyof Locks, string> = {
   guestbook: 'Gästebuch',
   memories: 'Erinnerungen',
   who_votes: 'Wer-von-uns-Abstimmung',
+  gallery_upload: 'Foto-Upload',
 }
 
 function formatDate(iso: string): string {

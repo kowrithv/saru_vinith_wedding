@@ -173,4 +173,23 @@ describe('GalleryPage', () => {
     // Das Mobil-Menü liegt auf z-40, die Lightbox und die Navigation auf z-50.
     expect(button).toHaveClass('z-30')
   })
+
+  it('hides the upload button and explains why while uploads are locked', async () => {
+    mockFetchSequence([{ body: { mode: 'public', unlocked: true, uploadsLocked: true, photos: [samplePhoto] } }])
+    render(<GalleryPage />)
+
+    await waitFor(() => expect(screen.getAllByRole('img')).toHaveLength(1))
+    expect(screen.queryByRole('button', { name: /fotos hochladen/i })).not.toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent(/hochladen ist gerade pausiert/i)
+  })
+
+  it('keeps the upload flag when a photo is added afterwards', async () => {
+    mockFetchSequence([{ body: { mode: 'public', unlocked: true, uploadsLocked: false, photos: [samplePhoto] } }])
+    render(<GalleryPage />)
+    await userEvent.click(await screen.findByRole('button', { name: /fotos hochladen/i }))
+    await userEvent.click(screen.getByRole('button', { name: 'stub-upload' }))
+
+    await waitFor(() => expect(screen.getAllByRole('img')).toHaveLength(2))
+    expect(screen.getByRole('button', { name: /schließen/i })).toBeInTheDocument()
+  })
 })
