@@ -41,5 +41,10 @@
   (`photo_key` bleibt bis dahin immer `null`)
 - Admin-Dashboard-Erweiterung: Galerie-Modus-Schalter + Galerie-Lösch-Liste
   (der Rest des Admin-Dashboards — Login, Gästebuch-/Erinnerungs-Lösch-Liste,
-  Schreib-Sperre als Notfall-Schalter — ist geplant/in Arbeit)
-- Betriebs-Härtung: SQLite-Backup-Cron, Festplatten-Alarm
+  Schreib-Sperre als Notfall-Schalter — ist fertig)
+- Betriebs-Härtung: SQLite-Backup-Cron, Festplatten-Alarm (Spec: stündlich
+  `VACUUM INTO`, rotierend, plus eine Kopie off-box; Disk-Alarm bei 85%).
+  Braucht noch vom Nutzer: Ziel für die Off-Box-Kopie (z. B. ein zweiter
+  Server per rsync/SSH, oder ein Objekt-Storage-Bucket) und einen
+  Alarm-Kanal (z. B. Discord-/Slack-Webhook, E-Mail) — ohne das lässt
+  sich nur die lokale Rotation bauen, nicht die eigentliche Absicherung.
