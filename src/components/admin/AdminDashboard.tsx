@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Camera, LogOut, ShieldAlert, Trash2 } from 'lucide-react'
+import { Camera, LogOut, ShieldAlert, Trash2, Trophy } from 'lucide-react'
 import Card from '@/components/ui/Card'
 import SectionTitle from '@/components/ui/SectionTitle'
 import GalleryUploadForm from '@/components/gallery/GalleryUploadForm'
@@ -65,6 +65,7 @@ export default function AdminDashboard({ initialLocks, initialGalleryMode }: Adm
   const [galleryModeError, setGalleryModeError] = useState<string | null>(null)
   const [changingGalleryMode, setChangingGalleryMode] = useState(false)
   const [galleryPhotos, setGalleryPhotos] = useState<GalleryPhotoView[]>([])
+  const [memoryRecordMessage, setMemoryRecordMessage] = useState<{ ok: boolean; text: string } | null>(null)
 
   useEffect(() => {
     fetch('/api/guestbook')
@@ -175,6 +176,23 @@ export default function AdminDashboard({ initialLocks, initialGalleryMode }: Adm
       setGalleryModeError('Umschalten fehlgeschlagen. Bitte versuch es erneut.')
     } finally {
       setChangingGalleryMode(false)
+    }
+  }
+
+  const resetMemoryRecord = async () => {
+    // Für Testspiele vor der Feier: der Rekord soll am Hochzeitstag bei null
+    // beginnen.
+    if (!window.confirm('Den Memory-Rekord aller Gäste wirklich zurücksetzen?')) return
+    setMemoryRecordMessage(null)
+    try {
+      const response = await fetch('/api/memory-record', { method: 'DELETE' })
+      setMemoryRecordMessage(
+        response.ok
+          ? { ok: true, text: 'Rekord zurückgesetzt.' }
+          : { ok: false, text: 'Zurücksetzen fehlgeschlagen. Bitte versuch es erneut.' }
+      )
+    } catch {
+      setMemoryRecordMessage({ ok: false, text: 'Zurücksetzen fehlgeschlagen. Bitte versuch es erneut.' })
     }
   }
 
@@ -395,6 +413,33 @@ export default function AdminDashboard({ initialLocks, initialGalleryMode }: Adm
             </div>
           </CollapsibleSection>
         </div>
+
+        <Card className="mt-8">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3 min-w-0">
+              <Trophy size={20} className="text-gray-400 flex-shrink-0" />
+              <div>
+                <p className="font-semibold text-dark-blue text-sm">Liebes-Memory</p>
+                <p className="text-xs text-gray-400">Rekord aller Gäste, z. B. nach Testspielen zurücksetzen.</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={resetMemoryRecord}
+              className="flex-shrink-0 text-sm font-medium text-red-600 hover:text-red-700 transition-colors"
+            >
+              Memory-Rekord zurücksetzen
+            </button>
+          </div>
+          {memoryRecordMessage && (
+            <p
+              role={memoryRecordMessage.ok ? 'status' : 'alert'}
+              className={cn('text-sm mt-3', memoryRecordMessage.ok ? 'text-green-700' : 'text-red-600')}
+            >
+              {memoryRecordMessage.text}
+            </p>
+          )}
+        </Card>
       </div>
     </div>
   )

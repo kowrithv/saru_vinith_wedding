@@ -1,6 +1,6 @@
 import { act } from 'react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import MemoryGame from './MemoryGame'
 import { MEMORY_PAIRS_COUNT } from '@/lib/memory-content'
@@ -28,10 +28,48 @@ function findMatchingPairIndices(cards: HTMLElement[]): [number, number] {
   throw new Error('No matching pair found on the board')
 }
 
+// Spielt ein komplettes Zwei-Paare-Spiel mit zwei Zügen (die bestmögliche Wertung).
+function playPerfectGame() {
+  const cards = screen.getAllByRole('button', { name: 'Karte umdrehen' })
+  const [a1, a2] = findMatchingPairIndices(cards)
+  const [b1, b2] = [0, 1, 2, 3].filter((i) => i !== a1 && i !== a2)
+  fireEvent.click(cards[a1])
+  fireEvent.click(cards[a2])
+  act(() => {
+    vi.advanceTimersByTime(500)
+  })
+  fireEvent.click(cards[b1])
+  fireEvent.click(cards[b2])
+  act(() => {
+    vi.advanceTimersByTime(500)
+  })
+}
+
 describe('MemoryGame', () => {
+  let fetchMock: ReturnType<typeof vi.fn>
+  let serverRecord: { moves: number; seconds: number } | null
+
+  beforeEach(() => {
+    serverRecord = null
+    fetchMock = vi.fn().mockImplementation(async (_url: string, init?: RequestInit) => {
+      if (init?.method === 'POST') {
+        const result = JSON.parse(init.body as string) as { moves: number; seconds: number }
+        const isNew =
+          !serverRecord ||
+          result.moves < serverRecord.moves ||
+          (result.moves === serverRecord.moves && result.seconds < serverRecord.seconds)
+        if (isNew) serverRecord = result
+        return { ok: true, json: async () => ({ record: serverRecord, isNewRecord: isNew }) }
+      }
+      return { ok: true, json: async () => ({ record: serverRecord }) }
+    })
+    vi.stubGlobal('fetch', fetchMock)
+  })
+
   afterEach(() => {
     window.localStorage.clear()
     vi.useRealTimers()
+    vi.unstubAllGlobals()
   })
 
   it('deals a board with twice as many cards as there are pairs', () => {
@@ -149,5 +187,93 @@ describe('MemoryGame', () => {
     })
 
     expect(screen.getByText(/0 Züge/)).toBeInTheDocument()
+  })
+
+  it('shows the record of all guests next to the personal best', async () => {
+    serverRecord = { moves: 11, seconds: 42 }
+    render(<MemoryGame />)
+
+    expect(await screen.findByText(/rekord aller gäste: 11 züge · 00:42/i)).toBeInTheDocument()
+  })
+
+  it('shows no record line while no guest has finished a game', async () => {
+    render(<MemoryGame />)
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/memory-record'))
+
+    expect(screen.queryByText(/rekord aller gäste/i)).not.toBeInTheDocument()
+  })
+
+  it('reports a finished game to the server exactly once, with moves and seconds', async () => {
+    vi.useFakeTimers()
+    render(<MemoryGame />)
+    await act(async () => {})
+
+    playPerfectGame()
+    await act(async () => {})
+
+    const posts = fetchMock.mock.calls.filter(([, init]) => (init as RequestInit | undefined)?.method === 'POST')
+    expect(posts).toHaveLength(1)
+    expect(posts[0][0]).toBe('/api/memory-record')
+    expect(JSON.parse((posts[0][1] as RequestInit).body as string)).toEqual({ moves: 2, seconds: 1 })
+  })
+
+  it('announces a new record of all guests and shows the new value', async () => {
+    vi.useFakeTimers()
+    render(<MemoryGame />)
+    await act(async () => {})
+
+    playPerfectGame()
+    await act(async () => {})
+
+    expect(screen.getByText(/neuer rekord/i)).toBeInTheDocument()
+    expect(screen.getByText(/rekord aller gäste: 2 züge/i)).toBeInTheDocument()
+  })
+
+  it('does not announce a record when the server already has a better one', async () => {
+    vi.useFakeTimers()
+    serverRecord = { moves: 1, seconds: 1 }
+    render(<MemoryGame />)
+    await act(async () => {})
+
+    playPerfectGame()
+    await act(async () => {})
+
+    expect(screen.queryByText(/neuer rekord/i)).not.toBeInTheDocument()
+    expect(screen.getByText(/rekord aller gäste: 1 züge/i)).toBeInTheDocument()
+  })
+
+  it('keeps the game working when the record cannot be loaded or reported', async () => {
+    vi.useFakeTimers()
+    fetchMock.mockRejectedValue(new Error('offline'))
+    render(<MemoryGame />)
+    await act(async () => {})
+
+    playPerfectGame()
+    await act(async () => {})
+
+    expect(screen.getByText(/geschafft/i)).toBeInTheDocument()
+    expect(screen.queryByText(/rekord aller gäste/i)).not.toBeInTheDocument()
+  })
+
+  it('labels the personal best as the visitor\'s own', () => {
+    window.localStorage.setItem('memory-spiel-best', JSON.stringify({ moves: 9, seconds: 70 }))
+    render(<MemoryGame />)
+
+    expect(screen.getByText(/deine bestzeit: 9 züge · 01:10/i)).toBeInTheDocument()
+  })
+
+  it('does not carry the record message over into the next game', async () => {
+    vi.useFakeTimers()
+    render(<MemoryGame />)
+    await act(async () => {})
+    playPerfectGame()
+    await act(async () => {})
+    expect(screen.getByText(/neuer rekord/i)).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: /neues spiel/i }))
+    playPerfectGame()
+
+    // Die Antwort des Servers für das zweite Spiel ist noch nicht da.
+    expect(screen.queryByText(/neuer rekord/i)).not.toBeInTheDocument()
   })
 })

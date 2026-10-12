@@ -72,6 +72,9 @@ export default function MemoryGame() {
   const [moves, setMoves] = useState(0)
   const [seconds, setSeconds] = useState(0)
   const [bestScore, setBestScore] = useState<BestScore | null>(loadBestScore)
+  // Rekord über alle Gäste (nur Züge und Zeit, ohne Namen), vom Server.
+  const [globalRecord, setGlobalRecord] = useState<BestScore | null>(null)
+  const [isNewGlobalRecord, setIsNewGlobalRecord] = useState(false)
 
   const { faces, cards } = game
   const locked = flippedIds.length === 2
@@ -98,6 +101,43 @@ export default function MemoryGame() {
     return () => clearInterval(interval)
   }, [isWon])
 
+  // Gemeinsamen Rekord laden. Fehler (offline, Server down) sind bewusst
+  // egal: das Spiel funktioniert auch ohne die Rekordanzeige.
+  useEffect(() => {
+    let cancelled = false
+    fetch('/api/memory-record')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { record: BestScore | null } | null) => {
+        if (!cancelled && data) setGlobalRecord(data.record)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  // Beim Gewinnen genau einmal das Ergebnis melden; die Antwort enthält den
+  // aktuellen Rekord und ob dieses Spiel ihn gebrochen hat.
+  useEffect(() => {
+    if (!isWon) return
+    let cancelled = false
+    fetch('/api/memory-record', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ moves: movesRef.current, seconds: secondsRef.current }),
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { record: BestScore; isNewRecord: boolean } | null) => {
+        if (cancelled || !data) return
+        setGlobalRecord(data.record)
+        setIsNewGlobalRecord(Boolean(data.isNewRecord))
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [isWon])
+
   useEffect(() => {
     return () => {
       if (resolveTimeoutRef.current) clearTimeout(resolveTimeoutRef.current)
@@ -110,6 +150,7 @@ export default function MemoryGame() {
     setFlippedIds([])
     setMoves(0)
     setSeconds(0)
+    setIsNewGlobalRecord(false)
   }
 
   const isCardVisible = (card: MemoryCard) => card.isMatched || flippedIds.includes(card.id)
@@ -160,7 +201,7 @@ export default function MemoryGame() {
 
   return (
     <div>
-      <div className="flex items-center justify-center gap-4 sm:gap-8 mb-6 text-sm">
+      <div className="flex items-center justify-center gap-4 sm:gap-8 mb-3 text-sm">
         <div className="flex items-center gap-2 text-dark-blue font-medium">
           <MousePointerClick size={16} className="text-gold" />
           {moves} Züge
@@ -169,13 +210,23 @@ export default function MemoryGame() {
           <Timer size={16} className="text-gold" />
           {formatTime(seconds)}
         </div>
-        {bestScore && (
-          <div className="flex items-center gap-2 text-gray-400">
-            <Trophy size={16} className="text-gold" />
-            Bestzeit: {bestScore.moves} Züge · {formatTime(bestScore.seconds)}
-          </div>
-        )}
       </div>
+      {(bestScore || globalRecord) && (
+        <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-1 mb-6 text-xs sm:text-sm text-gray-600">
+          {bestScore && (
+            <div className="flex items-center gap-2">
+              <Trophy size={14} className="text-gold" />
+              Deine Bestzeit: {bestScore.moves} Züge · {formatTime(bestScore.seconds)}
+            </div>
+          )}
+          {globalRecord && (
+            <div className="flex items-center gap-2">
+              <Trophy size={14} className="text-gold" />
+              Rekord aller Gäste: {globalRecord.moves} Züge · {formatTime(globalRecord.seconds)}
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="grid grid-cols-4 gap-2.5 sm:gap-3">
         {cards.map((card) => {
@@ -217,6 +268,9 @@ export default function MemoryGame() {
       {isWon && (
         <div className="text-center mt-8">
           <p className="font-serif text-xl font-semibold text-dark-blue mb-4">Geschafft! 🎉</p>
+          {isNewGlobalRecord && (
+            <p className="text-gold-text font-medium mb-4">Neuer Rekord aller Gäste! 🏆</p>
+          )}
           <Button onClick={startNewGame}>Neues Spiel</Button>
         </div>
       )}

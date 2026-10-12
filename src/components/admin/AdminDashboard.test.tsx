@@ -336,4 +336,49 @@ describe('AdminDashboard', () => {
     expect(screen.getByRole('button', { name: /^erinnerungen/i })).toHaveAttribute('aria-expanded', 'false')
     expect(screen.getByRole('button', { name: /^galerie \(/i })).toHaveAttribute('aria-expanded', 'true')
   })
+
+  it('resets the memory record only after confirmation', async () => {
+    const fetchMock = mockFetchSequence([
+      { body: { entries: [] } },
+      { body: { entries: [] } },
+      noGalleryPhotos,
+      { body: { record: null } },
+    ])
+    render(<AdminDashboard initialLocks={noLocks} initialGalleryMode="public" />)
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3))
+
+    await userEvent.click(screen.getByRole('button', { name: /memory-rekord zurücksetzen/i }))
+
+    expect(window.confirm).toHaveBeenCalled()
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith('/api/memory-record', expect.objectContaining({ method: 'DELETE' }))
+    )
+    expect(await screen.findByText(/rekord zurückgesetzt/i)).toBeInTheDocument()
+  })
+
+  it('does not reset the memory record when the confirmation is declined', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(false)
+    const fetchMock = mockFetchSequence([{ body: { entries: [] } }, { body: { entries: [] } }, noGalleryPhotos])
+    render(<AdminDashboard initialLocks={noLocks} initialGalleryMode="public" />)
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3))
+
+    await userEvent.click(screen.getByRole('button', { name: /memory-rekord zurücksetzen/i }))
+
+    expect(fetchMock).toHaveBeenCalledTimes(3)
+  })
+
+  it('shows an error when the memory record could not be reset', async () => {
+    mockFetchSequence([
+      { body: { entries: [] } },
+      { body: { entries: [] } },
+      noGalleryPhotos,
+      { status: 500, body: { error: 'Serverfehler' } },
+    ])
+    render(<AdminDashboard initialLocks={noLocks} initialGalleryMode="public" />)
+    await screen.findByRole('button', { name: /memory-rekord zurücksetzen/i })
+
+    await userEvent.click(screen.getByRole('button', { name: /memory-rekord zurücksetzen/i }))
+
+    expect(await screen.findByText(/zurücksetzen fehlgeschlagen/i)).toBeInTheDocument()
+  })
 })
