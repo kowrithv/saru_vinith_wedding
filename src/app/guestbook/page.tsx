@@ -5,6 +5,8 @@ import { MessageSquare, Send, User } from 'lucide-react'
 import SectionTitle from '@/components/ui/SectionTitle'
 import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
+import { textFieldClassName } from '@/lib/form-styles'
+import { cn } from '@/lib/utils'
 
 interface GuestbookEntry {
   id: number
@@ -108,7 +110,7 @@ export default function GuestbookPage() {
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Wie heißt du?"
                     maxLength={60}
-                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-dark-blue focus:ring-1 focus:ring-dark-blue outline-none transition-colors text-sm"
+                    className={textFieldClassName}
                   />
                 </div>
 
@@ -124,7 +126,7 @@ export default function GuestbookPage() {
                     placeholder="Schreib dem Brautpaar eine Nachricht, einen Wunsch oder eine nette Erinnerung..."
                     rows={5}
                     maxLength={500}
-                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-dark-blue focus:ring-1 focus:ring-dark-blue outline-none transition-colors text-sm resize-none"
+                    className={cn(textFieldClassName, 'resize-none')}
                   />
                   <p className="text-xs text-gray-400 text-right mt-1">{message.length}/500</p>
                 </div>

@@ -8,6 +8,7 @@ import Button from '@/components/ui/Button'
 import GalleryGrid from '@/components/gallery/GalleryGrid'
 import GalleryUploadForm from '@/components/gallery/GalleryUploadForm'
 import type { GalleryPhotoView } from '@/lib/gallery-photo-view'
+import { textFieldClassName } from '@/lib/form-styles'
 
 type GalleryData =
   | { status: 'loading' }
@@ -126,7 +127,7 @@ export default function GalleryPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Kennwort"
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-dark-blue focus:ring-1 focus:ring-dark-blue outline-none transition-colors text-sm"
+                  className={textFieldClassName}
                 />
               </div>
               {unlockError && <p className="text-sm text-red-600">{unlockError}</p>}

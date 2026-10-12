@@ -5,6 +5,8 @@ import { Heart, KeyRound, Send, User } from 'lucide-react'
 import SectionTitle from '@/components/ui/SectionTitle'
 import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
+import { textFieldClassName } from '@/lib/form-styles'
+import { cn } from '@/lib/utils'
 
 interface MemoryEntry {
   id: number
@@ -108,7 +110,7 @@ export default function MemoriesPage() {
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Wie heißt du?"
                 maxLength={60}
-                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-dark-blue focus:ring-1 focus:ring-dark-blue outline-none transition-colors text-sm"
+                className={textFieldClassName}
               />
             </div>
 
@@ -123,7 +125,7 @@ export default function MemoriesPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Kennwort"
-                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-dark-blue focus:ring-1 focus:ring-dark-blue outline-none transition-colors text-sm"
+                className={textFieldClassName}
               />
             </div>
 
@@ -139,7 +141,7 @@ export default function MemoriesPage() {
                 placeholder="Ein Moment, ein Lachen, ein Satz – was bleibt dir von diesem Tag?"
                 rows={4}
                 maxLength={500}
-                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-dark-blue focus:ring-1 focus:ring-dark-blue outline-none transition-colors text-sm resize-none"
+                className={cn(textFieldClassName, 'resize-none')}
               />
               <p className="text-xs text-gray-400 text-right mt-1">{message.length}/500</p>
             </div>

@@ -12,6 +12,7 @@ import {
   resolveImageContentType,
 } from '@/lib/gallery-upload-limits'
 import type { GalleryPhotoView } from '@/lib/gallery-photo-view'
+import { textFieldClassName } from '@/lib/form-styles'
 
 interface GalleryUploadFormProps {
   isAdmin?: boolean
@@ -323,7 +324,7 @@ export default function GalleryUploadForm({ isAdmin = false, onUploaded }: Galle
           onChange={(e) => setName(e.target.value)}
           placeholder="Wie heißt du?"
           maxLength={60}
-          className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-dark-blue focus:ring-1 focus:ring-dark-blue outline-none transition-colors text-sm"
+          className={textFieldClassName}
         />
       </div>
 
@@ -339,7 +340,7 @@ export default function GalleryUploadForm({ isAdmin = false, onUploaded }: Galle
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Kennwort"
-            className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-dark-blue focus:ring-1 focus:ring-dark-blue outline-none transition-colors text-sm"
+            className={textFieldClassName}
           />
         </div>
       )}
@@ -352,7 +353,7 @@ export default function GalleryUploadForm({ isAdmin = false, onUploaded }: Galle
           id="gallery-upload-category"
           value={category}
           onChange={(e) => setCategory(e.target.value)}
-          className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-dark-blue focus:ring-1 focus:ring-dark-blue outline-none transition-colors text-sm"
+          className={textFieldClassName}
         >
           {galleryCategories.map((cat) => (
             <option key={cat} value={cat}>

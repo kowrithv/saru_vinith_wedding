@@ -5,6 +5,7 @@ import { KeyRound, Lock } from 'lucide-react'
 import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
 import SectionTitle from '@/components/ui/SectionTitle'
+import { textFieldClassName } from '@/lib/form-styles'
 
 interface AdminLoginFormProps {
   onSuccess: () => void
@@ -58,7 +59,7 @@ export default function AdminLoginForm({ onSuccess }: AdminLoginFormProps) {
                 autoFocus
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-dark-blue focus:ring-1 focus:ring-dark-blue outline-none transition-colors text-sm"
+                className={textFieldClassName}
                 placeholder="••••••••"
               />
             </div>
