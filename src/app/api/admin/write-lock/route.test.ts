@@ -37,7 +37,7 @@ describe('/api/admin/write-lock', () => {
     expect(response.status).toBe(401)
   })
 
-  it('GET returns all three lock states (false by default) for an admin', async () => {
+  it('GET returns all four lock states (false by default) for an admin', async () => {
     const db = getDb()
     const secret = getOrCreateAdminSecret(db)
     const cookieValue = signCookieValue(Date.now() + 1000, secret)
@@ -45,7 +45,7 @@ describe('/api/admin/write-lock', () => {
     const response = await GET(requestWithCookie('GET', cookieValue))
     expect(response.status).toBe(200)
     const body = await response.json()
-    expect(body.locks).toEqual({ guestbook: false, memories: false, who_votes: false })
+    expect(body.locks).toEqual({ guestbook: false, memories: false, who_votes: false, gallery_upload: false })
   })
 
   it('POST rejects a request without a valid admin cookie', async () => {
@@ -63,11 +63,11 @@ describe('/api/admin/write-lock', () => {
     )
     expect(postResponse.status).toBe(200)
     const postBody = await postResponse.json()
-    expect(postBody.locks).toEqual({ guestbook: true, memories: false, who_votes: false })
+    expect(postBody.locks).toEqual({ guestbook: true, memories: false, who_votes: false, gallery_upload: false })
 
     const getResponse = await GET(requestWithCookie('GET', cookieValue))
     const getBody = await getResponse.json()
-    expect(getBody.locks).toEqual({ guestbook: true, memories: false, who_votes: false })
+    expect(getBody.locks).toEqual({ guestbook: true, memories: false, who_votes: false, gallery_upload: false })
   })
 
   it('POST rejects an unknown feature value', async () => {
@@ -80,4 +80,20 @@ describe('/api/admin/write-lock', () => {
     )
     expect(response.status).toBe(400)
   })
+
+  it.each(['guestbook', 'memories', 'who_votes', 'gallery_upload'] as const)(
+    'POST locks only %s and leaves the other features alone',
+    async (feature) => {
+      const db = getDb()
+      const secret = getOrCreateAdminSecret(db)
+      const cookieValue = signCookieValue(Date.now() + 1000, secret)
+
+      const response = await POST(requestWithCookie('POST', cookieValue, { feature, locked: true }))
+      expect(response.status).toBe(200)
+      const { locks } = await response.json()
+
+      expect(locks[feature]).toBe(true)
+      expect(Object.values(locks).filter(Boolean)).toHaveLength(1)
+    }
+  )
 })

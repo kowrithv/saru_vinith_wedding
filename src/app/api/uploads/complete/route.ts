@@ -7,6 +7,8 @@ import { verifyUploadTicket } from '@/lib/upload-ticket'
 import { headObject } from '@/lib/r2'
 import { addGalleryPhoto } from '@/lib/gallery-photos'
 import { toGalleryPhotoView } from '@/lib/gallery-photo-view'
+import { isFeatureLocked } from '@/lib/app-config'
+import { UPLOADS_PAUSED_MESSAGE } from '@/lib/gallery-upload-limits'
 
 const bodySchema = z.object({
   ticket: z.string().min(1),
@@ -25,6 +27,13 @@ export async function POST(request: Request): Promise<Response> {
   const payload = verifyUploadTicket(parsed.data.ticket, secret)
   if (!payload) {
     return NextResponse.json({ error: 'Ticket ungültig oder abgelaufen.' }, { status: 400 })
+  }
+
+  // Tickets, die vor der Sperre ausgestellt wurden, gelten nicht mehr -
+  // sonst liefen laufende Uploads nach dem "Notaus" noch bis zu 15 Minuten
+  // weiter. Admin-Tickets (offizielle Fotos) bleiben davon unberührt.
+  if (!payload.isOfficial && isFeatureLocked(db, 'gallery_upload')) {
+    return NextResponse.json({ error: UPLOADS_PAUSED_MESSAGE }, { status: 423 })
   }
 
   const [thumbInfo, originalInfo] = await Promise.all([

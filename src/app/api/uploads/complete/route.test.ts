@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { POST } from './route'
 import { getDb } from '@/lib/db'
+import { setFeatureLocked } from '@/lib/app-config'
 import { getOrCreateAdminSecret } from '@/lib/admin-auth'
 import { signUploadTicket, type TicketPayload } from '@/lib/upload-ticket'
 
@@ -141,5 +142,32 @@ describe('POST /api/uploads/complete', () => {
     expect(body.photo.originalUrl).toContain('/gallery/photo-1/original.jpg')
     expect(body.photo).not.toHaveProperty('thumbKey')
     expect(body.photo).not.toHaveProperty('originalKey')
+  })
+
+  it('refuses to register a guest ticket with 423 once uploads are locked', async () => {
+    const db = getDb()
+    const secret = getOrCreateAdminSecret(db)
+    setFeatureLocked(db, 'gallery_upload', true)
+    const ticket = signUploadTicket(validPayload(), secret)
+    mockHeadObject.mockResolvedValue({ size: 4_000_000 })
+
+    const response = await POST(completeRequest({ ticket, uploaderName: 'Anna' }))
+
+    expect(response.status).toBe(423)
+    expect(mockHeadObject).not.toHaveBeenCalled()
+  })
+
+  it('still registers an admin ticket while uploads are locked', async () => {
+    const db = getDb()
+    const secret = getOrCreateAdminSecret(db)
+    setFeatureLocked(db, 'gallery_upload', true)
+    const ticket = signUploadTicket({ ...validPayload(), isOfficial: true }, secret)
+    mockHeadObject.mockImplementation(async (key: string) =>
+      key.includes('thumb') ? { size: 100_000 } : { size: 4_000_000 }
+    )
+
+    const response = await POST(completeRequest({ ticket, uploaderName: 'Saruga' }))
+
+    expect(response.status).toBe(201)
   })
 })

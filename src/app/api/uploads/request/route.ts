@@ -8,7 +8,12 @@ import { signUploadTicket } from '@/lib/upload-ticket'
 import { RateLimiter } from '@/lib/rate-limit'
 import { getClientKey } from '@/lib/client-ip'
 import { galleryCategories } from '@/lib/gallery-categories'
-import { IMAGE_CONTENT_TYPE_EXTENSIONS as CONTENT_TYPE_EXTENSIONS, MAX_ORIGINAL_BYTES } from '@/lib/gallery-upload-limits'
+import {
+  IMAGE_CONTENT_TYPE_EXTENSIONS as CONTENT_TYPE_EXTENSIONS,
+  MAX_ORIGINAL_BYTES,
+  UPLOADS_PAUSED_MESSAGE,
+} from '@/lib/gallery-upload-limits'
+import { isFeatureLocked } from '@/lib/app-config'
 
 const MAX_THUMB_BYTES = 2 * 1024 * 1024
 const TICKET_DURATION_MS = 15 * 60 * 1000
@@ -42,6 +47,10 @@ export async function POST(request: Request): Promise<Response> {
 
   const db = getDb()
   const isOfficial = isAdminRequest(request, db)
+
+  if (!isOfficial && isFeatureLocked(db, 'gallery_upload')) {
+    return NextResponse.json({ error: UPLOADS_PAUSED_MESSAGE }, { status: 423 })
+  }
 
   if (!isOfficial) {
     const uploadPassword = process.env.UPLOAD_PASSWORD_EMPFANG

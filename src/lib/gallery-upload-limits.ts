@@ -36,3 +36,5 @@ export function resolveImageContentType(file: { name: string; type: string }): s
   const extension = file.name.slice(dotIndex + 1).toLowerCase()
   return CONTENT_TYPE_BY_EXTENSION.get(extension) ?? ''
 }
+
+export const UPLOADS_PAUSED_MESSAGE = 'Foto-Uploads sind derzeit pausiert.'

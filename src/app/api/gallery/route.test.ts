@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { GET } from './route'
 import { getDb } from '@/lib/db'
+import { setFeatureLocked } from '@/lib/app-config'
 import { setGalleryMode } from '@/lib/gallery-mode'
 import { addGalleryPhoto } from '@/lib/gallery-photos'
 import { createGallerySessionCookieValue, GALLERY_COOKIE_NAME } from '@/lib/gallery-auth'
@@ -107,5 +108,13 @@ describe('GET /api/gallery', () => {
     expect(body.photos[0].originalUrl).toBe('https://fotos.example.de/gallery/p1/original.jpg')
     expect(body.photos[0]).not.toHaveProperty('thumbKey')
     expect(body.photos[0]).not.toHaveProperty('originalKey')
+  })
+
+  it('reports whether uploads are currently locked', async () => {
+    const db = getDb()
+    expect((await (await GET(requestWithCookies({}))).json()).uploadsLocked).toBe(false)
+
+    setFeatureLocked(db, 'gallery_upload', true)
+    expect((await (await GET(requestWithCookies({}))).json()).uploadsLocked).toBe(true)
   })
 })

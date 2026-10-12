@@ -1,11 +1,13 @@
 import type Database from 'better-sqlite3'
 
-export type LockableFeature = 'guestbook' | 'memories' | 'who_votes'
+export const LOCKABLE_FEATURES = ['guestbook', 'memories', 'who_votes', 'gallery_upload'] as const
+export type LockableFeature = (typeof LOCKABLE_FEATURES)[number]
 
 const LOCK_KEYS: Record<LockableFeature, string> = {
   guestbook: 'guestbook_locked',
   memories: 'memories_locked',
   who_votes: 'who_votes_locked',
+  gallery_upload: 'gallery_upload_locked',
 }
 
 export function isFeatureLocked(db: Database.Database, feature: LockableFeature): boolean {

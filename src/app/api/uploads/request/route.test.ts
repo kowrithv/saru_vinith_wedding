@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { POST } from './route'
 import { getDb } from '@/lib/db'
+import { setFeatureLocked } from '@/lib/app-config'
 import { ADMIN_COOKIE_NAME, getOrCreateAdminSecret, signCookieValue } from '@/lib/admin-auth'
 import { verifyUploadTicket } from '@/lib/upload-ticket'
 
@@ -238,5 +239,34 @@ describe('POST /api/uploads/request', () => {
     expect(body.tickets).toHaveLength(2)
     expect(body.tickets[0].photoId).not.toBe(body.tickets[1].photoId)
     expect(body.tickets[1].originalKey).toMatch(/original\.heic$/)
+  })
+
+  it('refuses a guest upload with 423 while uploads are locked, before the password is even checked', async () => {
+    const db = getDb()
+    setFeatureLocked(db, 'gallery_upload', true)
+    const response = await POST(
+      requestBody(
+        { password: 'falsch', category: 'Hochzeit', files: [{ filename: 'a.jpg', size: 1000, contentType: 'image/jpeg' }] },
+        undefined,
+        '10.0.1.1'
+      )
+    )
+    expect(response.status).toBe(423)
+    expect((await response.json()).error).toMatch(/pausiert/i)
+  })
+
+  it('still issues tickets to the admin while uploads are locked', async () => {
+    const db = getDb()
+    setFeatureLocked(db, 'gallery_upload', true)
+    const secret = getOrCreateAdminSecret(db)
+    const cookieValue = signCookieValue(Date.now() + 60_000, secret)
+    const response = await POST(
+      requestBody(
+        { category: 'Hochzeit', files: [{ filename: 'a.jpg', size: 1000, contentType: 'image/jpeg' }] },
+        cookieValue,
+        '10.0.1.2'
+      )
+    )
+    expect(response.status).toBe(200)
   })
 })
