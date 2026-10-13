@@ -146,7 +146,12 @@
 ## Offene externe Abhängigkeiten (aus der Spec)
 
 - R2/Cloudflare-Zugangsdaten für die Foto-Pipeline (Galerie-Plan)
-- TLS/Domain-Entscheidung
+- Domain `vsjourney.de`: Registrierung und DNS liegen bei netcup. Für die
+  R2-Custom-Domain (`fotos.vsjourney.de`) muss die DNS-Zone zu Cloudflare
+  umziehen (Free-Plan: nur Full Setup) — Schritte in
+  `docs/ops/cloudflare-r2-setup.md`. Nameserver-TTL 24 h: vor Mittwoch erledigen.
+- TLS: Caddy holt das Zertifikat selbst (`DOMAIN=vsjourney.de`), solange die
+  A/AAAA-Einträge auf den Server zeigen und in Cloudflare „DNS only“ stehen.
 
 ## Noch zu planende Subsysteme (Backlog aus der Spec)
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { MissingEnvError, validateEnv } from './env'
+import { InvalidEnvError, MissingEnvError, validateEnv } from './env'
 
 const allSet = {
   ADMIN_PASSWORD: 'secret',
@@ -52,5 +52,19 @@ describe('validateEnv', () => {
   it('still requires ADMIN_PASSWORD and UPLOAD_PASSWORD_EMPFANG', () => {
     expect(() => validateEnv({ ...allSet, ADMIN_PASSWORD: undefined })).toThrow(/ADMIN_PASSWORD/)
     expect(() => validateEnv({ ...allSet, UPLOAD_PASSWORD_EMPFANG: undefined })).toThrow(/UPLOAD_PASSWORD_EMPFANG/)
+  })
+
+  it('exposes an optional R2 jurisdiction, normalised to lower case', () => {
+    expect(validateEnv({ ...allSet, R2_JURISDICTION: ' EU ' }).r2Jurisdiction).toBe('eu')
+  })
+
+  it('leaves the R2 jurisdiction undefined when it is not set or empty', () => {
+    expect(validateEnv(allSet).r2Jurisdiction).toBeUndefined()
+    expect(validateEnv({ ...allSet, R2_JURISDICTION: '' }).r2Jurisdiction).toBeUndefined()
+  })
+
+  it('rejects an unknown jurisdiction at startup instead of failing uploads at the party', () => {
+    expect(() => validateEnv({ ...allSet, R2_JURISDICTION: 'germany' })).toThrowError(InvalidEnvError)
+    expect(() => validateEnv({ ...allSet, R2_JURISDICTION: 'germany' })).toThrowError(/R2_JURISDICTION/)
   })
 })

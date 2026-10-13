@@ -58,6 +58,7 @@ wirklich auszuprobieren.
 | `R2_SECRET_ACCESS_KEY` | ja | zum Token gehörendes Secret |
 | `R2_BUCKET_NAME` | ja | Name des Buckets |
 | `R2_PUBLIC_BASE_URL` | ja | öffentliche Auslieferungs-URL, z. B. `https://fotos.<domain>` |
+| `R2_JURISDICTION` | nein | `eu`, wenn der Bucket mit EU-Jurisdiktion angelegt wurde: der S3-Endpoint lautet dann `<ACCOUNT_ID>.eu.r2.cloudflarestorage.com` (fest, nachträglich nicht änderbar) |
 | `ADMIN_SECRET` | nein | Signierschlüssel für Cookies; wird sonst zufällig erzeugt und in der DB gespeichert |
 | `CLOUDFLARE_API_TOKEN` | nein | Recht „Cache Purge“; ohne Wert wird der Cache-Purge beim Löschen übersprungen |
 | `CLOUDFLARE_ZONE_ID` | nein | Zone für den Cache-Purge |

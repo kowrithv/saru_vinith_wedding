@@ -131,4 +131,16 @@ describe('register (ops scheduler)', () => {
     await new Promise((resolve) => setTimeout(resolve, 0))
     expect(startOpsScheduler).not.toHaveBeenCalled()
   })
+
+  it('logs a German error and exits with code 1 when R2_JURISDICTION has an unknown value', () => {
+    setRequiredEnv()
+    vi.stubEnv('R2_JURISDICTION', 'germany')
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never)
+
+    register()
+
+    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('R2_JURISDICTION'))
+    expect(exitSpy).toHaveBeenCalledWith(1)
+  })
 })

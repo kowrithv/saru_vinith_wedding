@@ -3,11 +3,23 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 
 let client: S3Client | undefined
 
+// Ein Bucket mit Jurisdiktion (z. B. EU) ist nur über den Endpoint mit der
+// Jurisdiktion erreichbar: <ACCOUNT_ID>.eu.r2.cloudflarestorage.com. Der
+// Standard-Endpoint meldet für ihn "NoSuchBucket". Der Wert wird beim Start in
+// validateEnv geprüft.
+function r2Endpoint(): string {
+  const jurisdiction = process.env.R2_JURISDICTION?.trim().toLowerCase()
+  const host = jurisdiction
+    ? `${process.env.R2_ACCOUNT_ID}.${jurisdiction}.r2.cloudflarestorage.com`
+    : `${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`
+  return `https://${host}`
+}
+
 function getClient(): S3Client {
   if (!client) {
     client = new S3Client({
       region: 'auto',
-      endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+      endpoint: r2Endpoint(),
       credentials: {
         accessKeyId: process.env.R2_ACCESS_KEY_ID ?? '',
         secretAccessKey: process.env.R2_SECRET_ACCESS_KEY ?? '',

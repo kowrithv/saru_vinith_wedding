@@ -1,4 +1,4 @@
-import { MissingEnvError, validateEnv } from '@/lib/env'
+import { InvalidEnvError, MissingEnvError, validateEnv } from '@/lib/env'
 
 // Diese App läuft immer als eigenständiger Node-Server (Docker), nie auf
 // Vercels Edge Runtime - process.exit() ist dort ohnehin nicht verfügbar.
@@ -19,7 +19,7 @@ export function register(): void {
   try {
     validateEnv()
   } catch (error) {
-    if (error instanceof MissingEnvError) {
+    if (error instanceof MissingEnvError || error instanceof InvalidEnvError) {
       console.error(`FEHLER: ${error.message}`)
       process.exit(1)
       return

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { S3Client, PutObjectCommand, HeadObjectCommand, DeleteObjectsCommand } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { createPresignedPutUrl, headObject, deleteObjects } from './r2'
@@ -109,5 +109,56 @@ describe('deleteObjects', () => {
   it('does nothing when given an empty list', async () => {
     await deleteObjects([])
     expect(mockSend).not.toHaveBeenCalled()
+  })
+})
+
+describe('S3 endpoint', () => {
+  async function loadFreshModules() {
+    // r2.ts hält den Client im Modul-Cache: für jede Konfiguration neu laden.
+    vi.resetModules()
+    const s3 = await import('@aws-sdk/client-s3')
+    const presigner = await import('@aws-sdk/s3-request-presigner')
+    vi.mocked(s3.S3Client).mockImplementation(function () {
+      return { send: vi.fn() } as unknown as InstanceType<typeof s3.S3Client>
+    })
+    vi.mocked(presigner.getSignedUrl).mockResolvedValue('https://r2.example/signed')
+    const r2 = await import('./r2')
+    return { S3ClientMock: s3.S3Client, r2 }
+  }
+
+  afterEach(() => {
+    delete process.env.R2_JURISDICTION
+  })
+
+  it('uses the plain account endpoint when no jurisdiction is configured', async () => {
+    const { S3ClientMock, r2 } = await loadFreshModules()
+
+    await r2.createPresignedPutUrl('gallery/a/thumb.jpg', 'image/jpeg')
+
+    expect(S3ClientMock).toHaveBeenCalledWith(
+      expect.objectContaining({ endpoint: 'https://test-account.r2.cloudflarestorage.com' })
+    )
+  })
+
+  it('puts the jurisdiction into the endpoint for a bucket with EU jurisdiction', async () => {
+    process.env.R2_JURISDICTION = 'eu'
+    const { S3ClientMock, r2 } = await loadFreshModules()
+
+    await r2.createPresignedPutUrl('gallery/a/thumb.jpg', 'image/jpeg')
+
+    expect(S3ClientMock).toHaveBeenCalledWith(
+      expect.objectContaining({ endpoint: 'https://test-account.eu.r2.cloudflarestorage.com' })
+    )
+  })
+
+  it('tolerates letter case and surrounding whitespace in the jurisdiction', async () => {
+    process.env.R2_JURISDICTION = '  EU '
+    const { S3ClientMock, r2 } = await loadFreshModules()
+
+    await r2.createPresignedPutUrl('gallery/a/thumb.jpg', 'image/jpeg')
+
+    expect(S3ClientMock).toHaveBeenCalledWith(
+      expect.objectContaining({ endpoint: 'https://test-account.eu.r2.cloudflarestorage.com' })
+    )
   })
 })
