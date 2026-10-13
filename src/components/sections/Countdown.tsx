@@ -1,39 +1,12 @@
 'use client'
 
-import { useSyncExternalStore } from 'react'
 import { Clock } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import { calculateTimeUntil } from '@/lib/utils'
 import { receptionEvent } from '@/lib/event-info'
+import { useNowSecond } from '@/lib/use-now-second'
 
 const EVENT_START_MS = Date.parse(receptionEvent.startsAt)
-
-// Der Takt ist feiner als eine Sekunde: der Schnappschuss (ganze Sekunden)
-// ändert sich nur einmal pro Sekunde, React rendert also auch nur dann neu.
-// Ein reines 1000-ms-Intervall würde gegenüber dem Sekundenwechsel driften
-// und gelegentlich eine Sekunde überspringen.
-const TICK_MS = 250
-
-function subscribeToClock(onChange: () => void) {
-  const id = setInterval(() => {
-    onChange()
-    // Ab Beginn des Empfangs ändert sich nichts mehr - Timer beenden.
-    if (Date.now() >= EVENT_START_MS) clearInterval(id)
-  }, TICK_MS)
-  return () => clearInterval(id)
-}
-
-function getNowSecond(): number {
-  return Math.floor(Date.now() / 1000)
-}
-
-// Beim Server-Rendering und beim Hydrieren ist die Uhrzeit unbekannt (null):
-// beide Seiten rendern das Skelett, es gibt keinen Hydration-Mismatch.
-// Bei clientseitiger Navigation entfällt die Hydration, der erste Render
-// zeigt sofort die echten Werte statt eines kurzen "00".
-function getServerNowSecond(): null {
-  return null
-}
 
 interface CountdownUnitProps {
   value: number
@@ -75,7 +48,7 @@ function Separator() {
 }
 
 export default function Countdown() {
-  const nowSecond = useSyncExternalStore(subscribeToClock, getNowSecond, getServerNowSecond)
+  const nowSecond = useNowSecond(EVENT_START_MS)
   const timeLeft = nowSecond === null ? null : calculateTimeUntil(receptionEvent.startsAt, nowSecond * 1000)
   const isPast = timeLeft?.isPast ?? false
 

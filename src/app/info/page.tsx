@@ -77,7 +77,7 @@ export default function InfoPage() {
             {receptionSchedule.map((item, index) => (
               <div key={index} className="flex items-start gap-4">
                 <div className="flex-shrink-0 w-24 text-right">
-                  <span className="text-xs font-semibold text-gold bg-champagne px-2 py-1 rounded-full">
+                  <span className="text-xs font-semibold text-gold-text bg-champagne px-2 py-1 rounded-full">
                     {item.time}
                   </span>
                 </div>

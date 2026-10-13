@@ -26,4 +26,20 @@ describe('FeatureGrid', () => {
     const navigationHrefs = navigationItems.map((item) => item.href).filter((href) => href !== '/')
     expect(homeFeatures.map((feature) => feature.href).sort()).toEqual([...navigationHrefs].sort())
   })
+
+  it('gives every tile its own action text instead of the same "Mehr erfahren"', () => {
+    const ctas = homeFeatures.map((feature) => feature.cta)
+    expect(new Set(ctas).size).toBe(homeFeatures.length)
+    expect(ctas).not.toContain('Mehr erfahren')
+
+    render(<FeatureGrid />)
+    homeFeatures.forEach((feature) => {
+      expect(screen.getByText(feature.cta)).toBeInTheDocument()
+    })
+  })
+
+  it('advertises the shared record instead of a personal best on the memory tile', () => {
+    const memory = homeFeatures.find((feature) => feature.href === '/memory-spiel')
+    expect(memory?.description).toMatch(/rekord aller gäste/i)
+  })
 })

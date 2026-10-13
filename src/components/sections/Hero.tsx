@@ -4,6 +4,7 @@ import Button from '@/components/ui/Button'
 import { couple } from '@/lib/site-content'
 import { receptionEvent } from '@/lib/event-info'
 import { cn } from '@/lib/utils'
+import HeroBadge from '@/components/sections/HeroBadge'
 
 function FloralOrnament({ className }: { className?: string }) {
   return (
@@ -47,7 +48,7 @@ export default function Hero() {
         <div className={cn(enter, 'mb-6')} style={stagger(0)}>
           <span className="inline-flex items-center gap-2 px-4 py-1.5 bg-white/70 backdrop-blur-sm text-dark-blue text-sm font-medium rounded-full border border-champagne-dark/30 shadow-sm">
             <Heart size={12} className="text-gold fill-gold" />
-            Wir heiraten!
+            <HeroBadge />
             <Heart size={12} className="text-gold fill-gold" />
           </span>
         </div>

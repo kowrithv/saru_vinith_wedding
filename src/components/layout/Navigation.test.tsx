@@ -70,4 +70,13 @@ describe('Navigation', () => {
     await userEvent.click(mobileLink)
     expect(screen.getByRole('button', { name: /Menü öffnen/i })).toBeInTheDocument()
   })
+
+  it('shows the hashtag in the mobile menu in a gold that is readable on white', async () => {
+    mockPathname = '/'
+    render(<Navigation />)
+    await userEvent.click(screen.getByRole('button', { name: /Menü öffnen/i }))
+
+    const hashtags = screen.getAllByText(/^#/)
+    expect(hashtags.some((el) => el.classList.contains('text-gold-text'))).toBe(true)
+  })
 })

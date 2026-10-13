@@ -98,7 +98,7 @@ export default function Navigation() {
             <div className="flex flex-col h-full pt-20 pb-8 px-6">
               <div className="text-center mb-8">
                 <p className="font-serif text-2xl text-dark-blue">{couple.combinedName}</p>
-                <p className="text-sm text-gold mt-1">{couple.hashtag}</p>
+                <p className="text-sm text-gold-text mt-1">{couple.hashtag}</p>
               </div>
               <nav className="flex-1 overflow-y-auto">
                 <ul className="space-y-1">

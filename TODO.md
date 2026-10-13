@@ -37,19 +37,8 @@
 
 ## Gefunden im Homepage-Review (zurückgestellt, nicht blockierend)
 
-- **„Wir heiraten!"-Badge** im Hero bleibt auch am Hochzeitstag stehen:
-  der Hero ist jetzt eine Server-Komponente und kennt die Uhrzeit nicht.
-  Der Countdown darunter wechselt dagegen auf „Wir sind verheiratet!".
-- **Weitere `text-gold`-Textstellen mit zu wenig Kontrast** außerhalb der
-  Startseite: Hashtag im Footer und im Mobil-Menü, Zeit-Chips auf `/info`.
-  Dort `text-gold-text` verwenden (Token existiert).
-- **Reduced Motion** ist für die übrigen framer-motion-Seiten (Story u. a.)
-  nicht berücksichtigt; ein `MotionConfig reducedMotion="user"` im Layout
-  würde es global lösen.
 - **Lange Startseite auf dem Handy:** 7 Kacheln ≈ 1.750 px. Kompakte
   Zeilen (Icon + Titel) unterhalb von `sm` würden es halbieren.
-- **Link-Texte der Kacheln** sind alle „Mehr erfahren"; Aktionstexte je
-  Kachel („Jetzt spielen", „Eintrag schreiben") wären klarer.
 - Der Plan `2026-10-12-homepage.md` nennt noch 8 Kacheln und die
   Galerie-Ausnahme (historisch, nicht mehr gültig).
 

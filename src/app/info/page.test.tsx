@@ -32,4 +32,11 @@ describe('InfoPage', () => {
     const { container } = render(<InfoPage />)
     expect(container.firstChild).toHaveClass('pt-24')
   })
+
+  it('shows the schedule times in a gold that is readable on the champagne chip', () => {
+    render(<InfoPage />)
+    // Die Uhrzeit steht auch in einer Info-Karte: es geht um den Chip im Ablauf.
+    const matches = screen.getAllByText(receptionSchedule[0].time)
+    expect(matches.some((el) => el.classList.contains('text-gold-text'))).toBe(true)
+  })
 })

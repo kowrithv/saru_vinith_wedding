@@ -24,7 +24,7 @@ export default function FeatureGrid() {
                 <h3 className="font-serif text-lg font-semibold text-dark-blue mb-2">{feature.title}</h3>
                 <p className="text-sm text-gray-500 leading-relaxed mb-4">{feature.description}</p>
                 <div className="flex items-center gap-1 text-dark-blue text-sm font-medium mt-auto">
-                  <span>Mehr erfahren</span>
+                  <span>{feature.cta}</span>
                   <ArrowRight size={14} className="transition-transform duration-200 group-hover:translate-x-1" />
                 </div>
               </Card>

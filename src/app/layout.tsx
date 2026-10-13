@@ -4,6 +4,7 @@ import { Playfair_Display, Inter } from 'next/font/google'
 import './globals.css'
 import Navigation from '@/components/layout/Navigation'
 import Footer from '@/components/layout/Footer'
+import MotionProvider from '@/components/layout/MotionProvider'
 
 const playfair = Playfair_Display({
   subsets: ['latin'],
@@ -33,6 +34,7 @@ export default function RootLayout({
   return (
     <html lang="de" className={`${playfair.variable} ${inter.variable}`}>
       <body className="font-sans antialiased bg-white text-gray-900">
+        <MotionProvider>
         <Navigation />
         {/* Die Navigation ist "fixed" und überlagert daher den Seitenanfang -
             jede Seite ist dafür verantwortlich, selbst genug Abstand nach
@@ -43,6 +45,7 @@ export default function RootLayout({
             Abstand. */}
         <main className="min-h-screen">{children}</main>
         <Footer />
+        </MotionProvider>
       </body>
     </html>
   )
