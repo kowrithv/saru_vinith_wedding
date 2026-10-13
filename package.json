@@ -12,7 +12,9 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "smoke": "node scripts/smoke.mjs",
+    "loadtest": "node scripts/load/run.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "3.1149.0",

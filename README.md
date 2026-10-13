@@ -188,6 +188,27 @@ Die Sicherungen liegen auf derselben Platte wie die Datenbank – sie schützen
 vor Fehlbedienung, **nicht** vor einem Plattenausfall. Eine Kopie auf ein
 zweites System ist noch offen (`TODO.md`).
 
+## Prüfen nach dem Deploy und unter Last
+
+- **Smoke-Test** (nur lesend, nach jedem Deploy):
+  `node scripts/smoke.mjs https://vsjourney.de` – prüft Seiten, Health, API-Formen,
+  404-Weiterleitung, Sicherheits-Header und dass die Upload-Route antwortet. Mit
+  `SMOKE_ADMIN_PASSWORD=...` zusätzlich Admin-Login. Exit-Code 1 bei Befund.
+- **Lasttest** (schreibt Daten – nur gegen einen **lokalen** Produktions-Build):
+
+  ```bash
+  npm run build
+  DATABASE_PATH=/tmp/lasttest/wedding.db npx next start -p 3124
+  node scripts/load/run.mjs http://localhost:3124 --guests=500 --upload-password=<Kennwort>
+  ```
+
+  Simuliert Abstimmungen (inkl. „ein Gerät zählt einmal"), Gästebuch,
+  Memory-Rekord, Galerie-Liste, Polling und – mit Kennwort – Upload-Tickets und
+  Erinnerungen. Prüft, dass nichts verloren geht. Entfernte Adressen werden
+  ohne `--allow-remote` abgelehnt.
+- **Hochzeitstag:** `docs/ops/hochzeitstag-runbook.md`,
+  **Gerätetest:** `docs/ops/geraetetest-checkliste.md`.
+
 ## Hilfsskripte
 
 `scripts/compress-memory-images.mjs` verkleinert die Bilder für das
