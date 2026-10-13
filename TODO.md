@@ -27,11 +27,6 @@
   `accept="image/*"`, Speicher bei 20+ Fotos, Tab im Hintergrund),
   Android-Chrome (HEIC ohne MIME-Typ), langsames WLAN.
 
-## Gefunden im Homepage-Review (zurückgestellt, nicht blockierend)
-
-- **Lange Startseite auf dem Handy:** 7 Kacheln ≈ 1.750 px. Kompakte
-  Zeilen (Icon + Titel) unterhalb von `sm` würden es halbieren.
-
 ## Gefunden im Ops-/Polish-Review (zurückgestellt, nicht blockierend)
 
 - **Schwebender Knopf kann „Abbrechen" überdecken:** „Schließen" blendet das

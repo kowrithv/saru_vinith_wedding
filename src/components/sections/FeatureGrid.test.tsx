@@ -38,6 +38,25 @@ describe('FeatureGrid', () => {
     })
   })
 
+  it('turns the tiles into compact rows on small screens by hiding the description below sm', () => {
+    render(<FeatureGrid />)
+
+    homeFeatures.forEach((feature) => {
+      expect(screen.getByText(feature.description)).toHaveClass('hidden', 'sm:block')
+      const card = screen.getByRole('link', { name: new RegExp(feature.title) }).firstElementChild
+      expect(card).toHaveClass('flex', 'sm:block')
+    })
+  })
+
+  it('keeps the action text and the title visible on every screen size', () => {
+    render(<FeatureGrid />)
+
+    homeFeatures.forEach((feature) => {
+      expect(screen.getByText(feature.title)).not.toHaveClass('hidden')
+      expect(screen.getByText(feature.cta).parentElement).not.toHaveClass('hidden')
+    })
+  })
+
   it('advertises the shared record instead of a personal best on the memory tile', () => {
     const memory = homeFeatures.find((feature) => feature.href === '/memory-spiel')
     expect(memory?.description).toMatch(/rekord aller gäste/i)
