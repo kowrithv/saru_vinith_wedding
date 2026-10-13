@@ -103,7 +103,9 @@ export default function GalleryPage() {
   }
 
   return (
-    <div className="pt-24 pb-16">
+    // pb-28 statt pb-16: der schwebende Upload-Knopf (fixed, unten rechts)
+    // darf bei kurzem Inhalt nicht auf dem Formular-Ende und "Abbrechen" liegen.
+    <div className="pt-24 pb-28">
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         <SectionTitle title="Galerie" subtitle="Momente, die wir für immer in Erinnerung behalten." />
 

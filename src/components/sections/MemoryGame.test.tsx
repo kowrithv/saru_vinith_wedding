@@ -319,7 +319,8 @@ describe('MemoryGame', () => {
     window.localStorage.setItem('memory-spiel-best', JSON.stringify({ moves: 9, seconds: 70 }))
     render(<MemoryGame />)
 
-    expect(screen.getByText(/deine bestzeit: 9 züge · 01:10/i)).toBeInTheDocument()
+    expect(screen.getByText(/dein bestes ergebnis: 9 züge · 01:10/i)).toBeInTheDocument()
+    expect(screen.queryByText(/bestzeit/i)).not.toBeInTheDocument()
   })
 
   it('does not carry the record message over into the next game', async () => {

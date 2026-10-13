@@ -32,6 +32,33 @@ describe('RateLimiter', () => {
     expect(limiter.check('ip-1').allowed).toBe(true)
   })
 
+  it('drops expired buckets so the map cannot grow without bound', () => {
+    let now = 0
+    const limiter = new RateLimiter({ maxAttempts: 3, windowMs: 1000, now: () => now })
+    limiter.check('a')
+    limiter.check('b')
+    expect(limiter.size).toBe(2)
+
+    now = 1000
+    limiter.check('c')
+
+    expect(limiter.size).toBe(1)
+  })
+
+  it('keeps buckets that are still inside their window when it sweeps', () => {
+    let now = 0
+    const limiter = new RateLimiter({ maxAttempts: 1, windowMs: 1000, now: () => now })
+    limiter.check('a')
+    now = 600
+    limiter.check('b')
+    now = 1000
+    limiter.check('c')
+
+    expect(limiter.size).toBe(2)
+    // b zählt weiter: sein Fenster läuft erst bei 1600 ab.
+    expect(limiter.check('b').allowed).toBe(false)
+  })
+
   it('tracks separate keys independently', () => {
     const limiter = new RateLimiter({ maxAttempts: 1, windowMs: 1000 })
     expect(limiter.check('ip-1').allowed).toBe(true)

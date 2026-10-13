@@ -19,6 +19,7 @@ export class RateLimiter {
   private readonly windowMs: number
   private readonly now: () => number
   private readonly buckets = new Map<string, Bucket>()
+  private nextSweepAt = 0
 
   constructor(options: RateLimiterOptions) {
     this.maxAttempts = options.maxAttempts
@@ -26,8 +27,24 @@ export class RateLimiter {
     this.now = options.now ?? Date.now
   }
 
+  /** Anzahl der aktuell gemerkten Schlüssel (Bestand, nicht nur aktive). */
+  get size(): number {
+    return this.buckets.size
+  }
+
+  // Abgelaufene Einträge würden sonst für jede je gesehene Adresse bis zum
+  // Neustart im Speicher bleiben. Ein Durchlauf je Zeitfenster genügt.
+  private sweepExpired(now: number): void {
+    if (now < this.nextSweepAt) return
+    this.nextSweepAt = now + this.windowMs
+    for (const [key, bucket] of this.buckets) {
+      if (now - bucket.windowStart >= this.windowMs) this.buckets.delete(key)
+    }
+  }
+
   check(key: string): RateLimitResult {
     const now = this.now()
+    this.sweepExpired(now)
     const bucket = this.buckets.get(key)
 
     if (!bucket || now - bucket.windowStart >= this.windowMs) {

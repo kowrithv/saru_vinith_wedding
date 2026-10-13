@@ -233,7 +233,7 @@ export default function MemoryGame() {
           {bestScore && (
             <div className="flex items-center gap-2">
               <Trophy size={14} className="text-gold" />
-              Deine Bestzeit: {bestScore.moves} Züge · {formatTime(bestScore.seconds)}
+              Dein bestes Ergebnis: {bestScore.moves} Züge · {formatTime(bestScore.seconds)}
             </div>
           )}
           {globalRecord && (

@@ -105,6 +105,12 @@ describe('GalleryPage', () => {
     await waitFor(() => expect(container.firstChild).toHaveClass('pt-24'))
   })
 
+  it('leaves room below the content so the floating upload button never covers the last controls', async () => {
+    mockFetchSequence([{ body: { mode: 'public', unlocked: true, photos: [] } }])
+    const { container } = render(<GalleryPage />)
+    await waitFor(() => expect(container.firstChild).toHaveClass('pb-28'))
+  })
+
   it('shows an error state with a retry option, not the password form, when loading fails', async () => {
     mockFetchSequence([{ status: 500, body: { error: 'Serverfehler' } }])
     render(<GalleryPage />)
