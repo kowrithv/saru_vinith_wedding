@@ -88,7 +88,10 @@
   `docs/ops/cloudflare-r2-setup.md`. Nameserver-TTL 24 h: vor Mittwoch erledigen.
 - TLS/Proxy: Auf dem Server terminiert **Traefik** TLS. Die
   `docker-compose.yml` im Repo ist die Traefik-Variante; Netzwerkname,
-  Entrypoint und Cert-Resolver müssen zum vorhandenen Traefik passen.
+  Entrypoint und Cert-Resolver müssen zum vorhandenen Traefik passen. Vor dem
+  Umstieg: alte Seite stoppen und alte Route entfernen (README „Umstieg von
+  der alten Seite"); am Entrypoint darf `forwardedHeaders.insecure` nicht
+  gesetzt sein, sonst lässt sich der Rate-Limiter per Header umgehen.
 
 ## Noch zu planende Subsysteme (Backlog aus der Spec)
 

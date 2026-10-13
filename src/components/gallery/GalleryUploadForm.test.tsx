@@ -626,4 +626,21 @@ describe('GalleryUploadForm', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(/sitzung abgelaufen/i)
     expect(screen.queryByText(/falsches kennwort/i)).not.toBeInTheDocument()
   })
+
+  it('also reports an expired admin session while guest uploads are locked, not "pausiert"', async () => {
+    // Bei gesperrtem Foto-Upload prüft der Server die Sperre vor der Anmeldung:
+    // ein Admin mit abgelaufener Sitzung bekäme sonst 423 statt 401.
+    const user = setupUser()
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ ok: false, status: 423, json: async () => ({ error: 'Foto-Uploads sind derzeit pausiert.' }) })
+    )
+    render(<GalleryUploadForm isAdmin onUploaded={vi.fn()} />)
+    await user.type(screen.getByLabelText(/dein name/i), 'Saruga')
+    await user.upload(screen.getByLabelText(/fotos ausw/i), makeFile())
+    await user.click(screen.getByRole('button', { name: /hochladen/i }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/sitzung abgelaufen/i)
+    expect(screen.queryByText(/pausiert/i)).not.toBeInTheDocument()
+  })
 })

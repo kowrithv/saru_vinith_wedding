@@ -136,30 +136,56 @@ Entrypoint und Cert-Resolver lassen sich per Umgebungsvariable anpassen
 (`DOMAIN`, `TRAEFIK_NETWORK`, `TRAEFIK_ENTRYPOINT`, `TRAEFIK_CERTRESOLVER`):
 
 ```bash
-cp .env.example .env.production      # Werte eintragen
-IMAGE_TAG=1.0.0 docker compose -f docker-compose.yml pull
-IMAGE_TAG=1.0.0 docker compose -f docker-compose.yml up -d
+cp .env.example .env.production      # App-Werte eintragen
+echo 'IMAGE_TAG=1.0.0' > .env        # Compose-Variable, siehe unten
+docker compose -f docker-compose.yml pull
+docker compose -f docker-compose.yml up -d
 ```
+
+Compose braucht `IMAGE_TAG` bei **jedem** Kommando (auch `ps`, `logs`,
+`restart`), nicht nur bei `up`. Deshalb steht es in einer `.env` neben der
+Compose-Datei (dort optional auch `DOMAIN`, `TRAEFIK_*`); ein Prefix vor
+einem einzelnen Kommando reicht nicht. `.env` (Compose) und
+`.env.production` (App) sind zwei verschiedene Dateien.
 
 - Das Image heißt `ghcr.io/kowrithv/saru_vinith_wedding:<tag>`; CI baut es
   **nur für Versions-Tags** (`v*.*.*`) auf `main`. Aus dem Git-Tag `v1.0.0`
   wird der Image-Tag **`1.0.0`** (ohne „v"); zusätzlich gibt es
-  `sha-<kurz>`. Branch-Pushes erzeugen kein Image – der Compose-Standard
-  `IMAGE_TAG=develop` existiert also nicht, `IMAGE_TAG` muss immer gesetzt
-  werden. Der Tag `latest` wird nie automatisch gesetzt – er gehört der
+  `sha-<kurz>`. Branch-Pushes erzeugen kein Image – es gibt also keinen
+  Standard-Tag, `IMAGE_TAG` muss immer gesetzt sein. Der Tag `latest` wird nie automatisch gesetzt – er gehört der
   alten Seite (`clean-start`).
 - `./data` wird nach `/app/data` gemountet; dort liegen Datenbank und Sicherungen.
 - Health-Check: `GET /api/health`.
 - Hinter Traefik terminiert dieser das TLS. Die Rate-Limiter lesen die
-  Client-IP aus `X-Forwarded-For` (siehe `CLIENT_IP_HEADER`).
+  Client-IP aus `X-Forwarded-For` (siehe `CLIENT_IP_HEADER`). Das ist nur
+  vertrauenswürdig, solange Traefik fremde `X-Forwarded-*`-Header selbst
+  verwirft (Standard); am Entrypoint darf also weder
+  `forwardedHeaders.insecure` noch ein zu weites `trustedIPs` gesetzt sein.
 
 ### Betrieb
 
 ```bash
-docker compose -f docker-compose.yml logs -f web           # Logs
-docker compose -f docker-compose.yml restart web           # Neustart
-IMAGE_TAG=<älterer-tag> docker compose -f docker-compose.yml up -d   # Rollback auf festes Image-Tag
+docker compose -f docker-compose.yml logs -f web                    # Logs
+docker compose -f docker-compose.yml restart web                    # Neustart (liest .env.production NICHT neu)
+docker compose -f docker-compose.yml up -d --force-recreate web     # nach Änderung an .env.production
 ```
+
+Rollback: `IMAGE_TAG` in der `.env` auf den älteren Tag setzen, dann
+`docker compose -f docker-compose.yml pull` und `up -d`.
+
+### Umstieg von der alten Seite
+
+Die alte Seite (Branch `clean-start`) nutzt denselben `container_name`
+(`saru-vinith-wedding`), veröffentlicht Port 3000 und hat keine Traefik-Labels.
+Vor dem ersten `up -d` der neuen Datei:
+
+1. Die alte Seite stoppen: `docker compose down` in ihrem Ordner. Liegt die neue
+   Datei im selben Ordner, ersetzt sie die alte und `up -d` erneuert den Container.
+2. Eine alte Traefik-Route für `vsjourney.de` (File-Provider oder Labels einer
+   anderen Compose-Datei) entfernen. Zwei Router mit derselben Regel machen die
+   Zuordnung uneindeutig; der Routername `hochzeit` darf nirgends sonst vorkommen.
+3. Alte Dateien in `./data` und `./public/uploads` bleiben unberührt; die neue
+   App legt dort nur `wedding.db` und `backups/` an.
 
 **Backup:** Die App sichert die Datenbank beim Start und danach stündlich nach
 `data/backups/` (`wedding-YYYYMMDD-HHmmss.db`, UTC). Aufbewahrt werden die
@@ -179,8 +205,8 @@ der Mailversand funktioniert.
 
 ```bash
 docker compose -f docker-compose.yml stop web
-rm -f data/wedding.db-wal data/wedding.db-shm
-cp data/backups/wedding-<Zeitstempel>.db data/wedding.db
+sudo rm -f data/wedding.db-wal data/wedding.db-shm   # sudo: ./data gehört dem Container-Nutzer (uid 1001)
+sudo cp data/backups/wedding-<Zeitstempel>.db data/wedding.db
 docker compose -f docker-compose.yml start web
 ```
 

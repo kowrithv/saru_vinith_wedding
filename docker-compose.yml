@@ -1,15 +1,22 @@
 # Betrieb hinter einem vorhandenen Traefik (so läuft der Produktionsserver).
 # Diese Datei als eigene Compose-Datei auf den Server kopieren:
 #
-#   IMAGE_TAG=1.0.0 docker compose -f docker-compose.yml pull
-#   IMAGE_TAG=1.0.0 docker compose -f docker-compose.yml up -d
+#   echo 'IMAGE_TAG=1.0.0' > .env        # neben dieser Datei, siehe unten
+#   docker compose -f docker-compose.yml pull
+#   docker compose -f docker-compose.yml up -d
 #
-# Anzupassen an das eigene Traefik: Netzwerkname, Entrypoint und Cert-Resolver
-# (per Umgebungsvariable, z. B. in einer .env neben der Datei, oder direkt
-# hier). TLS terminiert Traefik; die App selbst spricht nur HTTP auf Port 3000.
+# IMAGE_TAG braucht Compose bei JEDEM Kommando (auch ps, logs, restart), nicht
+# nur bei up: deshalb in die .env neben dieser Datei, nicht nur vor ein
+# Kommando. Dort stehen optional auch DOMAIN, TRAEFIK_NETWORK,
+# TRAEFIK_ENTRYPOINT und TRAEFIK_CERTRESOLVER (Anpassung ans eigene Traefik).
+# TLS terminiert Traefik; die App selbst spricht nur HTTP auf Port 3000.
+#
+# Wichtig beim Umstieg von der alten Seite: gleicher container_name wie dort.
+# Die alte Seite vorher stoppen (docker compose down in ihrem Ordner) und
+# eine alte Traefik-Route für die Domain entfernen (siehe README).
 services:
   web:
-    image: ghcr.io/kowrithv/saru_vinith_wedding:${IMAGE_TAG:?IMAGE_TAG setzen, z. B. 1.0.0}
+    image: ghcr.io/kowrithv/saru_vinith_wedding:${IMAGE_TAG:?IMAGE_TAG in .env neben der Compose-Datei setzen, z. B. 1.0.0}
     container_name: saru-vinith-wedding
     restart: unless-stopped
     env_file:

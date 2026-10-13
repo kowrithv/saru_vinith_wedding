@@ -46,6 +46,11 @@ export async function POST(request: Request): Promise<Response> {
     return NextResponse.json({ error: 'Falsches Passwort.' }, { status: 401 })
   }
 
+  // Nur Fehlversuche sollen sperren: sonst sperren mehrere Geräte, ein
+  // Smoke-Test oder Anmelden/Abmelden die Admin-Person über die gemeinsame
+  // WLAN-IP aus - mitten im Notfall.
+  loginLimiter.reset(clientKey)
+
   const secret = getOrCreateAdminSecret(getDb())
   const expiresAt = Date.now() + ADMIN_SESSION_DURATION_MS
   const cookieValue = signCookieValue(expiresAt, secret)

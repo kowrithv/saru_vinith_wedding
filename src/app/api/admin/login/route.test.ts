@@ -46,6 +46,18 @@ describe('POST /api/admin/login', () => {
     expect(response.status).toBe(429)
   })
 
+  it('does not count successful logins against the limit (several devices, smoke test, login/logout cycles)', async () => {
+    const ip = '203.0.113.45'
+    for (let i = 0; i < 4; i += 1) {
+      await POST(loginRequest('falsch', ip))
+    }
+    const results: number[] = []
+    for (let i = 0; i < 3; i += 1) {
+      results.push((await POST(loginRequest('richtiges-passwort', ip))).status)
+    }
+    expect(results).toEqual([200, 200, 200])
+  })
+
   it('returns 500 with a German message when ADMIN_PASSWORD is unset, without throwing', async () => {
     delete process.env.ADMIN_PASSWORD
     const response = await POST(loginRequest('irgendwas', '203.0.113.50'))
