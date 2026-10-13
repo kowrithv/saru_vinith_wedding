@@ -45,8 +45,10 @@ stoppen.
 2. **Neue Seite vorbereiten, während die alte noch läuft:** Neue
    `docker-compose.yml` in einen **anderen** Ordner legen, daneben
    `.env.production` und eine `.env` mit `IMAGE_TAG=1.0.0-rc.1` (plus ggf.
-   `TRAEFIK_*`). Dann `docker compose -f docker-compose.yml config` – muss ohne
-   Fehler durchlaufen (braucht das Image nicht).
+   `TRAEFIK_*`); `chmod 600 .env.production`. Dann
+   `docker compose -f docker-compose.yml config --quiet` – muss ohne Ausgabe
+   durchlaufen (braucht das Image nicht). **Nicht** ohne `--quiet`: die
+   Ausgabe kann die Werte aus `.env.production` enthalten.
 3. **Image holen, sobald der Build grün ist:** `docker compose -f
    docker-compose.yml pull`. Das stört die alte Seite nicht.
 4. Alte Seite stoppen: `docker compose down` im alten Ordner. **Ab hier ist die
