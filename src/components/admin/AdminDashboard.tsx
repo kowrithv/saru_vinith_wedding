@@ -54,6 +54,18 @@ interface MemoryResultRow {
   createdAt: string
 }
 
+// Lädt die besten gemeldeten Memory-Ergebnisse; bei einem Fehler null (die
+// Ansicht bleibt dann beim letzten Stand).
+async function fetchMemoryResults(): Promise<{ results: MemoryResultRow[]; total: number } | null> {
+  try {
+    const response = await fetch('/api/admin/memory-results')
+    if (!response.ok) return null
+    return (await response.json()) as { results: MemoryResultRow[]; total: number }
+  } catch {
+    return null
+  }
+}
+
 function formatDateTime(iso: string): string {
   return new Date(iso).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
 }
@@ -107,13 +119,11 @@ export default function AdminDashboard({ initialLocks, initialGalleryMode }: Adm
 
     // Der Admin sieht die gemeldeten Memory-Ergebnisse, damit ein unmöglicher
     // Wert (gefälscht per Skript) auffällt und sich einzeln entfernen lässt.
-    fetch('/api/admin/memory-results')
-      .then((res) => (res.ok ? res.json() : { results: [], total: 0 }))
-      .then((data: { results: MemoryResultRow[]; total: number }) => {
-        setMemoryResults(data.results)
-        setMemoryResultsTotal(data.total)
-      })
-      .catch(() => {})
+    void fetchMemoryResults().then((data) => {
+      if (!data) return
+      setMemoryResults(data.results)
+      setMemoryResultsTotal(data.total)
+    })
   }, [])
 
   const deleteGuestbookEntry = async (id: number) => {
@@ -253,6 +263,13 @@ export default function AdminDashboard({ initialLocks, initialGalleryMode }: Adm
         setMemoryResults((prev) => prev.filter((r) => r.id !== result.id))
         setMemoryResultsTotal((prev) => (typeof data?.total === 'number' ? data.total : Math.max(0, prev - 1)))
         setMemoryRecordMessage({ ok: true, text: 'Ergebnis entfernt.' })
+        // Nachrückende Ergebnisse (ab Platz 51) und neu gemeldete stehen erst
+        // nach einem erneuten Abruf in der Liste.
+        void fetchMemoryResults().then((data) => {
+          if (!data) return
+          setMemoryResults(data.results)
+          setMemoryResultsTotal(data.total)
+        })
       } else if (response.status === 401) {
         setMemoryRecordMessage({ ok: false, text: 'Sitzung abgelaufen – bitte neu anmelden.' })
       } else {

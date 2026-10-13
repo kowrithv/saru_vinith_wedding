@@ -9,7 +9,8 @@
 | bis Mi 14.10. | Betreiber | SMTP-Zugang in `.env.production`; Ziel für Off-Box-Kopie und Uptime-Monitor (`hochzeitstag-runbook.md` §7) |
 | Mi 14.10. | Betreiber | Gerätetest auswerten; Funde melden |
 | Mi 14.10. (nur falls nötig) | Entwicklung | **Vorschau-Speicher** (nur wenn der Gerätetest bei 20+ Fotos Probleme zeigt); **Kennwort-Modus-Doppeleingabe** (nur wenn die Galerie am Fest auf „Kennwort" gestellt werden soll) |
-| Do 15.10. bis abends | Betreiber | letzter Smoke- und Lasttest gegen die echte Domain, Tag `v1.0.0`, **Freeze** — danach keine Änderungen mehr |
+| Di 13.10. abends bis Do | Betreiber | Vorab-Tags `v1.0.0-rc.1`, `-rc.2` … für Deploys und Tests (`IMAGE_TAG` in der `.env` anpassen) |
+| Do 15.10. bis abends | Betreiber | letzter Smoke- und Lasttest gegen die echte Domain, endgültiger Tag `v1.0.0` (`IMAGE_TAG=1.0.0`), **Freeze** — danach keine Änderungen mehr |
 | Sa 17.10. | Bereitschaft | `docs/ops/hochzeitstag-runbook.md` |
 | ab So 18.10. | Entwicklung | Export der Originale aus R2 (Runbook §6); **verwaiste R2-Objekte** aufräumen (Skript, Abgleich mit der Datenbank); **Thumbnail-Größenlimit** in der Signatur; Foto-Teil der Erinnerungen; die `process.exit`-Warnung in `instrumentation.ts` |
 
@@ -59,6 +60,10 @@ Nicht geplant: ein vom Server verteiltes Memory-Spiel (bewusst clientseitig).
   gemeldeten Ergebnisse werden ohne Namen gespeichert, Obergrenze 2000).
 - Wer das Skript-Fälschen ganz ausschließen will, bräuchte ein vom Server
   verteiltes Spiel — für diesen Termin bewusst nicht.
+- Eine Flut gefälschter Bestwerte verdrängt ehrliche Ergebnisse aus der
+  Obergrenze (nur die Historie geht verloren; der Rekord wäre ohnehin
+  gefälscht). Dann hilft nur „Zurücksetzen". Ein Admin-Knopf „alles entfernen,
+  was mindestens so gut ist" wäre eine mögliche Ergänzung nach der Hochzeit.
 
 ## Offene externe Abhängigkeiten (aus der Spec)
 

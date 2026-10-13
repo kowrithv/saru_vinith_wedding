@@ -84,6 +84,7 @@ Einträge nach dem Zeitstempel verloren.
 | Alarm-Mail „Speicherplatz wird knapp" | Platte ≥ 85 % | `df -h`, alte Docker-Logs/Images (`docker system df`) |
 | Alarm-Mail „Sicherung fehlgeschlagen" | Platte voll oder Datenbank beschädigt | `logs`, `df -h`; manuell `cp` der Datenbank sichern |
 | Alarm-Mail „Sicherung hängt" | vorige Sicherung läuft nach einer Stunde noch (Platte blockiert/sehr langsam) | `df -h`, `logs`; hilft nichts: `restart web` (Reste `*.tmp` räumt der nächste Lauf) |
+| Sehr viele unmögliche Memory-Ergebnisse (Skript-Flut) | Die Liste hält die besten 2000; Fälschungen verdrängen ehrliche | Einzelnes Entfernen lohnt nicht: „Memory-Rekord zurücksetzen". Ehrliche Spieler beginnen von vorn |
 | Rekord im Memory unrealistisch | Skript hat einen Wert gesendet | Admin: in „Gemeldete Ergebnisse" das einzelne Ergebnis **entfernen** (der Rekord fällt auf das nächstbeste zurück); „Memory-Rekord zurücksetzen" löscht alle |
 
 ## 5. Plan B
@@ -110,10 +111,12 @@ privater Bucket mit `rclone copy` geht genauso):
 
 ```bash
 # crontab -e auf dem Server – 5 Minuten nach der stündlichen App-Sicherung:
-5 * * * * rsync -a -e "ssh -i ~/.ssh/backup_key" <compose-ordner>/data/backups/ <benutzer>@<zielhost>:<pfad>/wedding-backups/
+5 * * * * rsync -a --exclude '*.tmp*' -e "ssh -i ~/.ssh/backup_key" <compose-ordner>/data/backups/ <benutzer>@<zielhost>:<pfad>/wedding-backups/
 ```
 
 - Ohne `--delete`: das Ziel behält auch Sicherungen, die die App schon rotiert hat.
+- `--exclude '*.tmp*'`: die App schreibt eine Sicherung zuerst als `*.tmp`; eine
+  halb geschriebene Datei soll nicht ins Ziel kopiert werden.
 - **Nicht** den öffentlichen Foto-Bucket (`fotos.vsjourney.de`) als Ziel nehmen:
   alles darin ist öffentlich abrufbar. Ein Bucket nur für Sicherungen, privat.
 - Einmal probeweise ausführen und im Ziel nachsehen, dass `wedding-*.db`

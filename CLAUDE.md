@@ -84,7 +84,8 @@ einer Route meldet `tsc` ggf. veraltete Dateien in `.next/types` – dann
 - Arbeitsbranch ist `develop`. **Nie** nach `clean-start` pushen oder mergen –
   das ist die Produktion der alten Seite (Image-Tag `latest`).
 - `main` wird vom Nutzer gebaut, sobald das Tag `v1.0.0` bereit ist (nur
-  Tags auf `main` erzeugen ein Image). Nicht von sich aus nach `main` mergen
+  Tags auf `main` erzeugen ein Image). Bis zum Freeze gelten Vorab-Tags
+  (`v1.0.0-rc.1`, …), das endgültige `v1.0.0` kommt erst danach. Nicht von sich aus nach `main` mergen
   oder taggen.
 - Gepusht wird vom Nutzer: sein SSH-Key ist passwortgeschützt und nur auf
   seinem Rechner nutzbar. Von hier aus ist der Remote nicht erreichbar

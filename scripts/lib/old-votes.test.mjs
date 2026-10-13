@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it, vi } from 'vitest'
-import { importVotes, parseOldVotes } from './old-votes.mjs'
+import { importVotes, normalizeBaseUrl, parseOldVotes } from './old-votes.mjs'
 
 const tallyZero = { Saruga: 0, Vinith: 0, Beide: 0 }
 
@@ -50,6 +50,12 @@ describe('parseOldVotes', () => {
     expect(problems.filter((problem) => /unbrauchbar/.test(problem))).toHaveLength(3)
   })
 
+  it('counts the entries it had to skip', () => {
+    const { votes, skipped } = parseOldVotes(oldFile([twoVotes[0], { id: 'x', questionId: '', option: 'Saruga' }, 'kaputt']))
+    expect(votes).toHaveLength(1)
+    expect(skipped).toBe(2)
+  })
+
   it('warns when the counters of the old file do not match the list of votes', () => {
     const { problems } = parseOldVotes(oldFile([twoVotes[0]], { 1: { Saruga: 3 } }))
     expect(problems.join(' ')).toMatch(/3.*1|1.*3/)
@@ -64,6 +70,21 @@ describe('parseOldVotes', () => {
   it('falls back to a position based voter id when a vote has no id', () => {
     const { votes } = parseOldVotes(oldFile([{ questionId: '1', option: 'Vinith' }]))
     expect(votes[0].voterId).toBe('legacy-0')
+  })
+})
+
+describe('normalizeBaseUrl', () => {
+  it('accepts an https address and drops trailing slashes', () => {
+    expect(normalizeBaseUrl('https://vsjourney.de/')).toBe('https://vsjourney.de')
+    expect(normalizeBaseUrl('http://localhost:3124')).toBe('http://localhost:3124')
+  })
+
+  it('rejects an address without a scheme, so a typo fails before anything is sent', () => {
+    expect(() => normalizeBaseUrl('vsjourney.de')).toThrow(/https?:\/\//)
+  })
+
+  it('rejects other schemes', () => {
+    expect(() => normalizeBaseUrl('ftp://vsjourney.de')).toThrow()
   })
 })
 

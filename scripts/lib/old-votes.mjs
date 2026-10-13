@@ -15,17 +15,18 @@ function tallyTotal(questions) {
 
 /**
  * @param {unknown} data Inhalt der alten who-votes.json
- * @returns {{ votes: { questionId: string, option: string, voterId: string }[], problems: string[] }}
+ * @returns {{ votes: { questionId: string, option: string, voterId: string }[], problems: string[], skipped: number }}
  */
 export function parseOldVotes(data) {
   const problems = []
   const list = data && Array.isArray(data.votes) ? data.votes : null
   if (!list) {
     problems.push('Die Datei enthält keine Liste "votes" - es gibt nichts zu übernehmen.')
-    return { votes: [], problems }
+    return { votes: [], problems, skipped: 0 }
   }
 
   const votes = []
+  let skipped = 0
   list.forEach((entry, index) => {
     const valid =
       entry &&
@@ -35,6 +36,7 @@ export function parseOldVotes(data) {
       typeof entry.option === 'string' &&
       entry.option.length > 0
     if (!valid) {
+      skipped += 1
       problems.push(`Eintrag ${index + 1} ist unbrauchbar und wird übersprungen.`)
       return
     }
@@ -50,7 +52,26 @@ export function parseOldVotes(data) {
         'Übernommen wird nur die Liste.'
     )
   }
-  return { votes, problems }
+  return { votes, problems, skipped }
+}
+
+/**
+ * Prüft die Basis-Adresse vor dem ersten Senden: ein Tippfehler (z. B. ohne
+ * "https://") soll sofort auffallen, nicht erst beim ersten Aufruf.
+ * @param {string} input
+ * @returns {string}
+ */
+export function normalizeBaseUrl(input) {
+  let url
+  try {
+    url = new URL(input)
+  } catch {
+    throw new Error(`Ungültige Adresse "${input}" - sie muss mit https:// (oder http://) beginnen.`)
+  }
+  if (url.protocol !== 'https:' && url.protocol !== 'http:') {
+    throw new Error(`Ungültige Adresse "${input}" - erlaubt sind nur https:// und http://.`)
+  }
+  return `${url.origin}${url.pathname.replace(/\/+$/, '')}`
 }
 
 /**

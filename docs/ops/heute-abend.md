@@ -8,7 +8,7 @@ den verlinkten Checklisten; diese Seite hält nur Reihenfolge und Abhängigkeite
 | 1 | DNS-Bestand sichern, Zone zu Cloudflare, Nameserver bei netcup umstellen | `cloudflare-r2-setup.md` §1–3 | – |
 | 2 | R2-Bucket, Domain `fotos.vsjourney.de`, Cache-Purge, Werte für `.env.production` | `cloudflare-r2-setup.md` §4–7 | Schritt 1 (Zone aktiv) |
 | 3 | Kosten-Wächter (Budget-Alarm) | `cloudflare-r2-setup.md` §9 | Schritt 2 |
-| 4 | **Image bauen lassen:** `develop` nach `main`, Tag `v1.0.0` pushen | `README.md` „Deployment" | Entscheidung, dass der Stand reif ist |
+| 4 | **Image bauen lassen:** `develop` nach `main`, Vorab-Tag **`v1.0.0-rc.1`** pushen (Image `1.0.0-rc.1`) | `README.md` „Deployment" | Entscheidung, dass der Stand reif ist |
 | 5 | **Server umstellen** (siehe unten) | `README.md` „Umstieg von der alten Seite" | Schritt 2 und 4 |
 | 6 | Smoke-Test gegen die echte Domain | `node scripts/smoke.mjs https://vsjourney.de` | Schritt 5 |
 | 7 | **Gerätetest** am echten Handy | `geraetetest-checkliste.md` | Schritt 2, 5 und 6 |
@@ -16,9 +16,16 @@ den verlinkten Checklisten; diese Seite hält nur Reihenfolge und Abhängigkeite
 
 ## Was vor Schritt 5 feststehen muss
 
-- **Das Image `1.0.0` existiert erst nach Schritt 4.** Die CI baut nur für Tags
+- **Das Image existiert erst nach Schritt 4.** Die CI baut nur für Tags
   `v*.*.*`, deren Commit auf `main` liegt; der Build dauert einige Minuten. Ohne
-  Image kann `docker compose pull` nichts holen.
+  Image kann `docker compose pull` nichts holen. Im Actions-Lauf unter „Extract
+  metadata" steht, welche Image-Tags entstanden sind (erwartet `1.0.0-rc.1`).
+- **Heute nur ein Vorab-Tag, kein `v1.0.0`:** Ein Tag lässt sich nicht erneut
+  verwenden. Würde heute `v1.0.0` gesetzt, bräuchte jede Änderung bis Donnerstag
+  `v1.0.1`. Deshalb: heute `v1.0.0-rc.1`, Korrekturen `v1.0.0-rc.2` usw., und
+  **erst nach dem Freeze am Donnerstag das endgültige `v1.0.0`**. Bei jedem neuen
+  Tag `IMAGE_TAG` in der `.env` auf dem Server anpassen, dann `pull` und
+  `up -d`.
 - **Die DNS-Umstellung braucht Zeit** (Nameserver-TTL bis 24 h). Bis die Zone
   bei Cloudflare aktiv ist, geht Schritt 2 nicht; Schritt 5 und 6 funktionieren
   aber auch vorher (mit der alten oder neuen Nameserver-Auflösung), sofern
@@ -30,7 +37,7 @@ den verlinkten Checklisten; diese Seite hält nur Reihenfolge und Abhängigkeite
 
 1. Alten Zustand sichern: Ordner und Compose-Datei der alten Seite notieren,
    ggf. `docker compose ps` und die alte Traefik-Route (File-Provider oder
-   Labels) festhalten – das ist der Rückweg. **Die alten Stimmen kopieren:**
+   Labels) festhalten – das ist der Rückweg. **Die alten Stimmen sichern:**
    `cp <alter-ordner>/data/who-votes.json ~/who-votes-alt.json` (siehe
    Schritt 8; die Datei enthält Namen der Abstimmenden, nicht weitergeben).
 2. Alte Seite stoppen: `docker compose down` im alten Ordner. **Ab hier ist die
@@ -38,7 +45,7 @@ den verlinkten Checklisten; diese Seite hält nur Reihenfolge und Abhängigkeite
 3. Alte Traefik-Route für `vsjourney.de` entfernen (zwei Router mit derselben
    Regel sind uneindeutig).
 4. Neue `docker-compose.yml` in einen Ordner legen, daneben `.env.production`
-   und eine `.env` mit `IMAGE_TAG=1.0.0` (plus ggf. `TRAEFIK_*`).
+   und eine `.env` mit `IMAGE_TAG=1.0.0-rc.1` (plus ggf. `TRAEFIK_*`).
 5. `docker compose -f docker-compose.yml config` – muss ohne Fehler durchlaufen.
 6. `docker compose -f docker-compose.yml pull` und `up -d`.
 7. `docker compose -f docker-compose.yml ps` – Status **healthy**; `logs web`
@@ -55,12 +62,23 @@ Gespeichert hat die alte Seite nur die Stimmen der „Wer von uns?"-Abstimmung
 Antworten sind in alt und neu gleich, deshalb lassen sich die Stimmen exakt
 übernehmen. Namen werden dabei **nicht** mit übernommen.
 
+Das Skript liegt im Repository, nicht auf dem Server: es läuft **auf dem Rechner
+mit dem Repo-Checkout** (Node ab Version 20) und spricht die Seite über das
+Internet an.
+
 ```bash
+# 0. Datei vom Server holen (im Repo-Ordner):
+scp <server>:~/who-votes-alt.json ./who-votes-alt.json
 # 1. Probelauf (sendet nichts, zeigt nur, was übernommen würde):
-node scripts/import-old-votes.mjs ~/who-votes-alt.json https://vsjourney.de
+node scripts/import-old-votes.mjs ./who-votes-alt.json https://vsjourney.de
 # 2. Wirklich übernehmen:
-node scripts/import-old-votes.mjs ~/who-votes-alt.json https://vsjourney.de --apply
+node scripts/import-old-votes.mjs ./who-votes-alt.json https://vsjourney.de --apply
+# 3. Die Kopie mit den Namen löschen (lokal und auf dem Server):
+rm ./who-votes-alt.json && ssh <server> rm ~/who-votes-alt.json
 ```
+
+Exit-Code 1 heißt: etwas wurde abgewiesen, ist fehlgeschlagen, oder Einträge der
+Datei waren unbrauchbar (die Hinweise stehen darüber).
 
 - Erst ausführen, **wenn die alte Seite gestoppt ist** (sonst kommen in der alten
   Datei noch Stimmen dazu) und die neue läuft.

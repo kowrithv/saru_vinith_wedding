@@ -6,14 +6,22 @@
 //
 // Ein zweiter Lauf legt nichts doppelt an (feste Kennung je alter Stimme).
 import { readFileSync } from 'node:fs'
-import { importVotes, parseOldVotes } from './lib/old-votes.mjs'
+import { importVotes, normalizeBaseUrl, parseOldVotes } from './lib/old-votes.mjs'
 
 const args = process.argv.slice(2)
 const apply = args.includes('--apply')
-const [file, baseUrl] = args.filter((arg) => !arg.startsWith('--'))
+const [file, rawBaseUrl] = args.filter((arg) => !arg.startsWith('--'))
 
-if (!file || !baseUrl) {
+if (!file || !rawBaseUrl) {
   console.error('Aufruf: node scripts/import-old-votes.mjs <who-votes.json> <basis-url> [--apply]')
+  process.exit(2)
+}
+
+let baseUrl
+try {
+  baseUrl = normalizeBaseUrl(rawBaseUrl)
+} catch (error) {
+  console.error(error instanceof Error ? error.message : error)
   process.exit(2)
 }
 
@@ -25,7 +33,7 @@ try {
   process.exit(2)
 }
 
-const { votes, problems } = parseOldVotes(data)
+const { votes, problems, skipped } = parseOldVotes(data)
 for (const problem of problems) console.warn(`Hinweis: ${problem}`)
 console.log(`${votes.length} Stimme(n) gefunden. ${apply ? 'Sende an' : 'Probelauf für'} ${baseUrl}`)
 
@@ -37,7 +45,10 @@ for (const { vote, status, detail } of results) {
 const count = (status) => results.filter((r) => r.status === status).length
 if (apply) {
   console.log(`Übernommen: ${count('imported')}, schon vorhanden: ${count('already-there')}, abgewiesen: ${count('rejected')}, Fehler: ${count('failed')}.`)
-  process.exit(count('rejected') + count('failed') > 0 ? 1 : 0)
+  // Unvollständig ist auch, wenn Einträge übersprungen wurden oder gar nichts da war.
+  const incomplete = skipped > 0 || votes.length === 0
+  if (incomplete) console.error('Achtung: nicht alles aus der Datei konnte übernommen werden (siehe Hinweise oben).')
+  process.exit(count('rejected') + count('failed') > 0 || incomplete ? 1 : 0)
 } else {
   console.log('Probelauf - nichts gesendet. Mit --apply wirklich übernehmen.')
 }

@@ -37,6 +37,8 @@ function mockFetchSequence(
     memoryRecord?: { moves: number; seconds: number } | null
     memoryResults?: { id: number; moves: number; seconds: number; createdAt: string }[]
     memoryTotal?: number
+    /** Antworten auf aufeinanderfolgende Listen-Abrufe (der letzte gilt danach weiter). */
+    memoryResultsSequence?: { id: number; moves: number; seconds: number; createdAt: string }[][]
   } = {}
 ) {
   const fn = vi.fn()
@@ -45,9 +47,12 @@ function mockFetchSequence(
   })
   // Das Laden des Memory-Rekords (GET) läuft außerhalb der Reihenfolge der
   // übrigen Aufrufe, damit deren Mock-Sequenzen unverändert bleiben.
+  let listCalls = 0
   const routed = (url: string, init?: RequestInit) => {
     if (url === '/api/admin/memory-results' && (!init || !init.method || init.method === 'GET')) {
+      const sequence = options.memoryResultsSequence
       const results =
+        (sequence ? sequence[Math.min(listCalls++, sequence.length - 1)] : undefined) ??
         options.memoryResults ??
         (options.memoryRecord
           ? [{ id: 1, ...options.memoryRecord, createdAt: '2026-10-13T10:00:00.000Z' }]
@@ -538,8 +543,9 @@ describe('AdminDashboard', () => {
     })
 
     it('removes one result after confirmation and shows the next best as the record', async () => {
+      // Der Server liefert nach dem Entfernen die Liste ohne das entfernte Ergebnis.
       const fetchMock = mockFetchSequence([...mounts, { body: { record: { moves: 14, seconds: 75 }, total: 2 } }], {
-        memoryResults: results,
+        memoryResultsSequence: [results, results.slice(1)],
       })
       render(<AdminDashboard initialLocks={noLocks} initialGalleryMode="public" />)
       await openResults()
@@ -553,6 +559,25 @@ describe('AdminDashboard', () => {
       expect(await screen.findByText(/aktueller rekord: 14 züge · 01:15/i)).toBeInTheDocument()
       expect(screen.queryByRole('button', { name: /8 züge · 00:04 entfernen/i })).not.toBeInTheDocument()
       expect(screen.getByRole('button', { name: /gemeldete ergebnisse \(2\)/i })).toBeInTheDocument()
+    })
+
+    it('reloads the list after a removal, so results that move up show and the record stays right', async () => {
+      const afterRemoval = [
+        { id: 3, moves: 14, seconds: 75, createdAt: '2026-10-13T09:30:00.000Z' },
+        { id: 9, moves: 20, seconds: 130, createdAt: '2026-10-13T09:45:00.000Z' },
+        { id: 11, moves: 22, seconds: 140, createdAt: '2026-10-13T10:00:00.000Z' },
+      ]
+      mockFetchSequence([...mounts, { body: { record: { moves: 14, seconds: 75 }, total: 3 } }], {
+        memoryResultsSequence: [results, afterRemoval],
+      })
+      render(<AdminDashboard initialLocks={noLocks} initialGalleryMode="public" />)
+      await openResults()
+      expect(screen.queryByRole('button', { name: /22 züge · 02:20 entfernen/i })).not.toBeInTheDocument()
+
+      await userEvent.click(screen.getByRole('button', { name: /8 züge · 00:04 entfernen/i }))
+
+      expect(await screen.findByRole('button', { name: /22 züge · 02:20 entfernen/i })).toBeInTheDocument()
+      expect(screen.getByText(/aktueller rekord: 14 züge · 01:15/i)).toBeInTheDocument()
     })
 
     it('keeps the result when the confirmation is declined', async () => {

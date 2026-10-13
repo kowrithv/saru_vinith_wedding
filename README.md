@@ -150,7 +150,8 @@ einem einzelnen Kommando reicht nicht. `.env` (Compose) und
 
 - Das Image heißt `ghcr.io/kowrithv/saru_vinith_wedding:<tag>`; CI baut es
   **nur für Versions-Tags** (`v*.*.*`) auf `main`. Aus dem Git-Tag `v1.0.0`
-  wird der Image-Tag **`1.0.0`** (ohne „v"); zusätzlich gibt es
+  wird der Image-Tag **`1.0.0`** (ohne „v"), aus einem Vorab-Tag wie
+  `v1.0.0-rc.1` der Image-Tag `1.0.0-rc.1`; zusätzlich gibt es
   `sha-<kurz>`. Branch-Pushes erzeugen kein Image – es gibt also keinen
   Standard-Tag, `IMAGE_TAG` muss immer gesetzt sein. Der Tag `latest` wird nie automatisch gesetzt – er gehört der
   alten Seite (`clean-start`).
@@ -240,7 +241,8 @@ zweites System ist noch offen (`TODO.md`).
 `scripts/import-old-votes.mjs` übernimmt die Stimmen der „Wer von uns?"-Abstimmung
 der alten Seite (`data/who-votes.json`) in die neue:
 `node scripts/import-old-votes.mjs <datei> <https://vsjourney.de> [--apply]`
-(ohne `--apply` nur ein Probelauf; wiederholbar, legt nichts doppelt an).
+(ohne `--apply` nur ein Probelauf; wiederholbar, legt nichts doppelt an). Es läuft
+auf dem Rechner mit dem Repo-Checkout, nicht auf dem Server.
 
 `scripts/compress-memory-images.mjs` verkleinert die Bilder für das
 Memory-Spiel nach `public/memory-spiel/`. Es braucht `sharp`, das nicht in
