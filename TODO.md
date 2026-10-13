@@ -50,10 +50,6 @@
   Server halten nur absurde Werte ab. Gegenmittel: Der Admin sieht den
   aktuellen Rekord in seiner Karte und kann ihn mit einem Tipp zurücksetzen.
   Echte Abhilfe wäre ein vom Server verteiltes Spiel — für diesen Termin zu groß.
-- **Zeit zählt ab dem Laden der Seite, nicht ab dem ersten Tipp.** Bei gleich
-  vielen Zügen entscheidet die Zeit und enthält so auch die Lesezeit. Für die
-  persönliche Bestzeit egal, für den gemeinsamen Rekord unfair; der Zähler
-  müsste beim ersten Aufdecken starten (ändert das bestehende Spiel).
 - **Wortwahl:** „Deine Bestzeit" und „Rekord aller Gäste" ranken beide nach
   Zügen zuerst. Nach einem Zurücksetzen kann die eigene Bestzeit besser
   aussehen als der Rekord.

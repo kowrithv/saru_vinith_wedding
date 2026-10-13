@@ -26,5 +26,9 @@ wird nur der Highscore — **keine Namen, keine Liste der Spiele**.
 - Rekord wird beim Laden abgefragt, ein gewonnenes Spiel meldet sich genau
   einmal. Antworten gelten nur in Anfrage-Reihenfolge; die Meldung „Neuer
   Rekord" gehört nur zum Spiel, das ihn gebrochen hat.
+- Die Zeit läuft erst ab der ersten aufgedeckten Karte (Änderung vom
+  13.10.2026): Lesezeit und Wartezeit auf der Seite zählen nicht, bei gleich
+  vielen Zügen entscheidet so die gespielte Zeit. „Neues Spiel" wartet wieder
+  auf die erste Karte.
 - Netzwerkfehler und Fehlerstatus stören das Spiel nie.
 - Die Rekord-Zeile reserviert ihre Höhe von Anfang an (kein Springen des Bretts).

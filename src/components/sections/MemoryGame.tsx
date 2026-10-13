@@ -78,6 +78,10 @@ export default function MemoryGame() {
   const { faces, cards } = game
   const locked = flippedIds.length === 2
   const isWon = cards.length > 0 && cards.every((c) => c.isMatched)
+  // Die Zeit läuft ab der ersten aufgedeckten Karte, nicht ab dem Laden der
+  // Seite: sonst enthält sie die Lesezeit und der gemeinsame Rekord wäre
+  // unfair. Ab dem ersten Zug bleibt der Wert wahr (moves > 0).
+  const hasStarted = moves > 0 || flippedIds.length > 0
 
   // Werden in effektgestützten Zeitfenstern (Timeout/Interval-Callbacks)
   // gebraucht, wo React-State sonst veraltet wäre - Refs halten den
@@ -95,10 +99,10 @@ export default function MemoryGame() {
   }, [seconds])
 
   useEffect(() => {
-    if (isWon) return
+    if (isWon || !hasStarted) return
     const interval = setInterval(() => setSeconds((s) => s + 1), 1000)
     return () => clearInterval(interval)
-  }, [isWon])
+  }, [isWon, hasStarted])
 
   // Gemeinsamen Rekord laden. Fehler (offline, Server down) sind bewusst
   // egal: das Spiel funktioniert auch ohne die Rekordanzeige.

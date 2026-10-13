@@ -203,6 +203,66 @@ describe('MemoryGame', () => {
     expect(screen.queryByText(/rekord aller gäste/i)).not.toBeInTheDocument()
   })
 
+  describe('timer', () => {
+    it('does not run before the first card is turned', () => {
+      vi.useFakeTimers()
+      render(<MemoryGame />)
+
+      act(() => {
+        vi.advanceTimersByTime(5000)
+      })
+
+      expect(screen.getByText('00:00')).toBeInTheDocument()
+    })
+
+    it('starts with the first card and counts from there', () => {
+      vi.useFakeTimers()
+      render(<MemoryGame />)
+      act(() => {
+        vi.advanceTimersByTime(5000)
+      })
+
+      fireEvent.click(screen.getAllByRole('button', { name: 'Karte umdrehen' })[0])
+      act(() => {
+        vi.advanceTimersByTime(3000)
+      })
+
+      expect(screen.getByText('00:03')).toBeInTheDocument()
+    })
+
+    it('reports the seconds counted from the first card, not from the page load', async () => {
+      vi.useFakeTimers()
+      render(<MemoryGame />)
+      await act(async () => {})
+      act(() => {
+        vi.advanceTimersByTime(30_000)
+      })
+
+      playPerfectGame()
+      await act(async () => {})
+
+      const posts = fetchMock.mock.calls.filter(([, init]) => (init as RequestInit | undefined)?.method === 'POST')
+      expect(JSON.parse((posts[0][1] as RequestInit).body as string)).toEqual({ moves: 2, seconds: 1 })
+    })
+
+    it('waits for the first card again after "Neues Spiel"', () => {
+      vi.useFakeTimers()
+      render(<MemoryGame />)
+      fireEvent.click(screen.getAllByRole('button', { name: 'Karte umdrehen' })[0])
+      act(() => {
+        vi.advanceTimersByTime(3000)
+      })
+      expect(screen.getByText('00:03')).toBeInTheDocument()
+
+      fireEvent.click(screen.getByRole('button', { name: 'Neues Spiel' }))
+      act(() => {
+        vi.advanceTimersByTime(5000)
+      })
+
+      expect(screen.getByText('00:00')).toBeInTheDocument()
+    })
+  })
+
   it('reports a finished game to the server exactly once, with moves and seconds', async () => {
     vi.useFakeTimers()
     render(<MemoryGame />)

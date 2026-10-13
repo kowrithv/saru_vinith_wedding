@@ -7,7 +7,7 @@ export default function MemorySpielPage() {
       <div className="max-w-2xl mx-auto px-4 sm:px-6">
         <SectionTitle
           title="Gästespiel: Liebes-Memory"
-          subtitle="Findet alle Pärchen! Deckt zwei Karten auf – passen die Fotos zusammen, bleiben sie offen."
+          subtitle="Findet alle Pärchen! Deckt zwei Karten auf – passen die Fotos zusammen, bleiben sie offen. Die Zeit startet mit der ersten Karte."
         />
         <MemoryGame />
       </div>
