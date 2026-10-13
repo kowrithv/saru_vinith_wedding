@@ -70,10 +70,13 @@ Nicht geplant: ein vom Server verteiltes Memory-Spiel (bewusst clientseitig).
 ## Offene externe Abhängigkeiten (aus der Spec)
 
 - R2/Cloudflare-Zugangsdaten für die Foto-Pipeline (Galerie-Plan)
-- Domain `vsjourney.de`: Registrierung und DNS liegen bei netcup. Für die
-  R2-Custom-Domain (`fotos.vsjourney.de`) muss die DNS-Zone zu Cloudflare
-  umziehen (Free-Plan: nur Full Setup) — Schritte in
-  `docs/ops/cloudflare-r2-setup.md`. Nameserver-TTL 24 h: vor Mittwoch erledigen.
+- Foto-Domain: Registrierung und DNS von `vsjourney.de` liegen bei netcup. Eine
+  R2-Custom-Domain verlangt, dass die **ganze Zone** der Foto-Domain bei
+  Cloudflare liegt (Free-Plan: nur Full Setup), im selben Konto wie der Bucket.
+  Entweder eine Subdomain einer Domain nehmen, die schon bei Cloudflare liegt
+  (Variante A, kein Umzug, `R2_PUBLIC_BASE_URL` und `CLOUDFLARE_ZONE_ID` zeigen
+  dann auf diese Domain), oder `vsjourney.de` umziehen (Variante B, Nameserver-TTL
+  24 h: vor Mittwoch erledigen) — Schritte in `docs/ops/cloudflare-r2-setup.md`.
 - TLS/Proxy: Auf dem Server terminiert **Traefik** TLS. Die
   `docker-compose.yml` im Repo ist die Traefik-Variante; Netzwerkname,
   Entrypoint und Cert-Resolver müssen zum vorhandenen Traefik passen. Vor dem

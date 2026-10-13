@@ -117,7 +117,7 @@ privater Bucket mit `rclone copy` geht genauso):
 - Ohne `--delete`: das Ziel behält auch Sicherungen, die die App schon rotiert hat.
 - `--exclude '*.tmp*'`: die App schreibt eine Sicherung zuerst als `*.tmp`; eine
   halb geschriebene Datei soll nicht ins Ziel kopiert werden.
-- **Nicht** den öffentlichen Foto-Bucket (`fotos.vsjourney.de`) als Ziel nehmen:
+- **Nicht** den öffentlichen Foto-Bucket (die Foto-Domain) als Ziel nehmen:
   alles darin ist öffentlich abrufbar. Ein Bucket nur für Sicherungen, privat.
 - Einmal probeweise ausführen und im Ziel nachsehen, dass `wedding-*.db`
   angekommen ist.

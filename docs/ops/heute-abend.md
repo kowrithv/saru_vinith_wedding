@@ -5,8 +5,8 @@ den verlinkten Checklisten; diese Seite hält nur Reihenfolge und Abhängigkeite
 
 | # | Schritt | Details | Braucht |
 |---|---|---|---|
-| 1 | DNS-Bestand sichern, Zone zu Cloudflare, Nameserver bei netcup umstellen | `cloudflare-r2-setup.md` §1–3 | – |
-| 2 | R2-Bucket, Domain `fotos.vsjourney.de`, Cache-Purge, Werte für `.env.production` | `cloudflare-r2-setup.md` §4–7 | Schritt 1 (Zone aktiv) |
+| 1 | **Foto-Domain festlegen.** Variante A: Subdomain einer Domain, die schon bei Cloudflare liegt – dann ist hier nichts zu tun. Variante B (`fotos.vsjourney.de`): DNS-Bestand sichern, Zone zu Cloudflare, Nameserver bei netcup umstellen | `cloudflare-r2-setup.md` „Welche Foto-Domain?", bei B §1–3 | – |
+| 2 | R2-Bucket, Foto-Domain verbinden, Purge-Token (Zone-ID der **Foto-Domain**), Werte für `.env.production` | `cloudflare-r2-setup.md` §4–7 | Schritt 1 (Zone aktiv, im selben Konto wie der Bucket) |
 | 3 | Kosten-Wächter (Budget-Alarm) | `cloudflare-r2-setup.md` §9 | Schritt 2 |
 | 4 | **Image bauen lassen:** `develop` nach `main`, Vorab-Tag **`v1.0.0-rc.1`** pushen (Image `1.0.0-rc.1`) | `README.md` „Deployment" | Entscheidung, dass der Stand reif ist |
 | 5 | **Server umstellen** (siehe unten) | `README.md` „Umstieg von der alten Seite" | Schritt 2 und 4 |
@@ -26,10 +26,11 @@ den verlinkten Checklisten; diese Seite hält nur Reihenfolge und Abhängigkeite
   **erst nach dem Freeze am Donnerstag das endgültige `v1.0.0`**. Bei jedem neuen
   Tag `IMAGE_TAG` in der `.env` auf dem Server anpassen, dann `pull` und
   `up -d`.
-- **Die DNS-Umstellung braucht Zeit** (Nameserver-TTL bis 24 h). Bis die Zone
-  bei Cloudflare aktiv ist, geht Schritt 2 nicht; Schritt 5 und 6 funktionieren
-  aber auch vorher (mit der alten oder neuen Nameserver-Auflösung), sofern
-  `vsjourney.de` schon auf den Server zeigt.
+- **Nur bei Variante B braucht die DNS-Umstellung Zeit** (Nameserver-TTL bis
+  24 h). Bis die Zone bei Cloudflare aktiv ist, geht Schritt 2 nicht; Schritt 5
+  und 6 funktionieren aber auch vorher (mit der alten oder neuen
+  Nameserver-Auflösung), sofern `vsjourney.de` schon auf den Server zeigt. Bei
+  Variante A läuft Schritt 2 sofort.
 - **`.env.production` ist vollständig** (`R2_*`, `ADMIN_PASSWORD`,
   `UPLOAD_PASSWORD_EMPFANG`; SMTP kommt, sobald die Werte da sind).
 
