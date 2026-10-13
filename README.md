@@ -58,7 +58,7 @@ wirklich auszuprobieren.
 | `R2_SECRET_ACCESS_KEY` | ja | zum Token gehörendes Secret |
 | `R2_BUCKET_NAME` | ja | Name des Buckets |
 | `R2_PUBLIC_BASE_URL` | ja | öffentliche Auslieferungs-URL, z. B. `https://fotos.<domain>` |
-| `CLIENT_IP_HEADER` | nein | Quelle der Client-IP für die Rate-Limiter: Standard `x-forwarded-for` (Traefik setzt ihn). `cf-connecting-ip` nur, wenn die Website hinter dem Cloudflare-Proxy läuft; ohne Proxy kann jeder den Header selbst setzen |
+| `CLIENT_IP_HEADER` | nein | Quelle der Client-IP für die Rate-Limiter: Standard `x-forwarded-for` (der Proxy – Caddy – setzt ihn). `cf-connecting-ip` nur, wenn die Website hinter dem Cloudflare-Proxy läuft; ohne Proxy kann jeder den Header selbst setzen |
 | `R2_JURISDICTION` | nein | `eu`, wenn der Bucket mit EU-Jurisdiktion angelegt wurde: der S3-Endpoint lautet dann `<ACCOUNT_ID>.eu.r2.cloudflarestorage.com` (fest, nachträglich nicht änderbar) |
 | `ADMIN_SECRET` | nein | Signierschlüssel für Cookies; wird sonst zufällig erzeugt und in der DB gespeichert |
 | `CLOUDFLARE_API_TOKEN` | nein | Recht „Cache Purge“; ohne Wert wird der Cache-Purge beim Löschen übersprungen |
@@ -66,7 +66,7 @@ wirklich auszuprobieren.
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD` | nein | SMTP-Zugang für E-Mail-Alarme (Port Standard 587, STARTTLS; 465 = implizites TLS) |
 | `SMTP_FROM` | nein | Absender der Alarm-Mails |
 | `ALERT_EMAIL_TO` | nein | Empfänger der Alarme, kommagetrennt. Ohne `SMTP_HOST`, `SMTP_FROM` und `ALERT_EMAIL_TO` wird nur ins Log geschrieben |
-| `DOMAIN` | nein | Nur für die Compose-Datei (Traefik-Router-Regel, Standard `vsjourney.de`); wird aus der Shell oder einer `.env` neben der Compose-Datei gelesen, nicht aus `.env.production` |
+| `DOMAIN` | nein | Nur für `docker-compose.traefik.yml` (Router-Regel, Standard `vsjourney.de`); wird aus der Shell oder einer `.env` neben der Compose-Datei gelesen, nicht aus `.env.production` |
 
 Lokal in `.env.local`, auf dem Server in `.env.production`. Beide Dateien
 sind gitignored – **keine Secrets committen**.
@@ -129,11 +129,13 @@ Details: `docs/superpowers/specs/2026-10-12-gallery-design.md`.
 
 ## Deployment
 
-Der Produktionsserver betreibt die App **hinter Traefik**. Die
-`docker-compose.yml` im Repo ist dafür gemacht (Labels für Router und
-Service, externes Traefik-Netzwerk, Healthcheck); Domain, Netzwerk,
-Entrypoint und Cert-Resolver lassen sich per Umgebungsvariable anpassen
-(`DOMAIN`, `TRAEFIK_NETWORK`, `TRAEFIK_ENTRYPOINT`, `TRAEFIK_CERTRESOLVER`):
+Der Produktionsserver betreibt die App **hinter einem Caddy auf dem Host**:
+Caddy terminiert TLS für `vsjourney.de` und leitet an `localhost:3000`. Die
+`docker-compose.yml` im Repo ist dafür gemacht (App nur auf `127.0.0.1:3000`
+veröffentlicht, Healthcheck, `./data`-Mount). Für einen Server, auf dem Traefik
+selbst TLS terminiert, liegt `docker-compose.traefik.yml` bei (Labels, externes
+Netzwerk; nicht der Produktionsserver und nicht gegen einen echten Traefik
+geprüft):
 
 ```bash
 cp .env.example .env.production      # App-Werte eintragen
@@ -144,8 +146,8 @@ docker compose -f docker-compose.yml up -d
 
 Compose braucht `IMAGE_TAG` bei **jedem** Kommando (auch `ps`, `logs`,
 `restart`), nicht nur bei `up`. Deshalb steht es in einer `.env` neben der
-Compose-Datei (dort optional auch `DOMAIN`, `TRAEFIK_*`); ein Prefix vor
-einem einzelnen Kommando reicht nicht. `.env` (Compose) und
+Compose-Datei (bei der Traefik-Variante dort auch `DOMAIN`, `TRAEFIK_*`); ein
+Prefix vor einem einzelnen Kommando reicht nicht. `.env` (Compose) und
 `.env.production` (App) sind zwei verschiedene Dateien.
 
 - Das Image heißt `ghcr.io/kowrithv/saru_vinith_wedding:<tag>`; CI baut es
@@ -157,11 +159,13 @@ einem einzelnen Kommando reicht nicht. `.env` (Compose) und
   alten Seite (`clean-start`).
 - `./data` wird nach `/app/data` gemountet; dort liegen Datenbank und Sicherungen.
 - Health-Check: `GET /api/health`.
-- Hinter Traefik terminiert dieser das TLS. Die Rate-Limiter lesen die
-  Client-IP aus `X-Forwarded-For` (siehe `CLIENT_IP_HEADER`). Das ist nur
-  vertrauenswürdig, solange Traefik fremde `X-Forwarded-*`-Header selbst
-  verwirft (Standard); am Entrypoint darf also weder
-  `forwardedHeaders.insecure` noch ein zu weites `trustedIPs` gesetzt sein.
+- Caddy terminiert das TLS. Die Rate-Limiter lesen die Client-IP aus
+  `X-Forwarded-For` (siehe `CLIENT_IP_HEADER`). Das ist nur vertrauenswürdig,
+  solange der Proxy fremde `X-Forwarded-*`-Header überschreibt. Nach unserem
+  Wissen tut Caddy das ab Version 2.5, solange in der Caddyfile keine
+  `trusted_proxies` gesetzt sind (`caddy version` auf dem Server prüfen).
+  Hinter Traefik gilt dasselbe für den Entrypoint: weder
+  `forwardedHeaders.insecure` noch ein zu weites `trustedIPs`.
 
 ### Betrieb
 
@@ -176,17 +180,19 @@ Rollback: `IMAGE_TAG` in der `.env` auf den älteren Tag setzen, dann
 
 ### Umstieg von der alten Seite
 
-Die alte Seite (Branch `clean-start`) nutzt denselben `container_name`
-(`saru-vinith-wedding`), veröffentlicht Port 3000 und hat keine Traefik-Labels.
-Vor dem ersten `up -d` der neuen Datei:
+Die alte Seite (Branch `clean-start`, Image `latest`) läuft als eigenes
+Compose-Projekt und veröffentlicht ebenfalls `127.0.0.1:3000`; Caddy leitet
+`vsjourney.de` dorthin. Die neue App übernimmt **denselben Port**, an Caddy
+ändert sich nichts. Reihenfolge:
 
-1. Die alte Seite stoppen: `docker compose down` in ihrem Ordner. Liegt die neue
-   Datei im selben Ordner, ersetzt sie die alte und `up -d` erneuert den Container.
-2. Eine alte Traefik-Route für `vsjourney.de` (File-Provider oder Labels einer
-   anderen Compose-Datei) entfernen. Zwei Router mit derselben Regel machen die
-   Zuordnung uneindeutig; der Routername `hochzeit` darf nirgends sonst vorkommen.
-3. Alte Dateien in `./data` und `./public/uploads` bleiben unberührt; die neue
-   App legt dort nur `wedding.db` und `backups/` an.
+1. Neue Compose-Datei, `.env.production` und `.env` in einem **eigenen Ordner**
+   vorbereiten (die alte Seite läuft weiter), `docker compose -f
+   docker-compose.yml config --quiet` und `pull`.
+2. Die alte Seite stoppen: `docker compose down` in ihrem Ordner. Das gibt Port
+   3000 frei; ab hier ist die Seite offline.
+3. `docker compose -f docker-compose.yml up -d` im neuen Ordner.
+4. Die Dateien im Ordner der alten Seite bleiben unberührt (Rückweg); die neue
+   App legt in ihrem eigenen Ordner nur `data/wedding.db` und `data/backups/` an.
 
 **Backup:** Die App sichert die Datenbank beim Start und danach stündlich nach
 `data/backups/` (`wedding-YYYYMMDD-HHmmss.db`, UTC). Aufbewahrt werden die

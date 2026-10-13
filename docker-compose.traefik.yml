@@ -1,0 +1,64 @@
+# Variante für einen Server, auf dem ein vorhandener Traefik selbst TLS terminiert.
+# NICHT die Variante des Produktionsservers (dort läuft ein Caddy auf dem Host,
+# siehe docker-compose.yml) und hier nicht gegen einen echten Traefik geprüft.
+# Diese Datei als eigene Compose-Datei auf den Server kopieren:
+#
+#   echo 'IMAGE_TAG=1.0.0' > .env        # neben dieser Datei, siehe unten
+#   docker compose -f docker-compose.traefik.yml pull
+#   docker compose -f docker-compose.traefik.yml up -d
+#
+# IMAGE_TAG braucht Compose bei JEDEM Kommando (auch ps, logs, restart), nicht
+# nur bei up: deshalb in die .env neben dieser Datei, nicht nur vor ein
+# Kommando. Dort stehen optional auch DOMAIN, TRAEFIK_NETWORK,
+# TRAEFIK_ENTRYPOINT und TRAEFIK_CERTRESOLVER (Anpassung ans eigene Traefik).
+# TLS terminiert Traefik; die App selbst spricht nur HTTP auf Port 3000.
+#
+# Wichtig beim Umstieg von der alten Seite: gleicher container_name wie dort.
+# Die alte Seite vorher stoppen (docker compose down in ihrem Ordner) und
+# eine alte Traefik-Route für die Domain entfernen (siehe README).
+services:
+  web:
+    image: ghcr.io/kowrithv/saru_vinith_wedding:${IMAGE_TAG:?IMAGE_TAG in .env neben der Compose-Datei setzen, z. B. 1.0.0}
+    container_name: saru-vinith-wedding
+    restart: unless-stopped
+    env_file:
+      - .env.production
+    volumes:
+      # Datenbank und Sicherungen (data/backups) - bleibt über Updates erhalten.
+      - ./data:/app/data
+    networks:
+      - traefik
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=${TRAEFIK_NETWORK:-traefik}"
+      - "traefik.http.routers.hochzeit.rule=Host(`${DOMAIN:-vsjourney.de}`) || Host(`www.${DOMAIN:-vsjourney.de}`)"
+      - "traefik.http.routers.hochzeit.entrypoints=${TRAEFIK_ENTRYPOINT:-websecure}"
+      - "traefik.http.routers.hochzeit.tls=true"
+      - "traefik.http.routers.hochzeit.tls.certresolver=${TRAEFIK_CERTRESOLVER:-letsencrypt}"
+      - "traefik.http.services.hochzeit.loadbalancer.server.port=3000"
+      # Nur relevant, wenn ein Autoheal-Container auf dem Server läuft.
+      - "autoheal=true"
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3000/api/health').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+    deploy:
+      resources:
+        limits:
+          memory: 1500M
+
+networks:
+  traefik:
+    external: true
+    name: ${TRAEFIK_NETWORK:-traefik}

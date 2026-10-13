@@ -1,7 +1,8 @@
 # Hochzeitstag-Runbook
 
 Für die Person in Bereitschaft am Sa 17.10.2026. Alles per Handy/SSH machbar.
-Server: netcup-VPS, App im Container `saru-vinith-wedding` hinter Traefik.
+Server: netcup-VPS, App im Container `saru-vinith-wedding` auf `127.0.0.1:3000`,
+TLS und Domain über den Caddy auf dem Host (`/etc/caddy/Caddyfile`).
 Compose-Datei: `docker-compose.yml` (Ordner auf dem Server: ______________).
 In diesem Ordner liegen auch `.env` (Compose: `IMAGE_TAG`) und `.env.production` (App).
 
@@ -75,11 +76,11 @@ Einträge nach dem Zeitstempel verloren.
 
 | Symptom | Wahrscheinliche Ursache | Maßnahme |
 |---|---|---|
-| Seite lädt nicht | Container gestoppt oder Traefik/DNS | `ps` und `logs` prüfen, `restart web`; `dig vsjourney.de` |
+| Seite lädt nicht | Container gestoppt oder Caddy/DNS | `ps` und `logs` prüfen, `restart web`; `curl -sI http://127.0.0.1:3000/api/health` (App) und `systemctl status caddy` (Proxy); `dig vsjourney.de` |
 | Seite lädt, API-Fehler | Datenbank oder Start fehlgeschlagen | `logs --tail 200`: „FEHLER: Fehlende Pflicht-Umgebungsvariablen" = `.env.production` prüfen, dann `up -d --force-recreate web` |
 | Foto-Upload scheitert bei allen | R2-Token, CORS oder Domain | Foto-Upload **sperren**, `logs`; CORS-Regel und Token in Cloudflare prüfen |
 | Upload scheitert nur bei einzelnen | große Datei (> 20 MB), HEIC, schwaches Netz | Gast soll es später im WLAN erneut versuchen; Meldung nennt den Grund |
-| „Zu viele Anfragen" für viele Gäste | Rate-Limit wegen gemeinsamer WLAN-IP | `CLIENT_IP_HEADER` und Traefik-Header prüfen, dann `up -d --force-recreate web` (setzt die Zähler zurück; `restart` liest die Werte nicht neu) |
+| „Zu viele Anfragen" für viele Gäste | Rate-Limit wegen gemeinsamer WLAN-IP | `CLIENT_IP_HEADER` und den `X-Forwarded-For`-Header von Caddy prüfen, dann `up -d --force-recreate web` (setzt die Zähler zurück; `restart` liest die Werte nicht neu) |
 | Fotos verschwinden nach Löschen nicht | Cache-Purge fehlt | `CLOUDFLARE_API_TOKEN`/`CLOUDFLARE_ZONE_ID` prüfen |
 | Alarm-Mail „Speicherplatz wird knapp" | Platte ≥ 85 % | `df -h`, alte Docker-Logs/Images (`docker system df`) |
 | Alarm-Mail „Sicherung fehlgeschlagen" | Platte voll oder Datenbank beschädigt | `logs`, `df -h`; manuell `cp` der Datenbank sichern |

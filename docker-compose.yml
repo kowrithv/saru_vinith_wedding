@@ -1,5 +1,6 @@
-# Betrieb hinter einem vorhandenen Traefik (so läuft der Produktionsserver).
-# Diese Datei als eigene Compose-Datei auf den Server kopieren:
+# Betrieb hinter einem Reverse-Proxy auf dem Host (so läuft der Produktionsserver:
+# ein Caddy terminiert TLS für vsjourney.de und leitet an localhost:3000).
+# Diese Datei in einen eigenen Ordner auf den Server kopieren:
 #
 #   echo 'IMAGE_TAG=1.0.0' > .env        # neben dieser Datei, siehe unten
 #   docker compose -f docker-compose.yml pull
@@ -7,13 +8,12 @@
 #
 # IMAGE_TAG braucht Compose bei JEDEM Kommando (auch ps, logs, restart), nicht
 # nur bei up: deshalb in die .env neben dieser Datei, nicht nur vor ein
-# Kommando. Dort stehen optional auch DOMAIN, TRAEFIK_NETWORK,
-# TRAEFIK_ENTRYPOINT und TRAEFIK_CERTRESOLVER (Anpassung ans eigene Traefik).
-# TLS terminiert Traefik; die App selbst spricht nur HTTP auf Port 3000.
+# Kommando.
 #
-# Wichtig beim Umstieg von der alten Seite: gleicher container_name wie dort.
-# Die alte Seite vorher stoppen (docker compose down in ihrem Ordner) und
-# eine alte Traefik-Route für die Domain entfernen (siehe README).
+# Die App ist nur auf 127.0.0.1:3000 erreichbar, nicht aus dem Netz; TLS und
+# Domain gehören dem Proxy. Die alte Seite belegt denselben Port: beim Umstieg
+# vorher `docker compose down` in ihrem Ordner (siehe README). Für einen Server,
+# auf dem Traefik selbst TLS terminiert, gibt es docker-compose.traefik.yml.
 services:
   web:
     image: ghcr.io/kowrithv/saru_vinith_wedding:${IMAGE_TAG:?IMAGE_TAG in .env neben der Compose-Datei setzen, z. B. 1.0.0}
@@ -21,19 +21,13 @@ services:
     restart: unless-stopped
     env_file:
       - .env.production
+    ports:
+      # Nur lokal: der Proxy auf dem Host greift hier zu, das Netz nicht.
+      - "127.0.0.1:3000:3000"
     volumes:
       # Datenbank und Sicherungen (data/backups) - bleibt über Updates erhalten.
       - ./data:/app/data
-    networks:
-      - traefik
     labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=${TRAEFIK_NETWORK:-traefik}"
-      - "traefik.http.routers.hochzeit.rule=Host(`${DOMAIN:-vsjourney.de}`) || Host(`www.${DOMAIN:-vsjourney.de}`)"
-      - "traefik.http.routers.hochzeit.entrypoints=${TRAEFIK_ENTRYPOINT:-websecure}"
-      - "traefik.http.routers.hochzeit.tls=true"
-      - "traefik.http.routers.hochzeit.tls.certresolver=${TRAEFIK_CERTRESOLVER:-letsencrypt}"
-      - "traefik.http.services.hochzeit.loadbalancer.server.port=3000"
       # Nur relevant, wenn ein Autoheal-Container auf dem Server läuft.
       - "autoheal=true"
     healthcheck:
@@ -55,8 +49,3 @@ services:
       resources:
         limits:
           memory: 1500M
-
-networks:
-  traefik:
-    external: true
-    name: ${TRAEFIK_NETWORK:-traefik}

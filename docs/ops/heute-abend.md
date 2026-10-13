@@ -39,33 +39,34 @@ den verlinkten Checklisten; diese Seite hält nur Reihenfolge und Abhängigkeite
 Die Seite ist nur so kurz offline wie nötig: erst alles vorbereiten, **dann**
 stoppen.
 
-1. Alten Zustand festhalten: Ordner und Compose-Datei der alten Seite notieren,
-   ggf. `docker compose ps` und die alte Traefik-Route (File-Provider oder
-   Labels) – das ist der Rückweg.
+1. Alten Zustand festhalten: Ordner der alten Seite (`~/saru_vinith_wedding`)
+   und `docker compose ps` notieren – das ist der Rückweg. Die Caddy-Route
+   (`vsjourney.de { reverse_proxy localhost:3000 }`) bleibt, wie sie ist.
 2. **Neue Seite vorbereiten, während die alte noch läuft:** Neue
-   `docker-compose.yml` in einen **anderen** Ordner legen, daneben
-   `.env.production` und eine `.env` mit `IMAGE_TAG=1.0.0-rc.1` (plus ggf.
-   `TRAEFIK_*`); `chmod 600 .env.production`. Dann
+   `docker-compose.yml` in einen **anderen** Ordner legen (z. B.
+   `~/hochzeit`), daneben `.env.production` und eine `.env` mit
+   `IMAGE_TAG=1.0.0-rc.1`; `chmod 600 .env.production`. Dann
    `docker compose -f docker-compose.yml config --quiet` – muss ohne Ausgabe
    durchlaufen (braucht das Image nicht). **Nicht** ohne `--quiet`: die
    Ausgabe kann die Werte aus `.env.production` enthalten.
 3. **Image holen, sobald der Build grün ist:** `docker compose -f
    docker-compose.yml pull`. Das stört die alte Seite nicht.
-4. Alte Seite stoppen: `docker compose down` im alten Ordner. **Ab hier ist die
-   alte Seite offline**, bis die neue läuft.
+4. Alte Seite stoppen: `docker compose down` im alten Ordner. Das gibt Port 3000
+   frei (die neue App nimmt denselben). **Ab hier ist die Seite offline**, bis
+   die neue läuft.
 5. **Die alten Stimmen jetzt sichern**, nach dem Stoppen, damit keine mehr
    hinzukommen: `cp <alter-ordner>/data/who-votes.json ~/who-votes-alt.json`
    (siehe Schritt 8; die Datei enthält Namen der Abstimmenden, nicht
    weitergeben).
-6. Alte Traefik-Route für `vsjourney.de` entfernen (zwei Router mit derselben
-   Regel sind uneindeutig).
-7. `docker compose -f docker-compose.yml up -d`.
-8. `docker compose -f docker-compose.yml ps` – Status **healthy**; `logs web`
-   zeigt `[backup] ok`.
+6. `docker compose -f docker-compose.yml up -d` im neuen Ordner. An Caddy ist
+   nichts zu ändern.
+7. `docker compose -f docker-compose.yml ps` – Status **healthy**; `logs web`
+   zeigt `[backup] ok`; `curl -sI http://127.0.0.1:3000/api/health` auf dem
+   Server liefert 200, danach `https://vsjourney.de` im Browser.
 
-**Rückweg:** `docker compose -f docker-compose.yml down`, dann die alte
-Compose-Datei im alten Ordner wieder mit `up -d` starten und die alte
-Traefik-Route zurückstellen.
+**Rückweg:** `docker compose -f docker-compose.yml down` im neuen Ordner, dann
+im alten Ordner `docker compose up -d` (Image `latest`). Caddy leitet
+unverändert an Port 3000.
 
 ## Alte Quiz-Stimmen übernehmen (Schritt 8)
 

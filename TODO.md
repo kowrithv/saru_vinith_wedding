@@ -77,12 +77,16 @@ Nicht geplant: ein vom Server verteiltes Memory-Spiel (bewusst clientseitig).
   (Variante A, kein Umzug, `R2_PUBLIC_BASE_URL` und `CLOUDFLARE_ZONE_ID` zeigen
   dann auf diese Domain), oder `vsjourney.de` umziehen (Variante B, Nameserver-TTL
   24 h: vor Mittwoch erledigen) — Schritte in `docs/ops/cloudflare-r2-setup.md`.
-- TLS/Proxy: Auf dem Server terminiert **Traefik** TLS. Die
-  `docker-compose.yml` im Repo ist die Traefik-Variante; Netzwerkname,
-  Entrypoint und Cert-Resolver müssen zum vorhandenen Traefik passen. Vor dem
-  Umstieg: alte Seite stoppen und alte Route entfernen (README „Umstieg von
-  der alten Seite"); am Entrypoint darf `forwardedHeaders.insecure` nicht
-  gesetzt sein, sonst lässt sich der Rate-Limiter per Header umgehen.
+- TLS/Proxy: Auf dem Server terminiert ein **Caddy auf dem Host** TLS und
+  leitet `vsjourney.de` an `localhost:3000` (Stand 13.10., an der Caddyfile
+  gesehen). Die `docker-compose.yml` im Repo veröffentlicht `127.0.0.1:3000`
+  und übernimmt den Port der alten Seite; an Caddy ändert sich nichts. Ein
+  Traefik-Container läuft dort ebenfalls (Ports 1800/1801), bedient aber diese
+  Domain nicht; die Traefik-Variante liegt als `docker-compose.traefik.yml`
+  bei. Zu prüfen: `caddy version` ≥ 2.5 (überschreibt fremde
+  `X-Forwarded-For`-Header, solange keine `trusted_proxies` gesetzt sind),
+  sonst ließe sich der Rate-Limiter per Header umgehen. Optional:
+  `www.vsjourney.de` hat in der Caddyfile keinen Block.
 
 ## Noch zu planende Subsysteme (Backlog aus der Spec)
 

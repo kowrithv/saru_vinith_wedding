@@ -66,10 +66,13 @@ einer Route meldet `tsc` ggf. veraltete Dateien in `.next/types` – dann
   `function`-Ausdrücke sein; Regex-Selektoren können mit Label-Texten
   kollidieren. Die Mount-Fetch-Reihenfolge im `AdminDashboard` (Gästebuch,
   Erinnerungen, Galerie) steckt in den Test-Mocks.
-- **Rate-Limiter:** `getClientKey` nimmt `X-Forwarded-For` (Traefik setzt
+- **Rate-Limiter:** `getClientKey` nimmt `X-Forwarded-For` (der Proxy setzt
   ihn). `cf-connecting-ip` nur mit `CLIENT_IP_HEADER=cf-connecting-ip` hinter
   dem Cloudflare-Proxy – ohne Proxy kann jeder Client den Header fälschen.
-  Der Server läuft hinter **Traefik**, nicht Caddy.
+  Der Server läuft hinter einem **Caddy auf dem Host** (`localhost:3000`, am
+  13.10. in der Caddyfile gesehen); die `docker-compose.yml` veröffentlicht
+  `127.0.0.1:3000`. Traefik läuft dort für anderes; seine Variante liegt als
+  `docker-compose.traefik.yml` bei.
 
 ## Arbeitsweise
 

@@ -42,7 +42,7 @@ auf den Server.** Reihenfolge B: **1. DNS-Bestand sichern → 2. Zone zu Cloudfl
 - [ ] Die automatisch gefundenen Einträge **mit der Liste aus Schritt 1 abgleichen**
       und fehlende ergänzen (vor allem MX/TXT, falls E-Mail genutzt wird).
 - [ ] Für `vsjourney.de` und `www` zunächst **DNS only** (graue Wolke) lassen: die
-      Seite läuft weiter direkt über Traefik auf dem netcup-Server.
+      Seite läuft weiter direkt über den Caddy auf dem netcup-Server.
 - [ ] Die beiden zugewiesenen Cloudflare-Nameserver notieren.
 
 ## 3. Nameserver bei netcup umstellen (nur Variante B)

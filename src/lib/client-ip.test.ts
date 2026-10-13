@@ -10,7 +10,7 @@ describe('getClientKey', () => {
     vi.unstubAllEnvs()
   })
 
-  describe('by default (behind Traefik, website not proxied by Cloudflare)', () => {
+  describe('by default (behind a reverse proxy, website not proxied by Cloudflare)', () => {
     it('uses the first x-forwarded-for entry', () => {
       const request = requestWithHeaders({ 'x-forwarded-for': '198.51.100.9, 10.0.0.1' })
       expect(getClientKey(request)).toBe('198.51.100.9')
