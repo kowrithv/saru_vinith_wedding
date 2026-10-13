@@ -36,20 +36,29 @@ den verlinkten Checklisten; diese Seite hält nur Reihenfolge und Abhängigkeite
 
 ## Schritt 5 im Einzelnen (Server, per SSH)
 
-1. Alten Zustand sichern: Ordner und Compose-Datei der alten Seite notieren,
+Die Seite ist nur so kurz offline wie nötig: erst alles vorbereiten, **dann**
+stoppen.
+
+1. Alten Zustand festhalten: Ordner und Compose-Datei der alten Seite notieren,
    ggf. `docker compose ps` und die alte Traefik-Route (File-Provider oder
-   Labels) festhalten – das ist der Rückweg. **Die alten Stimmen sichern:**
-   `cp <alter-ordner>/data/who-votes.json ~/who-votes-alt.json` (siehe
-   Schritt 8; die Datei enthält Namen der Abstimmenden, nicht weitergeben).
-2. Alte Seite stoppen: `docker compose down` im alten Ordner. **Ab hier ist die
+   Labels) – das ist der Rückweg.
+2. **Neue Seite vorbereiten, während die alte noch läuft:** Neue
+   `docker-compose.yml` in einen **anderen** Ordner legen, daneben
+   `.env.production` und eine `.env` mit `IMAGE_TAG=1.0.0-rc.1` (plus ggf.
+   `TRAEFIK_*`). Dann `docker compose -f docker-compose.yml config` – muss ohne
+   Fehler durchlaufen (braucht das Image nicht).
+3. **Image holen, sobald der Build grün ist:** `docker compose -f
+   docker-compose.yml pull`. Das stört die alte Seite nicht.
+4. Alte Seite stoppen: `docker compose down` im alten Ordner. **Ab hier ist die
    alte Seite offline**, bis die neue läuft.
-3. Alte Traefik-Route für `vsjourney.de` entfernen (zwei Router mit derselben
+5. **Die alten Stimmen jetzt sichern**, nach dem Stoppen, damit keine mehr
+   hinzukommen: `cp <alter-ordner>/data/who-votes.json ~/who-votes-alt.json`
+   (siehe Schritt 8; die Datei enthält Namen der Abstimmenden, nicht
+   weitergeben).
+6. Alte Traefik-Route für `vsjourney.de` entfernen (zwei Router mit derselben
    Regel sind uneindeutig).
-4. Neue `docker-compose.yml` in einen Ordner legen, daneben `.env.production`
-   und eine `.env` mit `IMAGE_TAG=1.0.0-rc.1` (plus ggf. `TRAEFIK_*`).
-5. `docker compose -f docker-compose.yml config` – muss ohne Fehler durchlaufen.
-6. `docker compose -f docker-compose.yml pull` und `up -d`.
-7. `docker compose -f docker-compose.yml ps` – Status **healthy**; `logs web`
+7. `docker compose -f docker-compose.yml up -d`.
+8. `docker compose -f docker-compose.yml ps` – Status **healthy**; `logs web`
    zeigt `[backup] ok`.
 
 **Rückweg:** `docker compose -f docker-compose.yml down`, dann die alte
