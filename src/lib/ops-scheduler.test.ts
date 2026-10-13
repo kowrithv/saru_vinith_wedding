@@ -99,6 +99,26 @@ describe('startOpsScheduler', () => {
     expect(deps.createBackup).toHaveBeenCalledTimes(2)
   })
 
+  it('does not start a second backup while the previous one is still running, and says so', async () => {
+    let finish!: (value: { fileName: string; filePath: string; sizeBytes: number }) => void
+    deps.createBackup.mockReturnValueOnce(
+      new Promise((resolve) => {
+        finish = resolve
+      })
+    )
+    start()
+    await vi.advanceTimersByTimeAsync(0)
+    await vi.advanceTimersByTimeAsync(BACKUP_INTERVAL_MS)
+
+    expect(deps.createBackup).toHaveBeenCalledTimes(1)
+    expect(deps.sendAlert).toHaveBeenCalledWith(expect.objectContaining({ key: 'backup-stuck' }))
+
+    finish({ fileName: 'wedding-x.db', filePath: '/b/wedding-x.db', sizeBytes: 10 })
+    await vi.advanceTimersByTimeAsync(0)
+    await vi.advanceTimersByTimeAsync(BACKUP_INTERVAL_MS)
+    expect(deps.createBackup).toHaveBeenCalledTimes(2)
+  })
+
   it('does not prune after a failed backup', async () => {
     deps.createBackup.mockRejectedValueOnce(new Error('boom'))
     start()

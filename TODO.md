@@ -44,10 +44,6 @@
 
 ## Gefunden im Ops-/Polish-Review (zurückgestellt, nicht blockierend)
 
-- **Backup schreibt direkt auf den endgültigen Namen:** ein Kill während
-  `db.backup()` hinterlässt eine Teil-Datei mit gültigem Namen. Besser nach
-  `*.tmp` schreiben, prüfen, umbenennen; dazu ein Watchdog, der bei einem
-  Backup ohne Ende alarmiert.
 - **Formular nach „Schließen" während des Uploads:** die Uploads laufen
   weiter, die Vorschau-URLs werden nicht freigegeben, nichts wird abgebrochen.
   Das Formular eingeklappt statt entfernt zu halten würde beides lösen.

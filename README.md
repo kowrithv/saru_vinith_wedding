@@ -166,7 +166,10 @@ IMAGE_TAG=<älterer-tag> docker compose -f docker-compose.yml up -d   # Rollback
 neueste Sicherung, je die erste Sicherung der letzten 48 Stunden und je die
 erste jedes Tages der letzten 30 Tage (mehrere Starts in einer Stunde
 verdrängen also keine ältere Historie). Jede
-Kopie wird mit `PRAGMA integrity_check` geprüft; schlägt das fehl, kommt ein
+Kopie entsteht zuerst unter `*.db.tmp`, wird mit `PRAGMA integrity_check`
+geprüft und erst dann umbenannt – eine halbe Datei trägt nie einen
+Sicherungsnamen (`*.tmp`-Reste räumt der nächste Lauf weg). Schlägt die
+Prüfung fehl oder läuft die vorige Sicherung nach einer Stunde noch, kommt ein
 Alarm. Ab 85 % Plattenbelegung kommt ebenfalls ein Alarm. Alarme gehen ins
 Log und, wenn `SMTP_*` und `ALERT_EMAIL_TO` gesetzt sind, per E-Mail (je
 Anlass höchstens alle 6 Stunden). Die Start-Meldung beim Deploy zeigt, dass

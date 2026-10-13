@@ -1,4 +1,4 @@
-import { mkdirSync, readdirSync, rmSync, statSync } from 'node:fs'
+import { mkdirSync, readdirSync, renameSync, rmSync, statSync } from 'node:fs'
 import path from 'node:path'
 import Database from 'better-sqlite3'
 
@@ -6,6 +6,9 @@ export const HOURLY_KEEP = 48
 export const DAILY_KEEP = 30
 
 const BACKUP_FILE_PATTERN = /^wedding-\d{8}-\d{6}\.db$/
+// Arbeitsdatei einer Sicherung (samt SQLite-Begleitdateien). Passt bewusst
+// nicht auf BACKUP_FILE_PATTERN: eine halbe Kopie darf nie als Sicherung gelten.
+const TEMP_FILE_PATTERN = /^wedding-\d{8}-\d{6}\.db\.tmp(-wal|-shm)?$/
 
 function pad(value: number): string {
   return String(value).padStart(2, '0')
@@ -77,6 +80,19 @@ export interface BackupResult {
   sizeBytes: number
 }
 
+// Reste eines Laufs, der mitten im Kopieren beendet wurde (Kill, Neustart).
+function removeStaleTempFiles(dir: string): void {
+  for (const name of readdirSync(dir)) {
+    if (TEMP_FILE_PATTERN.test(name)) rmSync(path.join(dir, name), { force: true })
+  }
+}
+
+/**
+ * Schreibt die Sicherung zuerst unter einem temporären Namen, prüft sie und
+ * benennt sie erst dann um. So existiert unter einem Sicherungsnamen nie eine
+ * halbe Datei. Nicht nebenläufig aufrufen (der Scheduler lässt nie zwei Läufe
+ * gleichzeitig zu): der Aufräumschritt löscht fremde Arbeitsdateien.
+ */
 export async function createBackup(
   db: Database.Database,
   dir: string,
@@ -85,12 +101,15 @@ export async function createBackup(
   mkdirSync(dir, { recursive: true })
   const fileName = backupFileName(now)
   const filePath = path.join(dir, fileName)
+  const tempPath = `${filePath}.tmp`
+  removeStaleTempFiles(dir)
   try {
-    await db.backup(filePath)
-    verifyBackup(filePath)
+    await db.backup(tempPath)
+    verifyBackup(tempPath)
+    renameSync(tempPath, filePath)
   } catch (error) {
     // Eine defekte Kopie darf nicht in der Rotation bleiben.
-    removeWithSidecars(filePath)
+    removeWithSidecars(tempPath)
     throw error
   }
   return { fileName, filePath, sizeBytes: statSync(filePath).size }

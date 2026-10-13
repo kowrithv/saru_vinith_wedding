@@ -72,6 +72,7 @@ Einträge nach dem Zeitstempel verloren.
 | Fotos verschwinden nach Löschen nicht | Cache-Purge fehlt | `CLOUDFLARE_API_TOKEN`/`CLOUDFLARE_ZONE_ID` prüfen |
 | Alarm-Mail „Speicherplatz wird knapp" | Platte ≥ 85 % | `df -h`, alte Docker-Logs/Images (`docker system df`) |
 | Alarm-Mail „Sicherung fehlgeschlagen" | Platte voll oder Datenbank beschädigt | `logs`, `df -h`; manuell `cp` der Datenbank sichern |
+| Alarm-Mail „Sicherung hängt" | vorige Sicherung läuft nach einer Stunde noch (Platte blockiert/sehr langsam) | `df -h`, `logs`; hilft nichts: `restart web` (Reste `*.tmp` räumt der nächste Lauf) |
 | Rekord im Memory unrealistisch | Skript hat einen Wert gesendet | Admin: „Memory-Rekord zurücksetzen" |
 
 ## 5. Plan B

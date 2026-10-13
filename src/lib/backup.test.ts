@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import Database from 'better-sqlite3'
@@ -147,6 +147,57 @@ describe('createBackup / pruneBackups', () => {
 
     await expect(createBackup(brokenDb, backupDir, new Date('2026-10-17T14:30:05Z'))).rejects.toThrow()
     expect(readdirSync(backupDir)).toEqual([])
+  })
+
+  it('writes under a temporary name and exposes the finished backup under its final name only at the end', async () => {
+    const backupDir = path.join(dir, 'backups')
+    const finalPath = path.join(backupDir, 'wedding-20261017-143005.db')
+    let target = ''
+    let finalExistedDuringCopy = true
+    const watchedDb = {
+      backup: async (targetPath: string) => {
+        target = targetPath
+        finalExistedDuringCopy = existsSync(finalPath)
+        return source.backup(targetPath)
+      },
+    } as unknown as Database.Database
+
+    await createBackup(watchedDb, backupDir, new Date('2026-10-17T14:30:05Z'))
+
+    expect(target).not.toBe(finalPath)
+    expect(finalExistedDuringCopy).toBe(false)
+    expect(readdirSync(backupDir)).toEqual(['wedding-20261017-143005.db'])
+  })
+
+  it('leaves nothing behind when the copy is interrupted half-way', async () => {
+    const backupDir = path.join(dir, 'backups')
+    const interruptedDb = {
+      backup: async (target: string) => {
+        writeFileSync(target, 'partial')
+        throw new Error('killed')
+      },
+    } as unknown as Database.Database
+
+    await expect(createBackup(interruptedDb, backupDir, new Date('2026-10-17T14:30:05Z'))).rejects.toThrow('killed')
+    expect(readdirSync(backupDir)).toEqual([])
+  })
+
+  it('removes temporary files of an earlier, killed run and touches nothing else', async () => {
+    const backupDir = path.join(dir, 'backups')
+    mkdirSync(backupDir)
+    writeFileSync(path.join(backupDir, 'wedding-20261017-120000.db.tmp'), 'partial')
+    writeFileSync(path.join(backupDir, 'wedding-20261017-120000.db.tmp-wal'), 'x')
+    writeFileSync(path.join(backupDir, 'wedding-20261017-120000.db.tmp-shm'), 'x')
+    writeFileSync(path.join(backupDir, 'wedding-20261017-110000.db'), 'earlier complete backup')
+    writeFileSync(path.join(backupDir, 'notes.tmp'), 'keep me')
+
+    await createBackup(source, backupDir, new Date('2026-10-17T14:30:05Z'))
+
+    expect(readdirSync(backupDir).sort()).toEqual([
+      'notes.tmp',
+      'wedding-20261017-110000.db',
+      'wedding-20261017-143005.db',
+    ])
   })
 
   it('prunes the folder according to the retention rules and reports what it deleted', () => {

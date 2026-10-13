@@ -59,17 +59,36 @@ export function startOpsScheduler(deps: SchedulerDeps = {}): RunningScheduler {
   const diskUsage = deps.diskUsage ?? diskUsageFraction
   const now = deps.now ?? (() => new Date())
 
+  // Zwei Sicherungen gleichzeitig würden sich gegenseitig die Arbeitsdateien
+  // wegräumen; ein Lauf, der nach einer Stunde noch läuft, ist außerdem selbst
+  // ein Alarmgrund (Platte voll/blockiert, Datenbank dauerhaft gesperrt).
+  let backupRunning = false
+
   const runBackup = async () => {
+    if (backupRunning) {
+      await alert({
+        key: 'backup-stuck',
+        subject: 'Datenbank-Sicherung hängt',
+        body: `Die vorige Sicherung nach ${backupDir} läuft nach über einer Stunde noch. Die neue wurde nicht gestartet.`,
+      })
+      return
+    }
+    backupRunning = true
+    let failure: string | undefined
     try {
       const result = await doBackup(resolveDb(), backupDir, now())
       const removed = doPrune(backupDir)
       console.warn(`[backup] ok: ${result.fileName} (${result.sizeBytes} Bytes), ${removed.length} alte entfernt`)
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error)
+      failure = error instanceof Error ? error.message : String(error)
+    } finally {
+      backupRunning = false
+    }
+    if (failure !== undefined) {
       await alert({
         key: 'backup-failed',
         subject: 'Datenbank-Sicherung fehlgeschlagen',
-        body: `Die stündliche Sicherung nach ${backupDir} ist fehlgeschlagen: ${message}`,
+        body: `Die stündliche Sicherung nach ${backupDir} ist fehlgeschlagen: ${failure}`,
       })
     }
   }
