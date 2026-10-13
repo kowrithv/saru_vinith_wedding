@@ -504,6 +504,28 @@ describe('GalleryUploadForm', () => {
     expect(screen.getByRole('button', { name: /^hochladen$/i })).toHaveFocus()
   })
 
+  it('does not pull the focus back to the upload button when the guest has moved on in the meantime', async () => {
+    const user = setupUser()
+    let release!: () => void
+    const holdComplete = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    const backend = createFakeBackend({ holdComplete })
+    render(<GalleryUploadForm isAdmin onUploaded={vi.fn()} />)
+    await user.type(screen.getByLabelText(/dein name/i), 'Anna')
+    await user.upload(screen.getByLabelText(/fotos ausw/i), makeFile('a.jpg'))
+    await user.click(screen.getByRole('button', { name: /hochladen/i }))
+    await waitFor(() => expect(backend.events).toContain('complete'))
+    await user.click(screen.getByRole('button', { name: /abbrechen/i }))
+
+    // Das Registrieren läuft weiter; der Gast tippt inzwischen im Namensfeld.
+    await user.click(screen.getByLabelText(/dein name/i))
+    release()
+
+    await screen.findByText(/1 foto hochgeladen/i)
+    expect(screen.getByLabelText(/dein name/i)).toHaveFocus()
+  })
+
   it('does not show the cancel button while idle', () => {
     render(<GalleryUploadForm isAdmin onUploaded={vi.fn()} />)
     expect(screen.queryByRole('button', { name: /abbrechen/i })).not.toBeInTheDocument()

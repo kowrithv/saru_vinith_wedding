@@ -210,6 +210,11 @@ export default function GalleryUploadForm({ isAdmin = false, onUploaded }: Galle
   useEffect(() => {
     if (submitting || !restoreFocusRef.current) return
     restoreFocusRef.current = false
+    // Das Registrieren eines schon übertragenen Fotos kann nach "Abbrechen"
+    // noch bis zu einer Minute dauern: hat der Gast inzwischen woanders
+    // hingetippt, darf der Fokus nicht (samt Tastatur) wegspringen.
+    const active = document.activeElement
+    if (active && active !== document.body) return
     formRef.current?.querySelector<HTMLButtonElement>('button[type="submit"]')?.focus()
   }, [submitting])
 

@@ -60,7 +60,9 @@ export default function AdminDashboard({ initialLocks, initialGalleryMode }: Adm
   // Eigener Fehlerzustand: der allgemeine deleteError steht oben auf der
   // Seite und wäre beim Löschen eines Fotos weit unten außerhalb des Sichtfelds.
   const [galleryDeleteError, setGalleryDeleteError] = useState<string | null>(null)
-  const [lockError, setLockError] = useState<string | null>(null)
+  // Die Meldung gehört zu dem Schalter, der gescheitert ist: ein anderer
+  // Schalter, der danach funktioniert, darf sie nicht wegräumen.
+  const [lockError, setLockError] = useState<{ feature: keyof Locks; message: string } | null>(null)
   // Mehrere Schalter können gleichzeitig unterwegs sein (schnelles Tippen im
   // Notfall): jeder hängt an seiner eigenen Anfrage.
   const [togglingFeatures, setTogglingFeatures] = useState<ReadonlySet<keyof Locks>>(new Set())
@@ -146,7 +148,7 @@ export default function AdminDashboard({ initialLocks, initialGalleryMode }: Adm
 
   const toggleLock = async (feature: keyof Locks) => {
     const next = !locks[feature]
-    setLockError(null)
+    setLockError((prev) => (prev?.feature === feature ? null : prev))
     setTogglingFeatures((prev) => new Set(prev).add(feature))
     try {
       const response = await fetch('/api/admin/write-lock', {
@@ -155,7 +157,7 @@ export default function AdminDashboard({ initialLocks, initialGalleryMode }: Adm
         body: JSON.stringify({ feature, locked: next }),
       })
       if (!response.ok) {
-        setLockError('Umschalten fehlgeschlagen. Bitte versuch es erneut.')
+        setLockError({ feature, message: 'Umschalten fehlgeschlagen. Bitte versuch es erneut.' })
         return
       }
       const data = (await response.json()) as { locks: Locks }
@@ -165,7 +167,7 @@ export default function AdminDashboard({ initialLocks, initialGalleryMode }: Adm
       // eintreffen und die neuere überschreiben.
       setLocks((prev) => ({ ...prev, [feature]: data.locks[feature] ?? next }))
     } catch {
-      setLockError('Umschalten fehlgeschlagen. Bitte versuch es erneut.')
+      setLockError({ feature, message: 'Umschalten fehlgeschlagen. Bitte versuch es erneut.' })
     } finally {
       setTogglingFeatures((prev) => {
         const remaining = new Set(prev)
@@ -284,7 +286,7 @@ export default function AdminDashboard({ initialLocks, initialGalleryMode }: Adm
           </div>
           {lockError && (
             <p className="text-sm text-red-600 mt-4" role="alert">
-              {lockError}
+              {lockError.message}
             </p>
           )}
 

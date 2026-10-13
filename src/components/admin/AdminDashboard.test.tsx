@@ -133,6 +133,44 @@ describe('AdminDashboard', () => {
     expect(screen.getByRole('switch', { name: /erinnerungen/i })).toBeEnabled()
   })
 
+  it('keeps the error of a failed switch visible when another switch is toggled afterwards', async () => {
+    const fetchMock = mockFetchSequence([
+      { body: { entries: [] } },
+      { body: { entries: [] } },
+      noGalleryPhotos,
+      { status: 500, body: { error: 'Serverfehler' } },
+      { body: { locks: { guestbook: false, memories: true, who_votes: false, gallery_upload: false } } },
+    ])
+    render(<AdminDashboard initialLocks={noLocks} initialGalleryMode="public" />)
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3))
+
+    await userEvent.click(screen.getByRole('switch', { name: /gästebuch/i }))
+    await waitFor(() => expect(screen.getByText(/umschalten fehlgeschlagen/i)).toBeInTheDocument())
+    await userEvent.click(screen.getByRole('switch', { name: /erinnerungen/i }))
+
+    await waitFor(() => expect(screen.getByRole('switch', { name: /erinnerungen/i })).toHaveAttribute('aria-checked', 'true'))
+    expect(screen.getByText(/umschalten fehlgeschlagen/i)).toBeInTheDocument()
+  })
+
+  it('removes the error once the failed switch itself is toggled again', async () => {
+    const fetchMock = mockFetchSequence([
+      { body: { entries: [] } },
+      { body: { entries: [] } },
+      noGalleryPhotos,
+      { status: 500, body: { error: 'Serverfehler' } },
+      { body: { locks: { guestbook: true, memories: false, who_votes: false, gallery_upload: false } } },
+    ])
+    render(<AdminDashboard initialLocks={noLocks} initialGalleryMode="public" />)
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3))
+
+    await userEvent.click(screen.getByRole('switch', { name: /gästebuch/i }))
+    await waitFor(() => expect(screen.getByText(/umschalten fehlgeschlagen/i)).toBeInTheDocument())
+    await userEvent.click(screen.getByRole('switch', { name: /gästebuch/i }))
+
+    await waitFor(() => expect(screen.getByRole('switch', { name: /gästebuch/i })).toHaveAttribute('aria-checked', 'true'))
+    expect(screen.queryByText(/umschalten fehlgeschlagen/i)).not.toBeInTheDocument()
+  })
+
   it('keeps a switch busy until its own answer is there, even while another one is toggled', async () => {
     const fetchMock = mockFetchSequence([{ body: { entries: [] } }, { body: { entries: [] } }, noGalleryPhotos])
     fetchMock
