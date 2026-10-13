@@ -167,6 +167,10 @@ async function uploadAndRegister(
   } finally {
     clearTimeout(timer)
     control.signal.removeEventListener('abort', onCancel)
+    // Scheitert eine der beiden Übertragungen, endet Promise.all sofort - die
+    // andere liefe sonst weiter (Bandbreite, Speicher) für ein Foto, das nie
+    // registriert wird.
+    if (!transferred) fileController.abort()
   }
 }
 

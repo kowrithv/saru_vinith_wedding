@@ -627,6 +627,32 @@ describe('GalleryUploadForm', () => {
     expect(screen.queryByText(/falsches kennwort/i)).not.toBeInTheDocument()
   })
 
+  it('stops the other transfer of a photo when one of its two PUTs fails', async () => {
+    const user = setupUser()
+    const backend = createFakeBackend()
+    let originalSignal: AbortSignal | undefined
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+        if (url === 'https://r2.example/thumb1') return Promise.reject(new TypeError('Failed to fetch'))
+        if (url === 'https://r2.example/original1') {
+          originalSignal = init?.signal ?? undefined
+          return new Promise((_, reject) => {
+            init?.signal?.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')))
+          })
+        }
+        return backend.fetchMock(url, init)
+      })
+    )
+    render(<GalleryUploadForm isAdmin onUploaded={vi.fn()} />)
+    await user.type(screen.getByLabelText(/dein name/i), 'Anna')
+    await user.upload(screen.getByLabelText(/fotos ausw/i), makeFile())
+    await user.click(screen.getByRole('button', { name: /hochladen/i }))
+
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent(/nicht hochgeladen werden/i))
+    expect(originalSignal?.aborted).toBe(true)
+  })
+
   it('also reports an expired admin session while guest uploads are locked, not "pausiert"', async () => {
     // Bei gesperrtem Foto-Upload prüft der Server die Sperre vor der Anmeldung:
     // ein Admin mit abgelaufener Sitzung bekäme sonst 423 statt 401.

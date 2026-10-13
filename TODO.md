@@ -44,14 +44,10 @@
 
 ## Gefunden im Ops-/Polish-Review (zurückgestellt, nicht blockierend)
 
-- **Formular nach „Schließen" während des Uploads:** die Uploads laufen
-  weiter, die Vorschau-URLs werden nicht freigegeben, nichts wird abgebrochen.
-  Das Formular eingeklappt statt entfernt zu halten würde beides lösen.
-- **Geschwister-Upload läuft weiter,** wenn ein PUT fehlschlägt
-  (`fileController` wird im `finally` nicht abgebrochen).
 - **Abbrechen-Knopf verliert den Fokus** beim Ausblenden (Tastatur/VoiceOver).
-- **Zwei „Stopp"-Knöpfe:** der schwebende „Schließen" beendet nur die Ansicht,
-  „Abbrechen" den Upload; der schwebende Knopf kann Abbrechen überdecken.
+- **Schwebender Knopf kann „Abbrechen" überdecken:** „Schließen" blendet das
+  Formular nur aus (Uploads laufen weiter), „Abbrechen" stoppt sie; auf kleinen
+  Bildschirmen liegt der schwebende Knopf über dem unteren Formularrand.
 - **Vorschau-Speicher:** jede Kachel hält das 800-px-Thumbnail (ca. 2 MB
   Bitmap) für eine 40-px-Kachel; bei 20 Fotos ca. 40 MB.
 - **Test-Lücken:** Integritätsprüfung mit Zeilen ungleich `ok`, `unref()`,
@@ -74,9 +70,9 @@
   vielen Zügen entscheidet die Zeit und enthält so auch die Lesezeit. Für die
   persönliche Bestzeit egal, für den gemeinsamen Rekord unfair; der Zähler
   müsste beim ersten Aufdecken starten (ändert das bestehende Spiel).
-- **Wortwahl:** „Deine Bestzeit" und „Rekord aller Gäste" ranken nach Zügen
-  zuerst; die Startseiten-Kachel wirbt noch mit „Bestzeit". Nach einem
-  Zurücksetzen kann die eigene Bestzeit besser aussehen als der Rekord.
+- **Wortwahl:** „Deine Bestzeit" und „Rekord aller Gäste" ranken beide nach
+  Zügen zuerst. Nach einem Zurücksetzen kann die eigene Bestzeit besser
+  aussehen als der Rekord.
 - **Rate-Limiter-Map** wird nie geleert (gilt für alle Limiter, vorbestehend).
 
 ## Offene externe Abhängigkeiten (aus der Spec)

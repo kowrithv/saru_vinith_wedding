@@ -150,8 +150,29 @@ describe('GalleryPage', () => {
     expect(closeButton).toHaveAttribute('aria-expanded', 'true')
 
     await userEvent.click(closeButton)
-    expect(screen.queryByLabelText(/dein name/i)).not.toBeInTheDocument()
+    expect(screen.getByLabelText(/dein name/i)).not.toBeVisible()
     expect(screen.getByRole('button', { name: /fotos hochladen/i })).toHaveAttribute('aria-expanded', 'false')
+  })
+
+  it('only hides the form on close, so running uploads and what was typed survive', async () => {
+    mockFetchSequence([{ body: { mode: 'public', unlocked: true, photos: [] } }])
+    render(<GalleryPage />)
+    await userEvent.click(await screen.findByRole('button', { name: /fotos hochladen/i }))
+    await userEvent.type(screen.getByLabelText(/dein name/i), 'Ben')
+
+    await userEvent.click(screen.getByRole('button', { name: /schließen/i }))
+    await userEvent.click(screen.getByRole('button', { name: /fotos hochladen/i }))
+
+    expect(screen.getByLabelText(/dein name/i)).toBeVisible()
+    expect(screen.getByLabelText(/dein name/i)).toHaveValue('Ben')
+  })
+
+  it('does not render the form at all before the first open', async () => {
+    mockFetchSequence([{ body: { mode: 'public', unlocked: true, photos: [] } }])
+    render(<GalleryPage />)
+    await screen.findByRole('button', { name: /fotos hochladen/i })
+
+    expect(screen.queryByLabelText(/dein name/i)).not.toBeInTheDocument()
   })
 
   it('scrolls the form into view and focuses its first field when it opens', async () => {

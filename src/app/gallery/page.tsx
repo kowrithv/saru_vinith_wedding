@@ -22,6 +22,9 @@ export default function GalleryPage() {
   const [unlockError, setUnlockError] = useState<string | null>(null)
   const [unlocking, setUnlocking] = useState(false)
   const [showUploadForm, setShowUploadForm] = useState(false)
+  // Nach dem ersten Öffnen bleibt das Formular im DOM und wird nur versteckt:
+  // "Schließen" soll laufende Uploads (und Eingaben) nicht verwerfen.
+  const [uploadFormMounted, setUploadFormMounted] = useState(false)
   const uploadPanelRef = useRef<HTMLDivElement>(null)
 
   // Der Button schwebt am unteren Bildschirmrand, das Formular steht aber
@@ -150,7 +153,10 @@ export default function GalleryPage() {
                     Lightbox (z-50), sonst läge der Button auf dem geöffneten Menü. */}
                 <button
                   type="button"
-                  onClick={() => setShowUploadForm((v) => !v)}
+                  onClick={() => {
+                    setShowUploadForm((v) => !v)
+                    setUploadFormMounted(true)
+                  }}
                   aria-expanded={showUploadForm}
                   aria-controls="gallery-upload-panel"
                   className="fixed bottom-6 right-6 z-30 flex items-center gap-2 bg-gold text-dark-blue font-medium px-5 py-3 rounded-full shadow-lg hover:shadow-xl transition-shadow"
@@ -159,8 +165,8 @@ export default function GalleryPage() {
                   {showUploadForm ? 'Schließen' : 'Fotos hochladen'}
                 </button>
 
-                {showUploadForm && (
-                  <div id="gallery-upload-panel" ref={uploadPanelRef} className="scroll-mt-28">
+                {uploadFormMounted && (
+                  <div id="gallery-upload-panel" ref={uploadPanelRef} hidden={!showUploadForm} className="scroll-mt-28">
                     <Card padding="lg" className="max-w-xl mx-auto mb-10">
                       <GalleryUploadForm onUploaded={handleUploaded} />
                     </Card>
