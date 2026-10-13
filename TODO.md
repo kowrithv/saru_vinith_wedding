@@ -9,27 +9,18 @@
 
 ## Vor Go-Live zu erledigen (gefunden im Gästebuch/Erinnerungen-Review)
 
-- **Rate-Limiter umgehbar, solange der Server direkt erreichbar ist:**
-  `getClientKey` vertraut dem `cf-connecting-ip`-Header, den aber auch
-  ein direkter Request an den Server (ohne über Cloudflare zu laufen)
-  frei setzen kann — ein Angreifer kann das Limit so beliebig umgehen.
-  Betrifft vor allem das offene, kennwortlose Gästebuch, dessen einzige
-  Spam-Bremse der Rate-Limiter ist. Muss vor dem Freigeben der Seite für
-  echten Internet-Traffic behoben sein: entweder den Server auf
-  Cloudflare-IP-Bereiche beschränken (Firewall), oder Caddy so
-  konfigurieren, dass es `cf-connecting-ip` von Nicht-Cloudflare-Quellen
-  verwirft/überschreibt (`trusted_proxies`, aktuell nur ein
-  TODO-Kommentar im Caddyfile).
+- **Rate-Limiter umgehbar:** `getClientKey` vertraut dem `cf-connecting-ip`-Header,
+  den bei `DNS only` (ohne Cloudflare-Proxy) jeder Client selbst setzen kann —
+  ein Angreifer umgeht so das Limit beliebig. Betrifft vor allem das offene,
+  kennwortlose Gästebuch, dessen einzige Spam-Bremse der Rate-Limiter ist.
+  Der Server läuft hinter **Traefik** (nicht Caddy). Lösung in der App:
+  den Header nur auslesen, wenn er ausdrücklich vertraut wird (z. B.
+  `CLIENT_IP_HEADER=cf-connecting-ip` erst, wenn die Website hinter dem
+  Cloudflare-Proxy läuft), sonst den ersten Eintrag von `X-Forwarded-For`,
+  den Traefik für nicht vertraute Quellen selbst setzt.
 
 ## Gefunden im Feingranulare-Schreib-Sperre-Review (nicht blockierend)
 
-- **Feature-Namen (`guestbook`/`memories`/`who_votes`) können ohne
-  Testausfall voneinander abweichen:** `z.enum` in
-  `api/admin/write-lock/route.ts` und die drei Durchsetzungs-Routen
-  teilen sich keinen gemeinsamen Typ, der das erzwingt. Ein Test, der
-  über alle drei Features loopt (statt nur `guestbook` zu prüfen),
-  würde das abfangen. Empfehlung: `FEATURES` als `as const`-Array
-  definieren und `z.enum(FEATURES)` darauf aufbauen.
 - **Kein Test für „Wer-von-uns-Ergebnisse lesen funktioniert trotz
   aktiver Sperre"** (Review-Vorgabe aus dem Plan, im Code korrekt
   erfüllt — `GET /api/who-votes` prüft die Sperre nicht —, aber nie
@@ -42,12 +33,6 @@
 
 ## Gefunden im Galerie-Upload-Review (zurückgestellt, nicht blockierend)
 
-- **Upload-Formular ohne Vorschaukacheln:** Die Statusliste zeigt nur
-  Dateinamen (Spec §5 sieht Vorschaubilder vor); die Dateiauswahl ist ein
-  ungestyltes natives Feld, die Karte hat kein Icon/keine Überschrift wie
-  das Erinnerungen-Formular.
-- **Kein Timeout/Abbrechen:** Ein hängender R2-PUT dreht, bis das Netz einen
-  Fehler meldet; der Button bleibt so lange gesperrt.
 - **Abgelaufenes Admin-Cookie (12 h):** Das Admin-Formular zeigt dann
   „Falsches Kennwort.", obwohl es kein Kennwortfeld hat.
 - **Kennwort-Modus: doppelte Eingabe:** Gäste tippen das Kennwort einmal zum
@@ -64,10 +49,6 @@
   Upload-Rate-Limiter zählt nur noch Fehlversuche (sonst sperrt er das
   gemeinsame Veranstaltungs-WLAN). Kostenobergrenze stattdessen über ein
   Billing-Alarm in Cloudflare setzen.
-- **Admin-Dashboard wird lang:** Galerie steht unter den kompletten
-  Gästebuch-/Erinnerungen-Listen. Einklappbare Abschnitte oder Sprungmarken;
-  Modus-Buttons nur ca. 28 px hoch; Vorschaubilder nicht vergrößerbar.
-- **Eingabefelder mit 14 px:** iOS zoomt beim Fokus hinein (seitenweit).
 - **Echtgeräte-Test steht aus:** iPhone-Safari (HEIC→JPEG bei
   `accept="image/*"`, Speicher bei 20+ Fotos, Tab im Hintergrund),
   Android-Chrome (HEIC ohne MIME-Typ), langsames WLAN.
@@ -150,8 +131,9 @@
   R2-Custom-Domain (`fotos.vsjourney.de`) muss die DNS-Zone zu Cloudflare
   umziehen (Free-Plan: nur Full Setup) — Schritte in
   `docs/ops/cloudflare-r2-setup.md`. Nameserver-TTL 24 h: vor Mittwoch erledigen.
-- TLS: Caddy holt das Zertifikat selbst (`DOMAIN=vsjourney.de`), solange die
-  A/AAAA-Einträge auf den Server zeigen und in Cloudflare „DNS only“ stehen.
+- TLS/Proxy: Auf dem Server terminiert **Traefik** TLS (kein Caddy). Die
+  `docker-compose.yml` im Repo enthält noch Caddy und Autoheal; maßgeblich ist
+  das Traefik-Setup auf dem Server (Labels/Netzwerk für den `web`-Container).
 
 ## Noch zu planende Subsysteme (Backlog aus der Spec)
 
