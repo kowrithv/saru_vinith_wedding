@@ -12,6 +12,7 @@ den verlinkten Checklisten; diese Seite hält nur Reihenfolge und Abhängigkeite
 | 5 | **Server umstellen** (siehe unten) | `README.md` „Umstieg von der alten Seite" | Schritt 2 und 4 |
 | 6 | Smoke-Test gegen die echte Domain | `node scripts/smoke.mjs https://vsjourney.de` | Schritt 5 |
 | 7 | **Gerätetest** am echten Handy | `geraetetest-checkliste.md` | Schritt 2, 5 und 6 |
+| 8 | **Alte Quiz-Stimmen übernehmen** | siehe unten | Schritt 5 (alte Seite gestoppt, neue läuft) |
 
 ## Was vor Schritt 5 feststehen muss
 
@@ -29,7 +30,9 @@ den verlinkten Checklisten; diese Seite hält nur Reihenfolge und Abhängigkeite
 
 1. Alten Zustand sichern: Ordner und Compose-Datei der alten Seite notieren,
    ggf. `docker compose ps` und die alte Traefik-Route (File-Provider oder
-   Labels) festhalten – das ist der Rückweg.
+   Labels) festhalten – das ist der Rückweg. **Die alten Stimmen kopieren:**
+   `cp <alter-ordner>/data/who-votes.json ~/who-votes-alt.json` (siehe
+   Schritt 8; die Datei enthält Namen der Abstimmenden, nicht weitergeben).
 2. Alte Seite stoppen: `docker compose down` im alten Ordner. **Ab hier ist die
    alte Seite offline**, bis die neue läuft.
 3. Alte Traefik-Route für `vsjourney.de` entfernen (zwei Router mit derselben
@@ -45,6 +48,27 @@ den verlinkten Checklisten; diese Seite hält nur Reihenfolge und Abhängigkeite
 Compose-Datei im alten Ordner wieder mit `up -d` starten und die alte
 Traefik-Route zurückstellen.
 
+## Alte Quiz-Stimmen übernehmen (Schritt 8)
+
+Gespeichert hat die alte Seite nur die Stimmen der „Wer von uns?"-Abstimmung
+(`data/who-votes.json`); das klassische Quiz speichert nichts. Fragen und
+Antworten sind in alt und neu gleich, deshalb lassen sich die Stimmen exakt
+übernehmen. Namen werden dabei **nicht** mit übernommen.
+
+```bash
+# 1. Probelauf (sendet nichts, zeigt nur, was übernommen würde):
+node scripts/import-old-votes.mjs ~/who-votes-alt.json https://vsjourney.de
+# 2. Wirklich übernehmen:
+node scripts/import-old-votes.mjs ~/who-votes-alt.json https://vsjourney.de --apply
+```
+
+- Erst ausführen, **wenn die alte Seite gestoppt ist** (sonst kommen in der alten
+  Datei noch Stimmen dazu) und die neue läuft.
+- Ein zweiter Lauf legt nichts doppelt an; Wiederholen ist also gefahrlos.
+- Ist „Wer von uns?" im Admin gesperrt, meldet das Skript „abgewiesen (HTTP 423)":
+  kurz entsperren, importieren, wieder sperren.
+- Danach auf der Seite „Quiz" prüfen, dass die Zähler stimmen.
+
 ## Gerätetest (Schritt 7)
 
 `geraetetest-checkliste.md` abarbeiten, zusätzlich beim ersten Aufruf der
@@ -56,7 +80,9 @@ Startseite am Handy ansehen:
 
 ## Noch offen (nicht heute Abend)
 
-- Uhrzeiten für die drei „TBA"-Zeilen auf `/info` und die SMTP-Werte: liegen bei
-  den Brautleuten, siehe Issue-Entwurf im Chat bzw. `TODO.md`.
+- Uhrzeiten für die drei „TBA"-Zeilen auf `/info`: liegen bei den Brautleuten
+  (Issue-Entwurf, `TODO.md`).
+- SMTP-Zugang für die Alarm-Mails: kommt vom Betreiber, nicht von den
+  Brautleuten (`TODO.md`).
 - Ziel für die Off-Box-Kopie der Sicherungen und ein Uptime-Monitor:
   `hochzeitstag-runbook.md` Abschnitt 7.

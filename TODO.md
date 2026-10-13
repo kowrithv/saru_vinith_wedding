@@ -7,8 +7,8 @@
   (`receptionSchedule` in `src/lib/event-info.ts`). Uhrzeiten eintragen
   oder die Zeilen entfernen — „TBA" sollte am Hochzeitstag nicht stehen.
 - **SMTP-Zugang für die Alarm-Mails** (`SMTP_*`, `ALERT_EMAIL_TO` in
-  `.env.production`): ohne ihn laufen Alarme nur ins Log. Werte privat
-  weitergeben, nie ins Repo oder in ein Issue.
+  `.env.production`): kommt vom Betreiber, nicht von den Brautleuten. Ohne ihn
+  laufen Alarme nur ins Log. Werte nie ins Repo oder in ein Issue.
 
 ## Gefunden im Galerie-Upload-Review (zurückgestellt, nicht blockierend)
 

@@ -237,6 +237,11 @@ zweites System ist noch offen (`TODO.md`).
 
 ## Hilfsskripte
 
+`scripts/import-old-votes.mjs` übernimmt die Stimmen der „Wer von uns?"-Abstimmung
+der alten Seite (`data/who-votes.json`) in die neue:
+`node scripts/import-old-votes.mjs <datei> <https://vsjourney.de> [--apply]`
+(ohne `--apply` nur ein Probelauf; wiederholbar, legt nichts doppelt an).
+
 `scripts/compress-memory-images.mjs` verkleinert die Bilder für das
 Memory-Spiel nach `public/memory-spiel/`. Es braucht `sharp`, das nicht in
 den Abhängigkeiten steht: `npm i --no-save sharp`, dann
