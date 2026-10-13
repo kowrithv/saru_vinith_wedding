@@ -58,6 +58,7 @@ wirklich auszuprobieren.
 | `R2_SECRET_ACCESS_KEY` | ja | zum Token gehörendes Secret |
 | `R2_BUCKET_NAME` | ja | Name des Buckets |
 | `R2_PUBLIC_BASE_URL` | ja | öffentliche Auslieferungs-URL, z. B. `https://fotos.<domain>` |
+| `CLIENT_IP_HEADER` | nein | Quelle der Client-IP für die Rate-Limiter: Standard `x-forwarded-for` (Traefik setzt ihn). `cf-connecting-ip` nur, wenn die Website hinter dem Cloudflare-Proxy läuft; ohne Proxy kann jeder den Header selbst setzen |
 | `R2_JURISDICTION` | nein | `eu`, wenn der Bucket mit EU-Jurisdiktion angelegt wurde: der S3-Endpoint lautet dann `<ACCOUNT_ID>.eu.r2.cloudflarestorage.com` (fest, nachträglich nicht änderbar) |
 | `ADMIN_SECRET` | nein | Signierschlüssel für Cookies; wird sonst zufällig erzeugt und in der DB gespeichert |
 | `CLOUDFLARE_API_TOKEN` | nein | Recht „Cache Purge“; ohne Wert wird der Cache-Purge beim Löschen übersprungen |
@@ -128,14 +129,20 @@ Details: `docs/superpowers/specs/2026-10-12-gallery-design.md`.
 
 ## Deployment
 
-Produktion läuft per Docker Compose (App + Caddy als Reverse-Proxy +
-Autoheal):
+Der Produktionsserver betreibt die App **hinter Traefik** (eigene
+Compose-Datei mit Labels). Vorlage: `docker-compose.traefik.example.yml`
+(Domain, Netzwerk, Entrypoint und Cert-Resolver anpassbar):
 
 ```bash
 cp .env.example .env.production      # Werte eintragen
-IMAGE_TAG=1.0.0 docker compose pull
-IMAGE_TAG=1.0.0 docker compose up -d
+cp docker-compose.traefik.example.yml docker-compose.traefik.yml
+IMAGE_TAG=1.0.0 docker compose -f docker-compose.traefik.yml pull
+IMAGE_TAG=1.0.0 docker compose -f docker-compose.traefik.yml up -d
 ```
+
+Die `docker-compose.yml` im Repo bringt statt Traefik einen eigenen Caddy und
+Autoheal mit; sie ist für einen eigenständigen Betrieb ohne vorhandenen
+Reverse-Proxy gedacht (`docker compose up -d`, Domain über `DOMAIN`).
 
 - Das Image heißt `ghcr.io/kowrithv/saru_vinith_wedding:<tag>`; CI baut es
   **nur für Versions-Tags** (`v*.*.*`) auf `main`. Aus dem Git-Tag `v1.0.0`
@@ -144,16 +151,17 @@ IMAGE_TAG=1.0.0 docker compose up -d
   `IMAGE_TAG=develop` existiert also nicht, `IMAGE_TAG` muss immer gesetzt
   werden. Der Tag `latest` wird nie automatisch gesetzt – er gehört der
   alten Seite (`clean-start`).
-- `./data` wird nach `/app/data` gemountet; dort liegt die Datenbank.
+- `./data` wird nach `/app/data` gemountet; dort liegen Datenbank und Sicherungen.
 - Health-Check: `GET /api/health`.
-- Caddy liest die Domain aus `DOMAIN`.
+- Hinter Traefik terminiert dieser das TLS. Die Rate-Limiter lesen die
+  Client-IP aus `X-Forwarded-For` (siehe `CLIENT_IP_HEADER`).
 
 ### Betrieb
 
 ```bash
-docker compose logs -f web           # Logs
-docker compose restart web           # Neustart
-IMAGE_TAG=<älterer-tag> docker compose up -d   # Rollback auf festes Image-Tag
+docker compose -f docker-compose.traefik.yml logs -f web           # Logs
+docker compose -f docker-compose.traefik.yml restart web           # Neustart
+IMAGE_TAG=<älterer-tag> docker compose -f docker-compose.traefik.yml up -d   # Rollback auf festes Image-Tag
 ```
 
 **Backup:** Die App sichert die Datenbank beim Start und danach stündlich nach
@@ -170,10 +178,10 @@ der Mailversand funktioniert.
 **Wiederherstellung:**
 
 ```bash
-docker compose stop web
+docker compose -f docker-compose.traefik.yml stop web
 rm -f data/wedding.db-wal data/wedding.db-shm
 cp data/backups/wedding-<Zeitstempel>.db data/wedding.db
-docker compose start web
+docker compose -f docker-compose.traefik.yml start web
 ```
 
 Die Sicherungen liegen auf derselben Platte wie die Datenbank – sie schützen

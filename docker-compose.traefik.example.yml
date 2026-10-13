@@ -1,0 +1,56 @@
+# Beispiel für den Betrieb hinter einem vorhandenen Traefik (so läuft der
+# Produktionsserver). Als eigene Compose-Datei neben die vorhandene kopieren:
+#
+#   IMAGE_TAG=1.0.0 docker compose -f docker-compose.traefik.yml pull
+#   IMAGE_TAG=1.0.0 docker compose -f docker-compose.traefik.yml up -d
+#
+# Anpassen an das eigene Traefik: Netzwerkname, Entrypoint und Cert-Resolver
+# (per Umgebungsvariable oder direkt hier). Die Compose-Datei im Repo
+# (docker-compose.yml) bringt dagegen einen eigenen Caddy mit und ist für
+# diesen Server NICHT gedacht.
+services:
+  web:
+    image: ghcr.io/kowrithv/saru_vinith_wedding:${IMAGE_TAG:?IMAGE_TAG setzen, z. B. 1.0.0}
+    container_name: saru-vinith-wedding
+    restart: unless-stopped
+    env_file:
+      - .env.production
+    volumes:
+      # Datenbank und Sicherungen (data/backups) - bleibt über Updates erhalten.
+      - ./data:/app/data
+    networks:
+      - traefik
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=${TRAEFIK_NETWORK:-traefik}"
+      - "traefik.http.routers.hochzeit.rule=Host(`${DOMAIN:-vsjourney.de}`) || Host(`www.${DOMAIN:-vsjourney.de}`)"
+      - "traefik.http.routers.hochzeit.entrypoints=${TRAEFIK_ENTRYPOINT:-websecure}"
+      - "traefik.http.routers.hochzeit.tls=true"
+      - "traefik.http.routers.hochzeit.tls.certresolver=${TRAEFIK_CERTRESOLVER:-letsencrypt}"
+      - "traefik.http.services.hochzeit.loadbalancer.server.port=3000"
+      # Nur relevant, wenn ein Autoheal-Container auf dem Server läuft.
+      - "autoheal=true"
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3000/api/health').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+    deploy:
+      resources:
+        limits:
+          memory: 1500M
+
+networks:
+  traefik:
+    external: true
+    name: ${TRAEFIK_NETWORK:-traefik}

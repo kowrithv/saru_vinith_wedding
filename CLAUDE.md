@@ -66,8 +66,10 @@ einer Route meldet `tsc` ggf. veraltete Dateien in `.next/types` – dann
   `function`-Ausdrücke sein; Regex-Selektoren können mit Label-Texten
   kollidieren. Die Mount-Fetch-Reihenfolge im `AdminDashboard` (Gästebuch,
   Erinnerungen, Galerie) steckt in den Test-Mocks.
-- **Rate-Limiter:** `getClientKey` vertraut `cf-connecting-ip` – vor dem
-  Go-Live absichern (siehe `TODO.md`).
+- **Rate-Limiter:** `getClientKey` nimmt `X-Forwarded-For` (Traefik setzt
+  ihn). `cf-connecting-ip` nur mit `CLIENT_IP_HEADER=cf-connecting-ip` hinter
+  dem Cloudflare-Proxy – ohne Proxy kann jeder Client den Header fälschen.
+  Der Server läuft hinter **Traefik**, nicht Caddy.
 
 ## Arbeitsweise
 

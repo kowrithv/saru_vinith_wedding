@@ -15,7 +15,7 @@ function requestBody(body: unknown, cookieValue?: string, clientIp?: string): Re
     headers.set('cookie', `${ADMIN_COOKIE_NAME}=${cookieValue}`)
   }
   if (clientIp !== undefined) {
-    headers.set('cf-connecting-ip', clientIp)
+    headers.set('x-forwarded-for', clientIp)
   }
   return new Request('http://localhost/api/uploads/request', {
     method: 'POST',

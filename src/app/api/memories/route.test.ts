@@ -80,7 +80,7 @@ describe('/api/memories', () => {
     const request = () =>
       new Request('http://localhost/api/memories', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'cf-connecting-ip': '203.0.113.10' },
+        headers: { 'Content-Type': 'application/json', 'x-forwarded-for': '203.0.113.10' },
         body: JSON.stringify({
           name: 'Anna',
           message: 'Eine gültige Erinnerung hier drin.',

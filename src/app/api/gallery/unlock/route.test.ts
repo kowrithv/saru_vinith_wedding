@@ -6,7 +6,7 @@ import { GALLERY_COOKIE_NAME } from '@/lib/gallery-auth'
 function unlockRequest(password?: string, clientIp?: string): Request {
   const headers = new Headers({ 'Content-Type': 'application/json' })
   if (clientIp !== undefined) {
-    headers.set('cf-connecting-ip', clientIp)
+    headers.set('x-forwarded-for', clientIp)
   }
   return new Request('http://localhost/api/gallery/unlock', {
     method: 'POST',

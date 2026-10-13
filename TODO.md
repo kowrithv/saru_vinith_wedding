@@ -7,18 +7,6 @@
   (`receptionSchedule` in `src/lib/event-info.ts`). Uhrzeiten eintragen
   oder die Zeilen entfernen — „TBA" sollte am Hochzeitstag nicht stehen.
 
-## Vor Go-Live zu erledigen (gefunden im Gästebuch/Erinnerungen-Review)
-
-- **Rate-Limiter umgehbar:** `getClientKey` vertraut dem `cf-connecting-ip`-Header,
-  den bei `DNS only` (ohne Cloudflare-Proxy) jeder Client selbst setzen kann —
-  ein Angreifer umgeht so das Limit beliebig. Betrifft vor allem das offene,
-  kennwortlose Gästebuch, dessen einzige Spam-Bremse der Rate-Limiter ist.
-  Der Server läuft hinter **Traefik** (nicht Caddy). Lösung in der App:
-  den Header nur auslesen, wenn er ausdrücklich vertraut wird (z. B.
-  `CLIENT_IP_HEADER=cf-connecting-ip` erst, wenn die Website hinter dem
-  Cloudflare-Proxy läuft), sonst den ersten Eintrag von `X-Forwarded-For`,
-  den Traefik für nicht vertraute Quellen selbst setzt.
-
 ## Gefunden im Feingranulare-Schreib-Sperre-Review (nicht blockierend)
 
 - **Kein Test für „Wer-von-uns-Ergebnisse lesen funktioniert trotz

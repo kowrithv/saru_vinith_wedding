@@ -7,7 +7,7 @@ function request(method: string, options: { body?: unknown; cookie?: string; ip?
   const headers = new Headers()
   if (options.body !== undefined) headers.set('Content-Type', 'application/json')
   if (options.cookie !== undefined) headers.set('cookie', `${ADMIN_COOKIE_NAME}=${options.cookie}`)
-  if (options.ip !== undefined) headers.set('cf-connecting-ip', options.ip)
+  if (options.ip !== undefined) headers.set('x-forwarded-for', options.ip)
   return new Request('http://localhost/api/memory-record', {
     method,
     headers,
@@ -70,7 +70,7 @@ describe('/api/memory-record', () => {
   it('POST rejects a body that is not JSON', async () => {
     const bad = new Request('http://localhost/api/memory-record', {
       method: 'POST',
-      headers: { 'cf-connecting-ip': '10.1.0.4' },
+      headers: { 'x-forwarded-for': '10.1.0.4' },
       body: 'not json',
     })
     expect((await POST(bad)).status).toBe(400)

@@ -67,4 +67,15 @@ describe('validateEnv', () => {
     expect(() => validateEnv({ ...allSet, R2_JURISDICTION: 'germany' })).toThrowError(InvalidEnvError)
     expect(() => validateEnv({ ...allSet, R2_JURISDICTION: 'germany' })).toThrowError(/R2_JURISDICTION/)
   })
+
+  it('accepts the supported client IP headers and normalises them', () => {
+    expect(validateEnv({ ...allSet, CLIENT_IP_HEADER: ' CF-Connecting-IP ' }).clientIpHeader).toBe('cf-connecting-ip')
+    expect(validateEnv({ ...allSet, CLIENT_IP_HEADER: 'x-forwarded-for' }).clientIpHeader).toBe('x-forwarded-for')
+    expect(validateEnv(allSet).clientIpHeader).toBeUndefined()
+  })
+
+  it('rejects an unknown client IP header at startup', () => {
+    expect(() => validateEnv({ ...allSet, CLIENT_IP_HEADER: 'x-real-ip' })).toThrowError(InvalidEnvError)
+    expect(() => validateEnv({ ...allSet, CLIENT_IP_HEADER: 'x-real-ip' })).toThrowError(/CLIENT_IP_HEADER/)
+  })
 })

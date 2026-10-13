@@ -63,7 +63,7 @@ describe('/api/guestbook', () => {
     const request = () =>
       new Request('http://localhost/api/guestbook', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'cf-connecting-ip': '203.0.113.9' },
+        headers: { 'Content-Type': 'application/json', 'x-forwarded-for': '203.0.113.9' },
         body: JSON.stringify({ name: 'Anna', message: 'Eine gültige Nachricht hier drin.' }),
       })
 

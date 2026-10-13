@@ -12,6 +12,9 @@ const REQUIRED_KEYS = [
 // S3-Endpoint enthält sie, sonst findet die App den Bucket nicht.
 export const R2_JURISDICTIONS = ['eu', 'fedramp'] as const
 
+// Quelle der Client-IP für die Rate-Limiter (siehe client-ip.ts).
+export const CLIENT_IP_HEADERS = ['x-forwarded-for', 'cf-connecting-ip'] as const
+
 export class InvalidEnvError extends Error {
   readonly variable: string
 
@@ -41,6 +44,7 @@ export interface AppEnv {
   r2BucketName: string
   r2PublicBaseUrl: string
   r2Jurisdiction?: string
+  clientIpHeader?: string
 }
 
 export function validateEnv(
@@ -57,6 +61,13 @@ export function validateEnv(
       `Ungültiger Wert für R2_JURISDICTION: "${source.R2_JURISDICTION}" - erlaubt sind ${R2_JURISDICTIONS.join(', ')} oder leer.`
     )
   }
+  const clientIpHeader = source.CLIENT_IP_HEADER?.trim().toLowerCase() || undefined
+  if (clientIpHeader && !(CLIENT_IP_HEADERS as readonly string[]).includes(clientIpHeader)) {
+    throw new InvalidEnvError(
+      'CLIENT_IP_HEADER',
+      `Ungültiger Wert für CLIENT_IP_HEADER: "${source.CLIENT_IP_HEADER}" - erlaubt sind ${CLIENT_IP_HEADERS.join(', ')} oder leer.`
+    )
+  }
   return {
     adminPassword: source.ADMIN_PASSWORD as string,
     uploadPasswordEmpfang: source.UPLOAD_PASSWORD_EMPFANG as string,
@@ -66,5 +77,6 @@ export function validateEnv(
     r2BucketName: source.R2_BUCKET_NAME as string,
     r2PublicBaseUrl: source.R2_PUBLIC_BASE_URL as string,
     r2Jurisdiction: jurisdiction,
+    clientIpHeader,
   }
 }
