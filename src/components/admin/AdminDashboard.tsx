@@ -61,7 +61,9 @@ export default function AdminDashboard({ initialLocks, initialGalleryMode }: Adm
   // Seite und wäre beim Löschen eines Fotos weit unten außerhalb des Sichtfelds.
   const [galleryDeleteError, setGalleryDeleteError] = useState<string | null>(null)
   const [lockError, setLockError] = useState<string | null>(null)
-  const [togglingFeature, setTogglingFeature] = useState<keyof Locks | null>(null)
+  // Mehrere Schalter können gleichzeitig unterwegs sein (schnelles Tippen im
+  // Notfall): jeder hängt an seiner eigenen Anfrage.
+  const [togglingFeatures, setTogglingFeatures] = useState<ReadonlySet<keyof Locks>>(new Set())
   const [galleryMode, setGalleryMode] = useState<GalleryMode>(initialGalleryMode)
   const [galleryModeError, setGalleryModeError] = useState<string | null>(null)
   const [changingGalleryMode, setChangingGalleryMode] = useState(false)
@@ -145,7 +147,7 @@ export default function AdminDashboard({ initialLocks, initialGalleryMode }: Adm
   const toggleLock = async (feature: keyof Locks) => {
     const next = !locks[feature]
     setLockError(null)
-    setTogglingFeature(feature)
+    setTogglingFeatures((prev) => new Set(prev).add(feature))
     try {
       const response = await fetch('/api/admin/write-lock', {
         method: 'POST',
@@ -157,11 +159,19 @@ export default function AdminDashboard({ initialLocks, initialGalleryMode }: Adm
         return
       }
       const data = (await response.json()) as { locks: Locks }
-      setLocks(data.locks)
+      // Nur den eigenen Schalter übernehmen: die Antwort enthält den
+      // Gesamtstand zum Zeitpunkt ihrer Verarbeitung, und bei zwei schnell
+      // aufeinanderfolgenden Änderungen kann die ältere Antwort später
+      // eintreffen und die neuere überschreiben.
+      setLocks((prev) => ({ ...prev, [feature]: data.locks[feature] ?? next }))
     } catch {
       setLockError('Umschalten fehlgeschlagen. Bitte versuch es erneut.')
     } finally {
-      setTogglingFeature(null)
+      setTogglingFeatures((prev) => {
+        const remaining = new Set(prev)
+        remaining.delete(feature)
+        return remaining
+      })
     }
   }
 
@@ -255,7 +265,7 @@ export default function AdminDashboard({ initialLocks, initialGalleryMode }: Adm
                     aria-checked={isLocked}
                     aria-label={`Schreib-Sperre: ${FEATURE_LABELS[feature]}`}
                     onClick={() => toggleLock(feature)}
-                    disabled={togglingFeature === feature}
+                    disabled={togglingFeatures.has(feature)}
                     className={cn(
                       'w-12 h-7 rounded-full transition-colors relative flex-shrink-0 disabled:opacity-50',
                       isLocked ? 'bg-red-500' : 'bg-gray-200'

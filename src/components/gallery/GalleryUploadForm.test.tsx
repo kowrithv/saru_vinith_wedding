@@ -491,6 +491,19 @@ describe('GalleryUploadForm', () => {
     expect(screen.getByLabelText(/fotos ausw/i)).toBeEnabled()
   })
 
+  it('moves the focus to the upload button when Abbrechen disappears, so keyboard users keep their place', async () => {
+    const user = setupUser()
+    createFakeBackend({ hangPuts: true })
+    render(<GalleryUploadForm isAdmin onUploaded={vi.fn()} />)
+    await user.type(screen.getByLabelText(/dein name/i), 'Anna')
+    await user.upload(screen.getByLabelText(/fotos ausw/i), makeFile())
+    await user.click(screen.getByRole('button', { name: /hochladen/i }))
+    await user.click(await screen.findByRole('button', { name: /abbrechen/i }))
+
+    await waitFor(() => expect(screen.getByRole('button', { name: /^hochladen$/i })).toBeEnabled())
+    expect(screen.getByRole('button', { name: /^hochladen$/i })).toHaveFocus()
+  })
+
   it('does not show the cancel button while idle', () => {
     render(<GalleryUploadForm isAdmin onUploaded={vi.fn()} />)
     expect(screen.queryByRole('button', { name: /abbrechen/i })).not.toBeInTheDocument()

@@ -7,14 +7,6 @@
   (`receptionSchedule` in `src/lib/event-info.ts`). Uhrzeiten eintragen
   oder die Zeilen entfernen — „TBA" sollte am Hochzeitstag nicht stehen.
 
-## Gefunden im Feingranulare-Schreib-Sperre-Review (nicht blockierend)
-
-- **Seltene Wettlaufsituation im Dashboard:** Tippt die Admin-Person
-  zwei Schalter kurz hintereinander an, bevor die erste Server-Antwort
-  da ist, kann eine spät eintreffende Antwort kurzzeitig den falschen
-  Schalter-Zustand anzeigen. Nur Anzeigesache (ein Reload korrigiert
-  es), betrifft nur die eine Admin-Person.
-
 ## Gefunden im Galerie-Upload-Review (zurückgestellt, nicht blockierend)
 
 - **Kennwort-Modus: doppelte Eingabe:** Gäste tippen das Kennwort einmal zum
@@ -42,7 +34,6 @@
 
 ## Gefunden im Ops-/Polish-Review (zurückgestellt, nicht blockierend)
 
-- **Abbrechen-Knopf verliert den Fokus** beim Ausblenden (Tastatur/VoiceOver).
 - **Schwebender Knopf kann „Abbrechen" überdecken:** „Schließen" blendet das
   Formular nur aus (Uploads laufen weiter), „Abbrechen" stoppt sie; auf kleinen
   Bildschirmen liegt der schwebende Knopf über dem unteren Formularrand.

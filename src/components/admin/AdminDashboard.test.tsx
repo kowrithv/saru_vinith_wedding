@@ -100,6 +100,55 @@ describe('AdminDashboard', () => {
     expect(screen.getByRole('switch', { name: /wer-von-uns/i })).toHaveAttribute('aria-checked', 'false')
   })
 
+  it('applies each answer only to its own switch, even when answers arrive in the wrong order', async () => {
+    const fetchMock = mockFetchSequence([{ body: { entries: [] } }, { body: { entries: [] } }, noGalleryPhotos])
+    let answerGuestbook!: (value: unknown) => void
+    let answerMemories!: (value: unknown) => void
+    fetchMock
+      .mockReturnValueOnce(new Promise((resolve) => { answerGuestbook = resolve }))
+      .mockReturnValueOnce(new Promise((resolve) => { answerMemories = resolve }))
+    render(<AdminDashboard initialLocks={noLocks} initialGalleryMode="public" />)
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3))
+
+    await userEvent.click(screen.getByRole('switch', { name: /gästebuch/i }))
+    await userEvent.click(screen.getByRole('switch', { name: /erinnerungen/i }))
+
+    // Die Antwort auf die zweite Änderung kommt zuerst; die ältere Antwort
+    // enthält noch den Stand vor ihr und darf sie nicht überschreiben.
+    answerMemories({
+      ok: true,
+      status: 200,
+      json: async () => ({ locks: { guestbook: true, memories: true, who_votes: false, gallery_upload: false } }),
+    })
+    answerGuestbook({
+      ok: true,
+      status: 200,
+      json: async () => ({ locks: { guestbook: true, memories: false, who_votes: false, gallery_upload: false } }),
+    })
+
+    await waitFor(() => expect(screen.getByRole('switch', { name: /gästebuch/i })).toHaveAttribute('aria-checked', 'true'))
+    expect(screen.getByRole('switch', { name: /erinnerungen/i })).toHaveAttribute('aria-checked', 'true')
+    // Nach der Antwort ist jeder Schalter wieder bedienbar.
+    await waitFor(() => expect(screen.getByRole('switch', { name: /gästebuch/i })).toBeEnabled())
+    expect(screen.getByRole('switch', { name: /erinnerungen/i })).toBeEnabled()
+  })
+
+  it('keeps a switch busy until its own answer is there, even while another one is toggled', async () => {
+    const fetchMock = mockFetchSequence([{ body: { entries: [] } }, { body: { entries: [] } }, noGalleryPhotos])
+    fetchMock
+      .mockReturnValueOnce(new Promise(() => {}))
+      .mockReturnValueOnce(new Promise(() => {}))
+    render(<AdminDashboard initialLocks={noLocks} initialGalleryMode="public" />)
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3))
+
+    await userEvent.click(screen.getByRole('switch', { name: /gästebuch/i }))
+    await userEvent.click(screen.getByRole('switch', { name: /erinnerungen/i }))
+
+    expect(screen.getByRole('switch', { name: /gästebuch/i })).toBeDisabled()
+    expect(screen.getByRole('switch', { name: /erinnerungen/i })).toBeDisabled()
+    expect(screen.getByRole('switch', { name: /wer-von-uns/i })).toBeEnabled()
+  })
+
   it('toggling one feature does not change the display of the other two', async () => {
     const fetchMock = mockFetchSequence([
       { body: { entries: [] } },

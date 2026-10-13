@@ -193,6 +193,11 @@ export default function GalleryUploadForm({ isAdmin = false, onUploaded }: Galle
   const [cancelled, setCancelled] = useState(false)
   const abortRef = useRef<AbortController | null>(null)
   const previewUrlsRef = useRef<string[]>([])
+  const formRef = useRef<HTMLFormElement>(null)
+  // "Abbrechen" verschwindet, sobald der Upload beendet ist: der Fokus würde
+  // dabei auf <body> fallen (Tastatur, VoiceOver). Er geht stattdessen auf
+  // "Hochladen", den naheliegenden nächsten Schritt.
+  const restoreFocusRef = useRef(false)
 
   const releasePreviews = () => {
     previewUrlsRef.current.forEach((url) => URL.revokeObjectURL(url))
@@ -201,6 +206,12 @@ export default function GalleryUploadForm({ isAdmin = false, onUploaded }: Galle
 
   // Beim Entfernen des Formulars die Objekt-URLs der Vorschauen freigeben.
   useEffect(() => releasePreviews, [])
+
+  useEffect(() => {
+    if (submitting || !restoreFocusRef.current) return
+    restoreFocusRef.current = false
+    formRef.current?.querySelector<HTMLButtonElement>('button[type="submit"]')?.focus()
+  }, [submitting])
 
   const handleFilesChange = (e: ChangeEvent<HTMLInputElement>) => {
     setFormError(null)
@@ -346,6 +357,7 @@ export default function GalleryUploadForm({ isAdmin = false, onUploaded }: Galle
   }
 
   const cancelUpload = () => {
+    restoreFocusRef.current = true
     setCancelled(true)
     abortRef.current?.abort()
   }
@@ -381,7 +393,7 @@ export default function GalleryUploadForm({ isAdmin = false, onUploaded }: Galle
     : summaryParts.join(' ')
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
       <div>
         <label htmlFor="gallery-upload-name" className="block text-sm font-medium text-gray-700 mb-1.5">
           <User size={14} className="inline mr-1" />
