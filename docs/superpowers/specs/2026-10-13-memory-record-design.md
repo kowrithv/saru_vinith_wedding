@@ -42,9 +42,11 @@ behandelt - dafür werden alle gemeldeten Ergebnisse gespeichert.
 - Tabelle `memory_results` (`moves`, `seconds`, `created_at`; weiterhin **keine
   Namen und keine Adresse**). Der Rekord ist das beste gespeicherte Ergebnis
   (Züge, dann Zeit, dann das früheste).
-- Obergrenze 2000 Ergebnisse: darüber fallen die schlechtesten weg, der Rekord
-  und die Spitze der Liste bleiben erhalten. Ein Skript kann die Tabelle so nicht
-  beliebig füllen.
+- Obergrenze 100.000 Ergebnisse (gemessen: rund 5 MB, Abfragen unter 0,1 ms; die
+  erste Fassung hatte 2000 und war unnötig knapp): darüber fallen die
+  schlechtesten weg, der Rekord und die Spitze der Liste bleiben erhalten. Ein
+  Skript bräuchte mit dem Limit von 600 Meldungen je 15 Minuten rund 42 Stunden
+  von einer Adresse, um ehrliche Ergebnisse zu verdrängen.
 - Admin: Liste der 50 besten (`GET /api/admin/memory-results`), einzelnes
   Ergebnis mit Bestätigung entfernen (`DELETE /api/admin/memory-results/<id>`);
   der Rekord fällt dann auf das nächstbeste zurück. „Rekord zurücksetzen"

@@ -57,13 +57,15 @@ Nicht geplant: ein vom Server verteiltes Memory-Spiel (bewusst clientseitig).
 
 - Das Spiel bleibt clientseitig; wir vertrauen auf Fairness. Ein gefälschter
   Wert lässt sich nicht verhindern, aber im Admin einzeln entfernen (alle
-  gemeldeten Ergebnisse werden ohne Namen gespeichert, Obergrenze 2000).
+  gemeldeten Ergebnisse werden ohne Namen gespeichert, Obergrenze 100.000).
 - Wer das Skript-Fälschen ganz ausschließen will, bräuchte ein vom Server
   verteiltes Spiel — für diesen Termin bewusst nicht.
-- Eine Flut gefälschter Bestwerte verdrängt ehrliche Ergebnisse aus der
-  Obergrenze (nur die Historie geht verloren; der Rekord wäre ohnehin
-  gefälscht). Dann hilft nur „Zurücksetzen". Ein Admin-Knopf „alles entfernen,
-  was mindestens so gut ist" wäre eine mögliche Ergänzung nach der Hochzeit.
+- Eine Flut gefälschter Bestwerte (über 100.000, rund 42 Stunden von einer
+  Adresse) würde ehrliche Ergebnisse aus der Obergrenze verdrängen (nur die
+  Historie geht verloren; der Rekord wäre ohnehin gefälscht). Dann hilft nur
+  „Zurücksetzen". Ein Admin-Knopf „alles entfernen, was mindestens so gut ist"
+  und ein „Mehr anzeigen" über die besten 50 hinaus wären mögliche Ergänzungen
+  nach der Hochzeit.
 
 ## Offene externe Abhängigkeiten (aus der Spec)
 

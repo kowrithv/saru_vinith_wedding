@@ -165,16 +165,23 @@ describe('all submitted results', () => {
 
   it('stays bounded: beyond the cap the worst results are dropped, the best are kept', () => {
     const db = createDb(':memory:')
-    submitMemoryResult(db, { moves: 9, seconds: 20 })
-    for (let i = 0; i < MAX_STORED_RESULTS + 5; i += 1) {
-      submitMemoryResult(db, { moves: 100 + (i % 50), seconds: 100 + i })
+    submitMemoryResult(db, { moves: 9, seconds: 20 }, 5)
+    for (let i = 0; i < 10; i += 1) {
+      submitMemoryResult(db, { moves: 100 + (i % 50), seconds: 100 + i }, 5)
     }
 
-    const { total } = listMemoryResults(db, 1)
+    const { results, total } = listMemoryResults(db)
 
-    expect(total).toBe(MAX_STORED_RESULTS)
-    expect(getMemoryRecord(db)).toEqual({ moves: 9, seconds: 20 })
+    expect(total).toBe(5)
+    expect(results[0]).toEqual(expect.objectContaining({ moves: 9, seconds: 20 }))
+    // Die fünf besten bleiben: das Ergebnis mit 9 Zügen und die vier besten der übrigen.
+    expect(results.map((r) => r.moves)).toEqual([9, 100, 101, 102, 103])
     db.close()
+  })
+
+  it('has a default cap that an event never reaches with honest play', () => {
+    // 100.000 Zeilen sind rund 5 MB; ein Fest mit 500 Gästen liefert einige Tausend.
+    expect(MAX_STORED_RESULTS).toBeGreaterThanOrEqual(100_000)
   })
 
   it('clears all results on reset', () => {

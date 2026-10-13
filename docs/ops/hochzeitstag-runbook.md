@@ -84,7 +84,7 @@ Einträge nach dem Zeitstempel verloren.
 | Alarm-Mail „Speicherplatz wird knapp" | Platte ≥ 85 % | `df -h`, alte Docker-Logs/Images (`docker system df`) |
 | Alarm-Mail „Sicherung fehlgeschlagen" | Platte voll oder Datenbank beschädigt | `logs`, `df -h`; manuell `cp` der Datenbank sichern |
 | Alarm-Mail „Sicherung hängt" | vorige Sicherung läuft nach einer Stunde noch (Platte blockiert/sehr langsam) | `df -h`, `logs`; hilft nichts: `restart web` (Reste `*.tmp` räumt der nächste Lauf) |
-| Sehr viele unmögliche Memory-Ergebnisse (Skript-Flut) | Die Liste hält die besten 2000; Fälschungen verdrängen ehrliche | Einzelnes Entfernen lohnt nicht: „Memory-Rekord zurücksetzen". Ehrliche Spieler beginnen von vorn |
+| Sehr viele unmögliche Memory-Ergebnisse (Skript-Flut) | Ein Skript meldet massenhaft Bestwerte | Einzelnes Entfernen lohnt nicht: „Memory-Rekord zurücksetzen". Ehrliche Ergebnisse gehen erst verloren, wenn über 100.000 gefälschte da sind (Stunden Dauerfeuer) |
 | Rekord im Memory unrealistisch | Skript hat einen Wert gesendet | Admin: in „Gemeldete Ergebnisse" das einzelne Ergebnis **entfernen** (der Rekord fällt auf das nächstbeste zurück); „Memory-Rekord zurücksetzen" löscht alle |
 
 ## 5. Plan B

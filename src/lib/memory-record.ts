@@ -21,9 +21,12 @@ export const MIN_SECONDS = 4
 export const MAX_SECONDS = 5999
 
 // Obergrenze der gespeicherten Ergebnisse: ein Skript soll die Tabelle nicht
-// beliebig füllen können. Bei Überschreitung fallen die schlechtesten weg,
-// der Rekord und die Spitze der Liste bleiben also erhalten.
-export const MAX_STORED_RESULTS = 2000
+// beliebig füllen können (jede Sicherung kopiert sie mit). 100.000 Zeilen sind
+// rund 5 MB und für ehrliches Spielen unerreichbar - ein einzelnes Skript
+// bräuchte mit dem Limit von 600 Meldungen je 15 Minuten rund 42 Stunden.
+// Bei Überschreitung fallen die schlechtesten weg, der Rekord und die Spitze
+// der Liste bleiben also erhalten.
+export const MAX_STORED_RESULTS = 100_000
 
 const RANK_ORDER = 'moves ASC, seconds ASC, id ASC'
 
@@ -53,18 +56,22 @@ export function getMemoryRecord(db: Database.Database): MemoryResult | null {
  * mit sofortiger Schreibsperre, damit gleichzeitig beendete Spiele einander
  * nicht in die Quere kommen.
  */
-export function submitMemoryResult(db: Database.Database, result: MemoryResult): SubmitOutcome {
+export function submitMemoryResult(
+  db: Database.Database,
+  result: MemoryResult,
+  maxStored: number = MAX_STORED_RESULTS
+): SubmitOutcome {
   const apply = db.transaction((candidate: MemoryResult): SubmitOutcome => {
     const current = getMemoryRecord(db)
     db.prepare('INSERT INTO memory_results (moves, seconds) VALUES (?, ?)').run(candidate.moves, candidate.seconds)
 
     const { n } = db.prepare('SELECT COUNT(*) AS n FROM memory_results').get() as { n: number }
-    if (n > MAX_STORED_RESULTS) {
+    if (n > maxStored) {
       db.prepare(
         `DELETE FROM memory_results WHERE id IN (
            SELECT id FROM memory_results ORDER BY ${RANK_ORDER} LIMIT -1 OFFSET ?
          )`
-      ).run(MAX_STORED_RESULTS)
+      ).run(maxStored)
     }
 
     const isNewRecord = isBetterResult(candidate, current)
