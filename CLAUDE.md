@@ -30,7 +30,7 @@ einer Route meldet `tsc` ggf. veraltete Dateien in `.next/types` – dann
 
 - `src/app/` – Seiten und `api/`-Routen (App Router). Jede Seite gibt sich
   selbst Abstand zur fixen Navigation (`pt-24 pb-16` auf dem äußersten
-  Element); im Root-Layout **kein** zusätzliches Padding.
+  Element; die Galerie nutzt `pb-28`, damit der schwebende Upload-Knopf nichts verdeckt); im Root-Layout **kein** zusätzliches Padding.
 - `src/lib/` – Server-Logik und Inhalte. SQLite über `getDb()`
   (`globalThis.__appDb`, WAL); Schema und idempotente Migrationen in `db.ts`.
 - `src/lib/env.ts` + `src/instrumentation.ts` – Pflicht-Variablen, Prozess

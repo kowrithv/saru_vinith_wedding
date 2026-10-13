@@ -14,7 +14,7 @@ Admin-Bereich für das Brautpaar.
 | `/info` | Hochzeitsinfos (Ort, Zeit, Ablauf, Karte) |
 | `/gallery` | Fotogalerie, Upload für Gäste, Kategorien, offizielle Fotos |
 | `/quiz` | Hochzeitsquiz und „Wer von uns?“-Abstimmung |
-| `/memory-spiel` | Liebes-Memory mit Bestzeit |
+| `/memory-spiel` | Liebes-Memory mit Rekord aller Gäste |
 | `/memories` | Erinnerungen der Gäste |
 | `/guestbook` | Gästebuch |
 | `/admin` | Admin-Bereich (nicht in der Navigation verlinkt) |

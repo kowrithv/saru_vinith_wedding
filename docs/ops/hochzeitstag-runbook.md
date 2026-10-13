@@ -97,3 +97,31 @@ werden nach dem Fest zusammengeführt.
 2. Alle Originale aus R2 exportieren (z. B. `rclone copy`), Stichproben prüfen.
 3. Nach ca. 3 Monaten: Bucket leeren, Cache purgen, Bucket löschen, Daten sichern.
 4. Offene Punkte in `TODO.md` (Videos, Off-Box-Backup).
+
+## 7. Off-Box-Kopie und Uptime-Monitor (Vorbereitung, sobald Ziel/Anbieter feststehen)
+
+Die stündlichen Sicherungen liegen auf derselben Platte wie die Datenbank und
+schützen nicht vor einem Plattenausfall. Beides hier läuft **außerhalb der App**
+und braucht keine Code-Änderung.
+
+**Off-Box-Kopie** (Beispiel mit `rsync` über SSH auf einen zweiten Server; ein
+privater Bucket mit `rclone copy` geht genauso):
+
+```bash
+# crontab -e auf dem Server – 5 Minuten nach der stündlichen App-Sicherung:
+5 * * * * rsync -a -e "ssh -i ~/.ssh/backup_key" <compose-ordner>/data/backups/ <benutzer>@<zielhost>:<pfad>/wedding-backups/
+```
+
+- Ohne `--delete`: das Ziel behält auch Sicherungen, die die App schon rotiert hat.
+- **Nicht** den öffentlichen Foto-Bucket (`fotos.vsjourney.de`) als Ziel nehmen:
+  alles darin ist öffentlich abrufbar. Ein Bucket nur für Sicherungen, privat.
+- Einmal probeweise ausführen und im Ziel nachsehen, dass `wedding-*.db`
+  angekommen ist.
+
+**Uptime-Monitor** (z. B. UptimeRobot oder Better Stack, beide mit kostenlosem Tarif):
+
+- Prüfung: HTTPS-GET auf `https://vsjourney.de/api/health`, erwartet Status 200
+  (Antwort `{"ok":true}`).
+- Intervall 5 Minuten, Benachrichtigung per E-Mail/Push an mindestens zwei Personen.
+- Der Monitor fängt auch eine Neustart-Schleife, bei der die App selbst keine
+  Alarm-Mail mehr losbekommt.

@@ -6,6 +6,9 @@
   Gratulationen, Gemeinsames Abendessen, Party & Tanz
   (`receptionSchedule` in `src/lib/event-info.ts`). Uhrzeiten eintragen
   oder die Zeilen entfernen — „TBA" sollte am Hochzeitstag nicht stehen.
+- **SMTP-Zugang für die Alarm-Mails** (`SMTP_*`, `ALERT_EMAIL_TO` in
+  `.env.production`): ohne ihn laufen Alarme nur ins Log. Werte privat
+  weitergeben, nie ins Repo oder in ein Issue.
 
 ## Gefunden im Galerie-Upload-Review (zurückgestellt, nicht blockierend)
 
@@ -29,9 +32,6 @@
 
 ## Gefunden im Ops-/Polish-Review (zurückgestellt, nicht blockierend)
 
-- **Schwebender Knopf kann „Abbrechen" überdecken:** „Schließen" blendet das
-  Formular nur aus (Uploads laufen weiter), „Abbrechen" stoppt sie; auf kleinen
-  Bildschirmen liegt der schwebende Knopf über dem unteren Formularrand.
 - **Vorschau-Speicher:** jede Kachel hält das 800-px-Thumbnail (ca. 2 MB
   Bitmap) für eine 40-px-Kachel; bei 20 Fotos ca. 40 MB.
 - **Neustart-Schleife:** läuft der Prozess schneller ab, als SMTP fertig
@@ -45,10 +45,6 @@
   Server halten nur absurde Werte ab. Gegenmittel: Der Admin sieht den
   aktuellen Rekord in seiner Karte und kann ihn mit einem Tipp zurücksetzen.
   Echte Abhilfe wäre ein vom Server verteiltes Spiel — für diesen Termin zu groß.
-- **Wortwahl:** „Deine Bestzeit" und „Rekord aller Gäste" ranken beide nach
-  Zügen zuerst. Nach einem Zurücksetzen kann die eigene Bestzeit besser
-  aussehen als der Rekord.
-- **Rate-Limiter-Map** wird nie geleert (gilt für alle Limiter, vorbestehend).
 
 ## Offene externe Abhängigkeiten (aus der Spec)
 
@@ -73,6 +69,8 @@
   echte R2-Zugangsdaten stehen noch aus (siehe oben).
 - Betriebs-Härtung, Rest: Off-Box-Kopie der Sicherungen (die stündliche
   lokale Sicherung mit Rotation, der Disk-Alarm und die E-Mail-Alarme sind
-  gebaut) und ein externer Uptime-Monitor auf `/api/health`. Braucht vom
-  Nutzer: ein Ziel für die Kopie (zweiter Server per rsync/SSH oder ein
-  privater Objekt-Storage-Bucket) und einen Anbieter für den Monitor.
+  gebaut) und ein externer Uptime-Monitor auf `/api/health`. Die Einrichtung
+  steht fertig in `docs/ops/hochzeitstag-runbook.md` Abschnitt 7; es fehlen
+  nur ein Ziel für die Kopie (zweiter Server per rsync/SSH oder ein privater
+  Objekt-Storage-Bucket, **nicht** der öffentliche Foto-Bucket) und ein
+  Anbieter für den Monitor.
