@@ -192,4 +192,13 @@ describe('GalleryPage', () => {
     await waitFor(() => expect(screen.getAllByRole('img')).toHaveLength(2))
     expect(screen.getByRole('button', { name: /schließen/i })).toBeInTheDocument()
   })
+
+  it('does not tell guests to upload the first photo while uploads are paused', async () => {
+    mockFetchSequence([{ body: { mode: 'public', unlocked: true, uploadsLocked: true, photos: [] } }])
+    render(<GalleryPage />)
+
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent(/pausiert/i))
+    expect(screen.queryByText(/lade das erste hoch/i)).not.toBeInTheDocument()
+    expect(screen.getByText(/noch keine fotos/i)).toBeInTheDocument()
+  })
 })

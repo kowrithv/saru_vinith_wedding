@@ -66,13 +66,29 @@ export async function sendAlert(input: AlertInput, options: SendAlertOptions = {
   try {
     const db = options.db ?? getDb()
     const last = Number(getConfigValue(db, configKey) ?? '0')
-    if (now() - last < cooldownMs) return 'suppressed'
+    const sinceLast = now() - last
+    // Ein Zeitstempel in der Zukunft (Uhr zurückgestellt) ist veraltet und
+    // darf den Alarm nicht tagelang unterdrücken.
+    if (sinceLast >= 0 && sinceLast < cooldownMs) {
+      console.warn(`[alert] ${input.subject} - unterdrückt (Abkühlzeit läuft noch)`)
+      return 'suppressed'
+    }
 
     console.warn(`[alert] ${input.subject} - ${input.body}`)
 
+    // Kann das Schreiben scheitern (z. B. volle Platte), ist der Alarm
+    // trotzdem raus: das Ergebnis darf deshalb nicht "fehlgeschlagen" lauten.
+    const rememberSent = () => {
+      try {
+        setConfigValue(db, configKey, String(now()))
+      } catch (error) {
+        console.error(`[alert] Abkühlzeit konnte nicht gespeichert werden: ${error instanceof Error ? error.message : String(error)}`)
+      }
+    }
+
     const settings = readSmtpSettings(env)
     if (!settings) {
-      setConfigValue(db, configKey, String(now()))
+      rememberSent()
       return 'logged'
     }
 
@@ -92,7 +108,7 @@ export async function sendAlert(input: AlertInput, options: SendAlertOptions = {
       subject: `[Hochzeitsseite] ${input.subject}`,
       text: input.body,
     })
-    setConfigValue(db, configKey, String(now()))
+    rememberSent()
     return 'sent'
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)

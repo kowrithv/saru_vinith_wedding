@@ -10,9 +10,11 @@ import GalleryLightbox from './GalleryLightbox'
 interface GalleryGridProps {
   photos: GalleryPhotoView[]
   onPhotoDeleted: (photoId: string) => void
+  /** Ersetzt den Standardtext, wenn es noch keine Fotos gibt (z. B. bei pausiertem Upload). */
+  emptyMessage?: string
 }
 
-export default function GalleryGrid({ photos, onPhotoDeleted }: GalleryGridProps) {
+export default function GalleryGrid({ photos, onPhotoDeleted, emptyMessage }: GalleryGridProps) {
   const [activeCategory, setActiveCategory] = useState<string>('Alle')
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
 
@@ -24,7 +26,9 @@ export default function GalleryGrid({ photos, onPhotoDeleted }: GalleryGridProps
   }
 
   if (photos.length === 0) {
-    return <p className="text-center text-gray-400 py-16">Noch keine Fotos – lade das erste hoch!</p>
+    return (
+      <p className="text-center text-gray-400 py-16">{emptyMessage ?? 'Noch keine Fotos – lade das erste hoch!'}</p>
+    )
   }
 
   return (

@@ -611,4 +611,19 @@ describe('GalleryUploadForm', () => {
 
     expect(screen.getByRole('list')).toHaveClass('max-h-72', 'overflow-y-auto')
   })
+
+  it('tells an admin whose session expired to log in again instead of asking for a password', async () => {
+    const user = setupUser()
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ ok: false, status: 401, json: async () => ({ error: 'Falsches Kennwort.' }) })
+    )
+    render(<GalleryUploadForm isAdmin onUploaded={vi.fn()} />)
+    await user.type(screen.getByLabelText(/dein name/i), 'Saruga')
+    await user.upload(screen.getByLabelText(/fotos ausw/i), makeFile())
+    await user.click(screen.getByRole('button', { name: /hochladen/i }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/sitzung abgelaufen/i)
+    expect(screen.queryByText(/falsches kennwort/i)).not.toBeInTheDocument()
+  })
 })

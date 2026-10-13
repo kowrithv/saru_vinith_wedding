@@ -130,4 +130,11 @@ describe('Countdown', () => {
     await act(async () => root.unmount())
     container.remove()
   })
+
+  it('is the target of the hero anchor', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-10-15T08:00:00Z'))
+    const { container } = render(<Countdown />)
+    expect(container.querySelector('section#countdown')).not.toBeNull()
+  })
 })

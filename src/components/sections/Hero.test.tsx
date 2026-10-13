@@ -51,4 +51,9 @@ describe('Hero', () => {
     const section = container.firstElementChild
     expect(section).toHaveClass('pt-20', 'pb-24', 'min-h-svh')
   })
+
+  it('makes the "Mehr entdecken" hint a link that scrolls to the countdown section', () => {
+    render(<Hero />)
+    expect(screen.getByRole('link', { name: /mehr entdecken/i })).toHaveAttribute('href', '#countdown')
+  })
 })

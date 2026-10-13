@@ -443,4 +443,17 @@ describe('AdminDashboard', () => {
 
     expect(await screen.findByRole('button', { name: /memory-rekord zurücksetzen/i })).toHaveClass('min-h-11')
   })
+
+  it('tells the admin that a locked photo upload still works for them', async () => {
+    mockFetchSequence([{ body: { entries: [] } }, { body: { entries: [] } }, noGalleryPhotos])
+    render(
+      <AdminDashboard
+        initialLocks={{ ...noLocks, gallery_upload: true }}
+        initialGalleryMode="public"
+      />
+    )
+
+    expect(await screen.findByText(/gesperrt für gäste/i)).toBeInTheDocument()
+    expect(screen.getByText(/du lädst weiter hoch/i)).toBeInTheDocument()
+  })
 })

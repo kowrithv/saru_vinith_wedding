@@ -98,13 +98,18 @@ export default function Hero() {
         </div>
       </div>
 
-      <div
-        className={cn(enter, 'absolute bottom-8 inset-x-0 flex flex-col items-center gap-2 text-dark-blue/70')}
+      {/* Echter Anker statt Dekoration: sieht anklickbar aus, also ist es das auch. */}
+      <a
+        href="#countdown"
+        className={cn(
+          enter,
+          'absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 px-4 py-2 rounded-xl text-dark-blue/70 hover:text-dark-blue focus-visible:outline focus-visible:outline-2 focus-visible:outline-dark-blue'
+        )}
         style={{ animationDelay: '1.2s' }}
       >
         <span className="text-xs font-medium tracking-widest uppercase">Mehr entdecken</span>
         <ChevronDown size={20} className="motion-safe:animate-bounce" />
-      </div>
+      </a>
     </section>
   )
 }

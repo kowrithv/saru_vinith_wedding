@@ -224,6 +224,11 @@ export default function GalleryUploadForm({ isAdmin = false, onUploaded }: Galle
       }),
     })
     if (!response.ok) {
+      // Der Admin hat kein Kennwortfeld: ein 401 heißt bei ihm, dass die
+      // Sitzung (12 Stunden) abgelaufen ist.
+      if (isAdmin && response.status === 401) {
+        return { error: 'Sitzung abgelaufen – bitte im Admin-Bereich neu anmelden.' }
+      }
       const body = await response.json().catch(() => null)
       return { error: body?.error ?? 'Hochladen fehlgeschlagen. Bitte versuch es erneut.' }
     }

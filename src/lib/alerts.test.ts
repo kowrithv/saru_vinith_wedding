@@ -122,4 +122,41 @@ describe('sendAlert', () => {
     expect(console.error).toHaveBeenCalledWith(expect.stringContaining('ETIMEDOUT'))
     expect(await sendAlert({ key: 'k', subject: 's', body: 'b' }, options())).toBe('sent')
   })
+
+  it('reports a mail that went out as sent even when the cool-down cannot be stored (full disk)', async () => {
+    const brokenDb = {
+      prepare: (sql: string) => {
+        if (sql.startsWith('INSERT')) throw new Error('database or disk is full')
+        return db.prepare(sql)
+      },
+    } as unknown as typeof db
+
+    const result = await sendAlert({ key: 'disk-full', subject: 's', body: 'b' }, {
+      db: brokenDb,
+      now: () => nowMs,
+      env: smtpEnv,
+      createTransport,
+    })
+
+    expect(result).toBe('sent')
+    expect(sendMail).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not stay silent for a day because a stored timestamp lies in the future (clock set back)', async () => {
+    db.prepare("INSERT INTO app_config (key, value) VALUES ('alert_last_sent:disk-full', ?)").run(
+      String(nowMs + 24 * 60 * 60 * 1000)
+    )
+
+    expect(await sendAlert({ key: 'disk-full', subject: 's', body: 'b' }, options())).toBe('sent')
+  })
+
+  it('still writes a log line when an alert is suppressed by the cool-down', async () => {
+    const input = { key: 'backup-failed', subject: 'Backup fehlgeschlagen', body: 'Details' }
+    await sendAlert(input, options())
+    vi.mocked(console.warn).mockClear()
+
+    await sendAlert(input, options())
+
+    expect(console.warn).toHaveBeenCalledWith(expect.stringContaining('Backup fehlgeschlagen'))
+  })
 })

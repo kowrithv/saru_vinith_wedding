@@ -80,7 +80,7 @@ export default function Countdown() {
   const isPast = timeLeft?.isPast ?? false
 
   return (
-    <section className="py-16 md:py-20 bg-gradient-to-b from-white to-champagne-light/30">
+    <section id="countdown" className="py-16 md:py-20 bg-gradient-to-b from-white to-champagne-light/30">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
         {!isPast && (
           <div className="mb-10">

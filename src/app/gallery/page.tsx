@@ -169,7 +169,11 @@ export default function GalleryPage() {
               </>
             )}
 
-            <GalleryGrid photos={data.photos} onPhotoDeleted={handlePhotoDeleted} />
+            <GalleryGrid
+              photos={data.photos}
+              onPhotoDeleted={handlePhotoDeleted}
+              emptyMessage={data.uploadsLocked ? 'Noch keine Fotos.' : undefined}
+            />
           </>
         )}
       </div>

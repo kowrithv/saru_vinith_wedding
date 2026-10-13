@@ -240,7 +240,13 @@ export default function AdminDashboard({ initialLocks, initialGalleryMode }: Adm
                     <ShieldAlert size={20} className={isLocked ? 'text-red-600' : 'text-gray-400'} />
                     <div>
                       <p className="font-semibold text-dark-blue text-sm">{FEATURE_LABELS[feature]}</p>
-                      <p className="text-xs text-gray-400">{isLocked ? 'Gesperrt.' : 'Erlaubt.'}</p>
+                      <p className="text-xs text-gray-400">
+                        {!isLocked
+                          ? 'Erlaubt.'
+                          : feature === 'gallery_upload'
+                            ? 'Gesperrt für Gäste – du lädst weiter hoch.'
+                            : 'Gesperrt.'}
+                      </p>
                     </div>
                   </div>
                   <button
