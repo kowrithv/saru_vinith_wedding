@@ -31,7 +31,7 @@ netcup umstellen → 4. R2 anlegen → 5. Domain verbinden → 6. Werte auf den 
 - [ ] Die automatisch gefundenen Einträge **mit der Liste aus Schritt 1 abgleichen**
       und fehlende ergänzen (vor allem MX/TXT, falls E-Mail genutzt wird).
 - [ ] Für `vsjourney.de` und `www` zunächst **DNS only** (graue Wolke) lassen: die
-      Seite läuft weiter direkt über Caddy auf dem netcup-Server.
+      Seite läuft weiter direkt über Traefik auf dem netcup-Server.
 - [ ] Die beiden zugewiesenen Cloudflare-Nameserver notieren.
 
 ## 3. Nameserver bei netcup umstellen

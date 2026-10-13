@@ -2,7 +2,7 @@
 
 Für die Person in Bereitschaft am Sa 17.10.2026. Alles per Handy/SSH machbar.
 Server: netcup-VPS, App im Container `saru-vinith-wedding` hinter Traefik.
-Compose-Datei: `docker-compose.traefik.yml` (Ordner auf dem Server: ______________).
+Compose-Datei: `docker-compose.yml` (Ordner auf dem Server: ______________).
 
 | Wer | Erreichbar unter |
 |---|---|
@@ -34,9 +34,9 @@ Einzelne Einträge/Fotos löscht der Admin in den aufgeklappten Abschnitten.
 ## 3. Server (SSH, im Compose-Ordner)
 
 ```bash
-docker compose -f docker-compose.traefik.yml ps                 # läuft der Container? Status "healthy"?
-docker compose -f docker-compose.traefik.yml logs --tail 200 -f web
-docker compose -f docker-compose.traefik.yml restart web        # Neustart (ca. 10 Sekunden)
+docker compose -f docker-compose.yml ps                 # läuft der Container? Status "healthy"?
+docker compose -f docker-compose.yml logs --tail 200 -f web
+docker compose -f docker-compose.yml restart web        # Neustart (ca. 10 Sekunden)
 df -h .                                                          # Platz auf der Platte
 ls -lh data/backups | tail                                       # letzte Sicherungen
 ```
@@ -44,17 +44,17 @@ ls -lh data/backups | tail                                       # letzte Sicher
 **Rollback auf eine ältere Version:**
 
 ```bash
-IMAGE_TAG=<älterer-tag> docker compose -f docker-compose.traefik.yml pull
-IMAGE_TAG=<älterer-tag> docker compose -f docker-compose.traefik.yml up -d
+IMAGE_TAG=<älterer-tag> docker compose -f docker-compose.yml pull
+IMAGE_TAG=<älterer-tag> docker compose -f docker-compose.yml up -d
 ```
 
 **Datenbank aus einer Sicherung wiederherstellen** (nur bei beschädigten Daten):
 
 ```bash
-docker compose -f docker-compose.traefik.yml stop web
+docker compose -f docker-compose.yml stop web
 rm -f data/wedding.db-wal data/wedding.db-shm
 cp data/backups/wedding-<Zeitstempel>.db data/wedding.db
-docker compose -f docker-compose.traefik.yml start web
+docker compose -f docker-compose.yml start web
 ```
 
 Die Sicherungen entstehen stündlich in `data/backups/`. Beim Wiederherstellen gehen

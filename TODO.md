@@ -90,9 +90,9 @@
   R2-Custom-Domain (`fotos.vsjourney.de`) muss die DNS-Zone zu Cloudflare
   umziehen (Free-Plan: nur Full Setup) — Schritte in
   `docs/ops/cloudflare-r2-setup.md`. Nameserver-TTL 24 h: vor Mittwoch erledigen.
-- TLS/Proxy: Auf dem Server terminiert **Traefik** TLS (kein Caddy). Die
-  `docker-compose.yml` im Repo enthält noch Caddy und Autoheal; maßgeblich ist
-  das Traefik-Setup auf dem Server (Labels/Netzwerk für den `web`-Container).
+- TLS/Proxy: Auf dem Server terminiert **Traefik** TLS. Die
+  `docker-compose.yml` im Repo ist die Traefik-Variante; Netzwerkname,
+  Entrypoint und Cert-Resolver müssen zum vorhandenen Traefik passen.
 
 ## Noch zu planende Subsysteme (Backlog aus der Spec)
 

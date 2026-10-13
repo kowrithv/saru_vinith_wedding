@@ -66,7 +66,7 @@ wirklich auszuprobieren.
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD` | nein | SMTP-Zugang für E-Mail-Alarme (Port Standard 587, STARTTLS; 465 = implizites TLS) |
 | `SMTP_FROM` | nein | Absender der Alarm-Mails |
 | `ALERT_EMAIL_TO` | nein | Empfänger der Alarme, kommagetrennt. Ohne `SMTP_HOST`, `SMTP_FROM` und `ALERT_EMAIL_TO` wird nur ins Log geschrieben |
-| `DOMAIN` | nein | Domain für Caddy (Standard `localhost`) |
+| `DOMAIN` | nein | Nur für die Compose-Datei (Traefik-Router-Regel, Standard `vsjourney.de`); wird aus der Shell oder einer `.env` neben der Compose-Datei gelesen, nicht aus `.env.production` |
 
 Lokal in `.env.local`, auf dem Server in `.env.production`. Beide Dateien
 sind gitignored – **keine Secrets committen**.
@@ -129,20 +129,17 @@ Details: `docs/superpowers/specs/2026-10-12-gallery-design.md`.
 
 ## Deployment
 
-Der Produktionsserver betreibt die App **hinter Traefik** (eigene
-Compose-Datei mit Labels). Vorlage: `docker-compose.traefik.example.yml`
-(Domain, Netzwerk, Entrypoint und Cert-Resolver anpassbar):
+Der Produktionsserver betreibt die App **hinter Traefik**. Die
+`docker-compose.yml` im Repo ist dafür gemacht (Labels für Router und
+Service, externes Traefik-Netzwerk, Healthcheck); Domain, Netzwerk,
+Entrypoint und Cert-Resolver lassen sich per Umgebungsvariable anpassen
+(`DOMAIN`, `TRAEFIK_NETWORK`, `TRAEFIK_ENTRYPOINT`, `TRAEFIK_CERTRESOLVER`):
 
 ```bash
 cp .env.example .env.production      # Werte eintragen
-cp docker-compose.traefik.example.yml docker-compose.traefik.yml
-IMAGE_TAG=1.0.0 docker compose -f docker-compose.traefik.yml pull
-IMAGE_TAG=1.0.0 docker compose -f docker-compose.traefik.yml up -d
+IMAGE_TAG=1.0.0 docker compose -f docker-compose.yml pull
+IMAGE_TAG=1.0.0 docker compose -f docker-compose.yml up -d
 ```
-
-Die `docker-compose.yml` im Repo bringt statt Traefik einen eigenen Caddy und
-Autoheal mit; sie ist für einen eigenständigen Betrieb ohne vorhandenen
-Reverse-Proxy gedacht (`docker compose up -d`, Domain über `DOMAIN`).
 
 - Das Image heißt `ghcr.io/kowrithv/saru_vinith_wedding:<tag>`; CI baut es
   **nur für Versions-Tags** (`v*.*.*`) auf `main`. Aus dem Git-Tag `v1.0.0`
@@ -159,9 +156,9 @@ Reverse-Proxy gedacht (`docker compose up -d`, Domain über `DOMAIN`).
 ### Betrieb
 
 ```bash
-docker compose -f docker-compose.traefik.yml logs -f web           # Logs
-docker compose -f docker-compose.traefik.yml restart web           # Neustart
-IMAGE_TAG=<älterer-tag> docker compose -f docker-compose.traefik.yml up -d   # Rollback auf festes Image-Tag
+docker compose -f docker-compose.yml logs -f web           # Logs
+docker compose -f docker-compose.yml restart web           # Neustart
+IMAGE_TAG=<älterer-tag> docker compose -f docker-compose.yml up -d   # Rollback auf festes Image-Tag
 ```
 
 **Backup:** Die App sichert die Datenbank beim Start und danach stündlich nach
@@ -178,10 +175,10 @@ der Mailversand funktioniert.
 **Wiederherstellung:**
 
 ```bash
-docker compose -f docker-compose.traefik.yml stop web
+docker compose -f docker-compose.yml stop web
 rm -f data/wedding.db-wal data/wedding.db-shm
 cp data/backups/wedding-<Zeitstempel>.db data/wedding.db
-docker compose -f docker-compose.traefik.yml start web
+docker compose -f docker-compose.yml start web
 ```
 
 Die Sicherungen liegen auf derselben Platte wie die Datenbank – sie schützen

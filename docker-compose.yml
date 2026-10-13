@@ -1,17 +1,33 @@
+# Betrieb hinter einem vorhandenen Traefik (so läuft der Produktionsserver).
+# Diese Datei als eigene Compose-Datei auf den Server kopieren:
+#
+#   IMAGE_TAG=1.0.0 docker compose -f docker-compose.yml pull
+#   IMAGE_TAG=1.0.0 docker compose -f docker-compose.yml up -d
+#
+# Anzupassen an das eigene Traefik: Netzwerkname, Entrypoint und Cert-Resolver
+# (per Umgebungsvariable, z. B. in einer .env neben der Datei, oder direkt
+# hier). TLS terminiert Traefik; die App selbst spricht nur HTTP auf Port 3000.
 services:
   web:
-    build: .
-    image: ghcr.io/kowrithv/saru_vinith_wedding:${IMAGE_TAG:-develop}
+    image: ghcr.io/kowrithv/saru_vinith_wedding:${IMAGE_TAG:?IMAGE_TAG setzen, z. B. 1.0.0}
     container_name: saru-vinith-wedding
     restart: unless-stopped
-    expose:
-      - "3000"
     env_file:
-      - path: .env.production
-        required: false
+      - .env.production
     volumes:
+      # Datenbank und Sicherungen (data/backups) - bleibt über Updates erhalten.
       - ./data:/app/data
+    networks:
+      - traefik
     labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=${TRAEFIK_NETWORK:-traefik}"
+      - "traefik.http.routers.hochzeit.rule=Host(`${DOMAIN:-vsjourney.de}`) || Host(`www.${DOMAIN:-vsjourney.de}`)"
+      - "traefik.http.routers.hochzeit.entrypoints=${TRAEFIK_ENTRYPOINT:-websecure}"
+      - "traefik.http.routers.hochzeit.tls=true"
+      - "traefik.http.routers.hochzeit.tls.certresolver=${TRAEFIK_CERTRESOLVER:-letsencrypt}"
+      - "traefik.http.services.hochzeit.loadbalancer.server.port=3000"
+      # Nur relevant, wenn ein Autoheal-Container auf dem Server läuft.
       - "autoheal=true"
     healthcheck:
       test:
@@ -33,32 +49,7 @@ services:
         limits:
           memory: 1500M
 
-  caddy:
-    image: caddy:2.9-alpine
-    container_name: saru-vinith-caddy
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    env_file:
-      - path: .env.production
-        required: false
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-      - caddy_config:/config
-    depends_on:
-      - web
-
-  autoheal:
-    image: willfarrell/autoheal:latest
-    container_name: saru-vinith-autoheal
-    restart: unless-stopped
-    environment:
-      AUTOHEAL_CONTAINER_LABEL: autoheal
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-
-volumes:
-  caddy_data:
-  caddy_config:
+networks:
+  traefik:
+    external: true
+    name: ${TRAEFIK_NETWORK:-traefik}
