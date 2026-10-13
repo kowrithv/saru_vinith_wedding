@@ -126,6 +126,23 @@
 - **Neustart-Schleife:** läuft der Prozess schneller ab, als SMTP fertig
   wird, kommt gar keine Mail — nur ein externer Uptime-Monitor fängt das.
 
+## Memory-Rekord aller Gäste (umgesetzt) — Restrisiken und zurückgestellt
+
+- **Gefälschter Rekord ist nicht verhinderbar:** Ohne Namen und ohne
+  serverseitig gespieltes Spiel kann ein Skript mit einer Anfrage „8 Züge ·
+  00:04" eintragen; dieser Wert ist praktisch unschlagbar. Die Grenzen im
+  Server halten nur absurde Werte ab. Gegenmittel: Der Admin sieht den
+  aktuellen Rekord in seiner Karte und kann ihn mit einem Tipp zurücksetzen.
+  Echte Abhilfe wäre ein vom Server verteiltes Spiel — für diesen Termin zu groß.
+- **Zeit zählt ab dem Laden der Seite, nicht ab dem ersten Tipp.** Bei gleich
+  vielen Zügen entscheidet die Zeit und enthält so auch die Lesezeit. Für die
+  persönliche Bestzeit egal, für den gemeinsamen Rekord unfair; der Zähler
+  müsste beim ersten Aufdecken starten (ändert das bestehende Spiel).
+- **Wortwahl:** „Deine Bestzeit" und „Rekord aller Gäste" ranken nach Zügen
+  zuerst; die Startseiten-Kachel wirbt noch mit „Bestzeit". Nach einem
+  Zurücksetzen kann die eigene Bestzeit besser aussehen als der Rekord.
+- **Rate-Limiter-Map** wird nie geleert (gilt für alle Limiter, vorbestehend).
+
 ## Offene externe Abhängigkeiten (aus der Spec)
 
 - R2/Cloudflare-Zugangsdaten für die Foto-Pipeline (Galerie-Plan)
@@ -133,18 +150,6 @@
 
 ## Noch zu planende Subsysteme (Backlog aus der Spec)
 
-- **Gästespiel „Liebes-Memory": Gesamt-Bestzeit speichern.** Heute steht die
-  Bestzeit nur pro Gerät im `localStorage` (`memory-spiel-best` in
-  `MemoryGame.tsx`, Züge + Sekunden). Gewünscht ist **eine gemeinsame
-  Bestzeit über alle Gäste** — nur der Highscore, **ohne Namen und ohne
-  Liste der Spiele**. Ansatz: ein Datensatz in `app_config` (oder eigene
-  Mini-Tabelle) mit den besten Werten; `POST` meldet ein Ergebnis und
-  aktualisiert nur, wenn es besser ist (atomar, damit gleichzeitige Spiele
-  nichts überschreiben), `GET` liefert den Rekord; die Seite zeigt ihn
-  neben der eigenen Bestzeit. Vergleichsregel wie lokal: erst weniger Züge,
-  bei Gleichstand weniger Sekunden. Wertebereich serverseitig prüfen
-  (keine negativen oder unmöglich kleinen Werte), Rate-Limiter wie beim
-  Gästebuch. Eigene Spec/Plan nötig.
 - Foto-Teil von Erinnerungen über die R2-Pipeline (im
   Gästebuch/Erinnerungen-Plan bewusst ausgeklammert, `photo_key` bleibt
   bis dahin immer `null`). Die Galerie selbst (Backend, Ansicht, Upload,

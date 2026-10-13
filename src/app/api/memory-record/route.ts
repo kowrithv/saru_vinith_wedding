@@ -19,9 +19,11 @@ const resultSchema = z.object({
   seconds: z.number().int().min(MIN_SECONDS).max(MAX_SECONDS),
 })
 
-// Ein Spiel dauert mindestens eine halbe Minute: 60 Meldungen je Adresse und
-// 15 Minuten reichen auch für ein gemeinsames WLAN, bremsen aber Skripte.
-const resultLimiter = new RateLimiter({ maxAttempts: 60, windowMs: 15 * 60 * 1000 })
+// Viele Gäste teilen sich die IP des Veranstaltungs-WLANs, und jede Meldung ist
+// nur eine winzige Transaktion. Das Limit ist deshalb großzügig: es soll nur
+// Dauerfeuer eines einzelnen Skripts bremsen, nie ehrliche Rekorde verlieren
+// (eine abgewiesene Meldung bemerkt der Gast nicht).
+const resultLimiter = new RateLimiter({ maxAttempts: 600, windowMs: 15 * 60 * 1000 })
 
 export async function GET(): Promise<Response> {
   return NextResponse.json({ record: getMemoryRecord(getDb()) })

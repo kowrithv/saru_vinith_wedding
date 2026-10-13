@@ -276,4 +276,85 @@ describe('MemoryGame', () => {
     // Die Antwort des Servers für das zweite Spiel ist noch nicht da.
     expect(screen.queryByText(/neuer rekord/i)).not.toBeInTheDocument()
   })
+
+  it('keeps room for the record lines from the first render so the board does not jump when they load', () => {
+    render(<MemoryGame />)
+    expect(screen.getByTestId('memory-record-row')).toHaveClass('min-h-11')
+  })
+
+  it('announces the finish message to assistive technology', async () => {
+    vi.useFakeTimers()
+    render(<MemoryGame />)
+    await act(async () => {})
+
+    playPerfectGame()
+    await act(async () => {})
+
+    expect(screen.getByRole('status')).toHaveTextContent(/geschafft/i)
+  })
+
+  it('does not let the late answer of the previous game announce a record in the next game', async () => {
+    vi.useFakeTimers()
+    const pendingPosts: ((value: unknown) => void)[] = []
+    fetchMock.mockImplementation(async (_url: string, init?: RequestInit) => {
+      if (init?.method === 'POST') return new Promise((resolve) => pendingPosts.push(resolve))
+      return { ok: true, json: async () => ({ record: null }) }
+    })
+    render(<MemoryGame />)
+    await act(async () => {})
+
+    playPerfectGame()
+    fireEvent.click(screen.getByRole('button', { name: /neues spiel/i }))
+    // Die Antwort des ersten Spiels kommt erst, nachdem das zweite begonnen hat.
+    await act(async () => {
+      pendingPosts[0]({ ok: true, json: async () => ({ record: { moves: 2, seconds: 1 }, isNewRecord: true }) })
+    })
+    playPerfectGame()
+
+    expect(screen.queryByText(/neuer rekord/i)).not.toBeInTheDocument()
+    // Der gebrochene Rekord selbst wird trotzdem angezeigt.
+    expect(screen.getByText(/rekord aller gäste: 2 züge/i)).toBeInTheDocument()
+  })
+
+  it('ignores a slow initial record answer that arrives after a newer answer', async () => {
+    vi.useFakeTimers()
+    let resolveInitialGet!: (value: unknown) => void
+    fetchMock.mockImplementation(async (_url: string, init?: RequestInit) => {
+      if (init?.method === 'POST') {
+        return { ok: true, json: async () => ({ record: { moves: 2, seconds: 1 }, isNewRecord: true }) }
+      }
+      return new Promise((resolve) => {
+        resolveInitialGet = resolve
+      })
+    })
+    render(<MemoryGame />)
+    await act(async () => {})
+
+    playPerfectGame()
+    await act(async () => {})
+    expect(screen.getByText(/rekord aller gäste: 2 züge/i)).toBeInTheDocument()
+
+    await act(async () => {
+      resolveInitialGet({ ok: true, json: async () => ({ record: null }) })
+    })
+
+    expect(screen.getByText(/rekord aller gäste: 2 züge/i)).toBeInTheDocument()
+  })
+
+  it('keeps the shown record when the server answers a report with an error status', async () => {
+    vi.useFakeTimers()
+    serverRecord = { moves: 5, seconds: 50 }
+    fetchMock.mockImplementation(async (_url: string, init?: RequestInit) => {
+      if (init?.method === 'POST') return { ok: false, status: 429, json: async () => ({ error: 'Zu viele Anfragen.' }) }
+      return { ok: true, json: async () => ({ record: serverRecord }) }
+    })
+    render(<MemoryGame />)
+    await act(async () => {})
+
+    playPerfectGame()
+    await act(async () => {})
+
+    expect(screen.getByText(/rekord aller gäste: 5 züge/i)).toBeInTheDocument()
+    expect(screen.queryByText(/neuer rekord/i)).not.toBeInTheDocument()
+  })
 })

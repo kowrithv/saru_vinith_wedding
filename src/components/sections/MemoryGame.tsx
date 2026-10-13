@@ -5,6 +5,7 @@ import { motion } from 'framer-motion'
 import { Heart, Timer, MousePointerClick, Trophy } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import { memoryImages, MEMORY_PAIRS_COUNT } from '@/lib/memory-content'
+import { formatTime } from '@/lib/format-time'
 
 const STORAGE_KEY = 'memory-spiel-best'
 
@@ -60,12 +61,6 @@ function loadBestScore(): BestScore | null {
   }
 }
 
-function formatTime(totalSeconds: number): string {
-  const minutes = Math.floor(totalSeconds / 60)
-  const seconds = totalSeconds % 60
-  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
-}
-
 export default function MemoryGame() {
   const [game, setGame] = useState<GameState>(createNewGame)
   const [flippedIds, setFlippedIds] = useState<string[]>([])
@@ -75,6 +70,10 @@ export default function MemoryGame() {
   // Rekord über alle Gäste (nur Züge und Zeit, ohne Namen), vom Server.
   const [globalRecord, setGlobalRecord] = useState<BestScore | null>(null)
   const [isNewGlobalRecord, setIsNewGlobalRecord] = useState(false)
+  // Antworten können in anderer Reihenfolge eintreffen, als die Anfragen
+  // gestartet wurden (langsames WLAN): nur die jeweils neueste zählt.
+  const requestSeqRef = useRef(0)
+  const appliedSeqRef = useRef(0)
 
   const { faces, cards } = game
   const locked = flippedIds.length === 2
@@ -105,10 +104,13 @@ export default function MemoryGame() {
   // egal: das Spiel funktioniert auch ohne die Rekordanzeige.
   useEffect(() => {
     let cancelled = false
+    const seq = ++requestSeqRef.current
     fetch('/api/memory-record')
       .then((res) => (res.ok ? res.json() : null))
       .then((data: { record: BestScore | null } | null) => {
-        if (!cancelled && data) setGlobalRecord(data.record)
+        if (cancelled || !data || seq <= appliedSeqRef.current) return
+        appliedSeqRef.current = seq
+        setGlobalRecord(data.record)
       })
       .catch(() => {})
     return () => {
@@ -120,7 +122,11 @@ export default function MemoryGame() {
   // aktuellen Rekord und ob dieses Spiel ihn gebrochen hat.
   useEffect(() => {
     if (!isWon) return
-    let cancelled = false
+    // "gameOver" wird beim Start eines neuen Spiels (und beim Entladen) wahr:
+    // eine späte Antwort darf dann den Rekord aktualisieren, aber nicht mehr
+    // melden, dass DIESES Spiel ihn gebrochen hat.
+    let gameOver = false
+    const seq = ++requestSeqRef.current
     fetch('/api/memory-record', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -128,13 +134,16 @@ export default function MemoryGame() {
     })
       .then((res) => (res.ok ? res.json() : null))
       .then((data: { record: BestScore; isNewRecord: boolean } | null) => {
-        if (cancelled || !data) return
-        setGlobalRecord(data.record)
-        setIsNewGlobalRecord(Boolean(data.isNewRecord))
+        if (!data) return
+        if (seq > appliedSeqRef.current) {
+          appliedSeqRef.current = seq
+          setGlobalRecord(data.record)
+        }
+        if (!gameOver) setIsNewGlobalRecord(Boolean(data.isNewRecord))
       })
       .catch(() => {})
     return () => {
-      cancelled = true
+      gameOver = true
     }
   }, [isWon])
 
@@ -211,8 +220,12 @@ export default function MemoryGame() {
           {formatTime(seconds)}
         </div>
       </div>
-      {(bestScore || globalRecord) && (
-        <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-1 mb-6 text-xs sm:text-sm text-gray-600">
+      {/* Die Zeile reserviert ihre Höhe von Anfang an: sonst springt das Brett
+          nach unten, sobald der Rekord geladen ist, und Tipps landen daneben. */}
+      <div
+        data-testid="memory-record-row"
+        className="flex flex-wrap items-center justify-center gap-x-6 gap-y-1 mb-6 min-h-11 text-xs sm:text-sm text-gray-600"
+      >
           {bestScore && (
             <div className="flex items-center gap-2">
               <Trophy size={14} className="text-gold" />
@@ -225,8 +238,7 @@ export default function MemoryGame() {
               Rekord aller Gäste: {globalRecord.moves} Züge · {formatTime(globalRecord.seconds)}
             </div>
           )}
-        </div>
-      )}
+      </div>
 
       <div className="grid grid-cols-4 gap-2.5 sm:gap-3">
         {cards.map((card) => {
@@ -266,7 +278,7 @@ export default function MemoryGame() {
       </div>
 
       {isWon && (
-        <div className="text-center mt-8">
+        <div className="text-center mt-8" role="status">
           <p className="font-serif text-xl font-semibold text-dark-blue mb-4">Geschafft! 🎉</p>
           {isNewGlobalRecord && (
             <p className="text-gold-text font-medium mb-4">Neuer Rekord aller Gäste! 🏆</p>

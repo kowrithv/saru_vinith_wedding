@@ -6,6 +6,7 @@ import { Camera, LogOut, ShieldAlert, Trash2, Trophy } from 'lucide-react'
 import Card from '@/components/ui/Card'
 import SectionTitle from '@/components/ui/SectionTitle'
 import GalleryUploadForm from '@/components/gallery/GalleryUploadForm'
+import { formatTime } from '@/lib/format-time'
 import CollapsibleSection from '@/components/admin/CollapsibleSection'
 import type { GalleryPhotoView } from '@/lib/gallery-photo-view'
 import { cn } from '@/lib/utils'
@@ -66,6 +67,7 @@ export default function AdminDashboard({ initialLocks, initialGalleryMode }: Adm
   const [changingGalleryMode, setChangingGalleryMode] = useState(false)
   const [galleryPhotos, setGalleryPhotos] = useState<GalleryPhotoView[]>([])
   const [memoryRecordMessage, setMemoryRecordMessage] = useState<{ ok: boolean; text: string } | null>(null)
+  const [memoryRecord, setMemoryRecord] = useState<{ moves: number; seconds: number } | null>(null)
 
   useEffect(() => {
     fetch('/api/guestbook')
@@ -83,6 +85,13 @@ export default function AdminDashboard({ initialLocks, initialGalleryMode }: Adm
     fetch('/api/gallery')
       .then((res) => (res.ok ? res.json() : { photos: [] }))
       .then((data: { photos: GalleryPhotoView[] | null }) => setGalleryPhotos(data.photos ?? []))
+      .catch(() => {})
+
+    // Der Admin sieht den aktuellen Memory-Rekord, damit ein unmöglicher Wert
+    // (gefälscht per Skript) auffällt und sich zurücksetzen lässt.
+    fetch('/api/memory-record')
+      .then((res) => (res.ok ? res.json() : { record: null }))
+      .then((data: { record: { moves: number; seconds: number } | null }) => setMemoryRecord(data.record))
       .catch(() => {})
   }, [])
 
@@ -186,11 +195,16 @@ export default function AdminDashboard({ initialLocks, initialGalleryMode }: Adm
     setMemoryRecordMessage(null)
     try {
       const response = await fetch('/api/memory-record', { method: 'DELETE' })
-      setMemoryRecordMessage(
-        response.ok
-          ? { ok: true, text: 'Rekord zurückgesetzt.' }
-          : { ok: false, text: 'Zurücksetzen fehlgeschlagen. Bitte versuch es erneut.' }
-      )
+      if (response.ok) {
+        setMemoryRecord(null)
+        setMemoryRecordMessage({ ok: true, text: 'Rekord zurückgesetzt.' })
+      } else if (response.status === 401) {
+        // Die Admin-Sitzung läuft nach 12 Stunden ab - ein erneuter Versuch
+        // würde nichts ändern.
+        setMemoryRecordMessage({ ok: false, text: 'Sitzung abgelaufen – bitte neu anmelden.' })
+      } else {
+        setMemoryRecordMessage({ ok: false, text: 'Zurücksetzen fehlgeschlagen. Bitte versuch es erneut.' })
+      }
     } catch {
       setMemoryRecordMessage({ ok: false, text: 'Zurücksetzen fehlgeschlagen. Bitte versuch es erneut.' })
     }
@@ -415,18 +429,25 @@ export default function AdminDashboard({ initialLocks, initialGalleryMode }: Adm
         </div>
 
         <Card className="mt-8">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3 min-w-0">
-              <Trophy size={20} className="text-gray-400 flex-shrink-0" />
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-3 min-w-0">
+              <Trophy size={20} className="text-gray-400 flex-shrink-0 mt-0.5" />
               <div>
                 <p className="font-semibold text-dark-blue text-sm">Liebes-Memory</p>
-                <p className="text-xs text-gray-400">Rekord aller Gäste, z. B. nach Testspielen zurücksetzen.</p>
+                <p className="text-sm text-gray-600">
+                  {memoryRecord
+                    ? `Aktueller Rekord: ${memoryRecord.moves} Züge · ${formatTime(memoryRecord.seconds)}`
+                    : 'Noch kein Rekord.'}
+                </p>
+                <p className="text-xs text-gray-400 mt-1">
+                  Zurücksetzen z. B. nach Testspielen oder bei einem unmöglichen Wert.
+                </p>
               </div>
             </div>
             <button
               type="button"
               onClick={resetMemoryRecord}
-              className="flex-shrink-0 text-sm font-medium text-red-600 hover:text-red-700 transition-colors"
+              className="min-h-11 px-4 rounded-xl border border-red-200 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
             >
               Memory-Rekord zurücksetzen
             </button>
