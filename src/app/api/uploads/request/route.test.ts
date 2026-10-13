@@ -269,4 +269,22 @@ describe('POST /api/uploads/request', () => {
     )
     expect(response.status).toBe(200)
   })
+
+  it('does not count attempts made while uploads are paused against the rate limit', async () => {
+    const db = getDb()
+    setFeatureLocked(db, 'gallery_upload', true)
+    const body = {
+      password: 'empfang-secret',
+      category: 'Hochzeit',
+      files: [{ filename: 'a.jpg', size: 1000, contentType: 'image/jpeg' }],
+    }
+    for (let i = 0; i < 35; i++) {
+      expect((await POST(requestBody(body, undefined, '10.0.2.1'))).status).toBe(423)
+    }
+
+    setFeatureLocked(db, 'gallery_upload', false)
+    const response = await POST(requestBody(body, undefined, '10.0.2.1'))
+
+    expect(response.status).toBe(200)
+  })
 })

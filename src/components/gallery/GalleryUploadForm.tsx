@@ -10,6 +10,7 @@ import {
   IMAGE_CONTENT_TYPE_EXTENSIONS,
   MAX_ORIGINAL_BYTES,
   resolveImageContentType,
+  UPLOADS_PAUSED_MESSAGE,
 } from '@/lib/gallery-upload-limits'
 import type { GalleryPhotoView } from '@/lib/gallery-photo-view'
 import { textFieldClassName } from '@/lib/form-styles'
@@ -28,9 +29,16 @@ const FILES_PER_GROUP = 3
 
 const GENERIC_UPLOAD_ERROR = 'Hochladen fehlgeschlagen.'
 
-// Ein einzelnes Foto darf höchstens so lange brauchen - danach gilt es als
-// hängengeblieben (Funkloch, Tab im Hintergrund) und lässt sich erneut starten.
-const UPLOAD_TIMEOUT_MS = 5 * 60 * 1000
+// Zeitlimit für die Übertragung einer Gruppe: wer keine Verbindung hat, soll
+// nicht ewig warten - eine langsame Leitung (3 Fotos teilen sich den Uplink im
+// WLAN der Feier) darf aber nicht scheitern, nur weil sie langsam ist. Das
+// Limit wächst deshalb mit den Bytes der Gruppe (Untergrenze 20 KB/s), bleibt
+// über 5 Minuten und endet spätestens mit dem Ticket (15 Minuten).
+const MIN_UPLOAD_TIMEOUT_MS = 5 * 60 * 1000
+const MAX_UPLOAD_TIMEOUT_MS = 15 * 60 * 1000
+const MIN_UPLOAD_BYTES_PER_SECOND = 20 * 1024
+// Das Registrieren ist eine kurze Server-Anfrage nach der Übertragung.
+const COMPLETE_TIMEOUT_MS = 60 * 1000
 const TIMEOUT_MESSAGE = 'Zeitüberschreitung – bitte erneut versuchen.'
 const CANCELLED_MESSAGE = 'Abgebrochen.'
 
@@ -83,6 +91,8 @@ async function createThumbnailOrPlaceholder(file: File): Promise<{ blob: Blob; i
 interface UploadControl {
   /** Wird beim Klick auf "Abbrechen" ausgelöst. */
   signal: AbortSignal
+  /** Zeitlimit für die Übertragung (Thumbnail und Original). */
+  timeoutMs: number
   onPreview: (blob: Blob, isPlaceholder: boolean) => void
 }
 
@@ -101,8 +111,10 @@ async function uploadAndRegister(
   const timer = setTimeout(() => {
     timedOut = true
     fileController.abort()
-  }, UPLOAD_TIMEOUT_MS)
+  }, control.timeoutMs)
   const { signal } = fileController
+  let transferred = false
+  let completeTimedOut = false
 
   try {
     const { blob, isPlaceholder } = await createThumbnailOrPlaceholder(selected.file)
@@ -119,18 +131,36 @@ async function uploadAndRegister(
     if (!thumbResponse.ok || !originalResponse.ok) {
       return { error: 'Übertragung fehlgeschlagen.' }
     }
-    const completeResponse = await fetch('/api/uploads/complete', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ticket: ticket.ticket, uploaderName }),
-      signal,
-    })
-    if (!completeResponse.ok) {
-      const body = await completeResponse.json().catch(() => null)
-      return { error: body?.error ?? GENERIC_UPLOAD_ERROR }
+
+    // Ab hier liegen die Bytes im Speicher. Das Registrieren darf weder durch
+    // "Abbrechen" noch durch das Übertragungs-Limit unterbrochen werden: der
+    // Server schließt die Anfrage ohnehin ab, und ein erneuter Versuch würde
+    // das Foto ein zweites Mal anlegen (ohne Löschen-Token für die erste Kopie).
+    transferred = true
+    clearTimeout(timer)
+    control.signal.removeEventListener('abort', onCancel)
+    const completeController = new AbortController()
+    const completeTimer = setTimeout(() => {
+      completeTimedOut = true
+      completeController.abort()
+    }, COMPLETE_TIMEOUT_MS)
+    try {
+      const completeResponse = await fetch('/api/uploads/complete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ticket: ticket.ticket, uploaderName }),
+        signal: completeController.signal,
+      })
+      if (!completeResponse.ok) {
+        const body = await completeResponse.json().catch(() => null)
+        return { error: body?.error ?? GENERIC_UPLOAD_ERROR }
+      }
+      return (await completeResponse.json()) as { photo: GalleryPhotoView; deleteToken: string }
+    } finally {
+      clearTimeout(completeTimer)
     }
-    return (await completeResponse.json()) as { photo: GalleryPhotoView; deleteToken: string }
   } catch {
+    if (transferred) return { error: completeTimedOut ? TIMEOUT_MESSAGE : GENERIC_UPLOAD_ERROR }
     if (timedOut) return { error: TIMEOUT_MESSAGE }
     if (control.signal.aborted) return { cancelled: true }
     return { error: GENERIC_UPLOAD_ERROR }
@@ -138,6 +168,11 @@ async function uploadAndRegister(
     clearTimeout(timer)
     control.signal.removeEventListener('abort', onCancel)
   }
+}
+
+function uploadTimeoutMs(groupBytes: number): number {
+  const needed = (groupBytes / MIN_UPLOAD_BYTES_PER_SECOND) * 1000
+  return Math.min(MAX_UPLOAD_TIMEOUT_MS, Math.max(MIN_UPLOAD_TIMEOUT_MS, needed))
 }
 
 function pluralPhotos(count: number, singular: string, plural: string): string {
@@ -151,6 +186,7 @@ export default function GalleryUploadForm({ isAdmin = false, onUploaded }: Galle
   const [selectedFiles, setSelectedFiles] = useState<SelectedFile[]>([])
   const [formError, setFormError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [cancelled, setCancelled] = useState(false)
   const abortRef = useRef<AbortController | null>(null)
   const previewUrlsRef = useRef<string[]>([])
 
@@ -164,6 +200,7 @@ export default function GalleryUploadForm({ isAdmin = false, onUploaded }: Galle
 
   const handleFilesChange = (e: ChangeEvent<HTMLInputElement>) => {
     setFormError(null)
+    setCancelled(false)
     releasePreviews()
     setSelectedFiles(Array.from(e.target.files ?? []).map(toSelectedFile))
   }
@@ -193,10 +230,17 @@ export default function GalleryUploadForm({ isAdmin = false, onUploaded }: Galle
     return (await response.json()) as { tickets: UploadTicket[] }
   }
 
-  const uploadOneFile = async (index: number, selected: SelectedFile, ticket: UploadTicket, signal: AbortSignal) => {
+  const uploadOneFile = async (
+    index: number,
+    selected: SelectedFile,
+    ticket: UploadTicket,
+    signal: AbortSignal,
+    timeoutMs: number
+  ) => {
     updateFile(index, { status: 'uploading', message: undefined })
     const result = await uploadAndRegister(selected, ticket, name.trim(), {
       signal,
+      timeoutMs,
       onPreview: (blob, isPlaceholder) => {
         if (isPlaceholder || typeof URL.createObjectURL !== 'function') {
           updateFile(index, { previewUrl: null })
@@ -257,6 +301,7 @@ export default function GalleryUploadForm({ isAdmin = false, onUploaded }: Galle
 
     const controller = new AbortController()
     abortRef.current = controller
+    setCancelled(false)
     setSubmitting(true)
     try {
       for (let start = 0; start < queue.length; start += FILES_PER_GROUP) {
@@ -270,9 +315,11 @@ export default function GalleryUploadForm({ isAdmin = false, onUploaded }: Galle
           setFormError(ticketsResult.error)
           break
         }
+        // Die Gruppe teilt sich die Leitung: das Limit richtet sich nach ihren Bytes.
+        const timeoutMs = uploadTimeoutMs(group.reduce((sum, { selected }) => sum + selected.file.size, 0))
         await Promise.all(
           group.map(({ selected, index }, i) =>
-            uploadOneFile(index, selected, ticketsResult.tickets[i], controller.signal)
+            uploadOneFile(index, selected, ticketsResult.tickets[i], controller.signal, timeoutMs)
           )
         )
       }
@@ -287,23 +334,35 @@ export default function GalleryUploadForm({ isAdmin = false, onUploaded }: Galle
     }
   }
 
-  const cancelUpload = () => abortRef.current?.abort()
+  const cancelUpload = () => {
+    setCancelled(true)
+    abortRef.current?.abort()
+  }
 
   const doneCount = selectedFiles.filter((f) => f.status === 'done').length
   const failedCount = selectedFiles.filter((f) => f.status === 'error' && !f.invalid).length
-  const cancelledCount = selectedFiles.filter((f) => f.status === 'pending' && f.message === CANCELLED_MESSAGE).length
+  // Nach "Abbrechen" zählt jedes gültige, nicht fertige Foto als abgebrochen -
+  // auch die Gruppen, die gar nicht mehr gestartet wurden.
+  const cancelledCount = cancelled
+    ? selectedFiles.filter((f) => !f.invalid && f.status === 'pending').length
+    : 0
+  const wasPaused = selectedFiles.some((f) => f.status === 'error' && f.message === UPLOADS_PAUSED_MESSAGE)
   const summaryParts: string[] = []
   if (doneCount > 0) {
     summaryParts.push(`${pluralPhotos(doneCount, 'Foto', 'Fotos')} hochgeladen – danke!`)
   }
   if (failedCount > 0) {
+    // Bei einer Pause bringt ein sofortiger Wiederholungsversuch nichts.
+    const hint = wasPaused
+      ? 'Das Hochladen ist gerade pausiert – bitte versucht es später noch einmal.'
+      : 'Tippe erneut auf „Hochladen“.'
     summaryParts.push(
-      `${pluralPhotos(failedCount, 'Foto konnte', 'Fotos konnten')} nicht hochgeladen werden. Tippe erneut auf „Hochladen“.`
+      `${pluralPhotos(failedCount, 'Foto konnte', 'Fotos konnten')} nicht hochgeladen werden. ${hint}`
     )
   }
   if (cancelledCount > 0) {
     summaryParts.push(
-      `${pluralPhotos(cancelledCount, 'Foto', 'Fotos')} abgebrochen – tippe auf „Hochladen“, um sie erneut zu senden.`
+      `${pluralPhotos(cancelledCount, 'Foto wurde', 'Fotos wurden')} abgebrochen. Tippe auf „Hochladen“, um den Rest zu senden.`
     )
   }
   const statusText = submitting
@@ -379,7 +438,7 @@ export default function GalleryUploadForm({ isAdmin = false, onUploaded }: Galle
       </div>
 
       {selectedFiles.length > 0 && (
-        <ul className="space-y-1">
+        <ul className="space-y-1 max-h-72 overflow-y-auto">
           {selectedFiles.map(({ file, status, message, previewUrl }, index) => (
             <li key={index} className="flex flex-wrap items-center gap-x-2 text-xs text-gray-600">
               {status === 'uploading' && <Loader2 size={14} className="animate-spin text-gray-400" />}

@@ -64,6 +64,38 @@ describe('selectBackupsToDelete', () => {
     expect(kept).not.toContain(nameFor('2026-08-01T06:00:00Z'))
   })
 
+  it('keeps one backup per hour, so several starts within an hour do not push older history out', () => {
+    const names: string[] = []
+    // 48 normale stündliche Sicherungen ...
+    for (let hour = 0; hour < 48; hour++) {
+      const day = 10 + Math.floor(hour / 24)
+      names.push(nameFor(`2026-10-${day}T${String(hour % 24).padStart(2, '0')}:00:00Z`))
+    }
+    // ... danach eine Neustart-Schleife: eine Sicherung pro Minute für 50 Minuten.
+    for (let minute = 0; minute < 50; minute++) {
+      names.push(nameFor(`2026-10-12T00:${String(minute).padStart(2, '0')}:30Z`))
+    }
+
+    const deleted = selectBackupsToDelete(names)
+    const kept = names.filter((name) => !deleted.includes(name))
+
+    // Die Historie der letzten zwei Tage bleibt vollständig erhalten.
+    for (let hour = 1; hour < 48; hour++) {
+      const day = 10 + Math.floor(hour / 24)
+      expect(kept).toContain(nameFor(`2026-10-${day}T${String(hour % 24).padStart(2, '0')}:00:00Z`))
+    }
+    // Aus der Schleife bleibt nur die erste ihrer Stunde plus die allerneueste.
+    const loopKept = kept.filter((name) => name.startsWith('wedding-20261012-00'))
+    expect(loopKept).toEqual([nameFor('2026-10-12T00:00:30Z'), nameFor('2026-10-12T00:49:30Z')])
+  })
+
+  it('always keeps the newest backup, even when it is not the first of its hour', () => {
+    const names = [nameFor('2026-10-17T10:00:00Z'), nameFor('2026-10-17T10:20:00Z'), nameFor('2026-10-17T10:50:00Z')]
+    const deleted = selectBackupsToDelete(names)
+
+    expect(deleted).toEqual([nameFor('2026-10-17T10:20:00Z')])
+  })
+
   it('never selects files that are not backups', () => {
     const names = ['notes.txt', 'wedding.db', 'wedding-20261017-143005.db-wal', nameFor('2026-10-17T10:00:00Z')]
     expect(selectBackupsToDelete(names)).toEqual([])

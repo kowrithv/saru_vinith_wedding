@@ -38,8 +38,8 @@ einer Route meldet `tsc` ggf. veraltete Dateien in `.next/types` – dann
 - Galerie: Browser lädt per presigned PUT direkt nach R2 (`r2.ts`,
   `upload-ticket.ts`, `api/uploads/*`). Rohe R2-Keys verlassen den Server
   nie – Clients bekommen nur `GalleryPhotoView` mit URLs.
-- Schreib-Sperren (`app-config.ts`): `guestbook | memories | who_votes`
-  einzeln schaltbar; `gallery_mode` (`public | password`) ist davon getrennt.
+- Schreib-Sperren (`app-config.ts`, `LOCKABLE_FEATURES`):
+  `guestbook | memories | who_votes | gallery_upload` einzeln schaltbar; `gallery_mode` (`public | password`) ist davon getrennt.
 - Tailwind v4, Farb-Tokens `dark-blue`, `champagne(-light/-dark)`, `gold`.
 
 ## Fallstricke (aus früheren Reviews)
@@ -81,8 +81,8 @@ einer Route meldet `tsc` ggf. veraltete Dateien in `.next/types` – dann
 
 - Arbeitsbranch ist `develop`. **Nie** nach `clean-start` pushen oder mergen –
   das ist die Produktion der alten Seite (Image-Tag `latest`).
-- Der Push zum Remote ist derzeit nicht möglich (403 für den Account
-  `hartingsdev`) – nicht wiederholt versuchen, auf Freigabe warten.
+- Gepusht wird vom Nutzer. Nicht von sich aus pushen, taggen oder
+  mergen; Remote-Zugriff ist freigegeben, aber eine Aktion des Nutzers.
 - Keine Secrets committen: `.env*`, `data/*.db*` sind gitignored.
 - Nicht-triviale Entscheidungen oder Rückfragen zu fehlenden Zugangsdaten
   (R2, Cloudflare) an den Nutzer geben, nicht raten.

@@ -91,6 +91,41 @@
 - Der Plan `2026-10-12-homepage.md` nennt noch 8 Kacheln und die
   Galerie-Ausnahme (historisch, nicht mehr gültig).
 
+## Gefunden im Ops-/Polish-Review (zurückgestellt, nicht blockierend)
+
+- **Cool-down wird nach dem Mailversand geschrieben** (`alerts.ts`): wirft
+  das Schreiben (z. B. bei voller Platte), steht „Versand fehlgeschlagen" im
+  Log, obwohl die Mail raus ging, und die Platten-Mail käme alle 10 Minuten.
+- **Zeitstempel in der Zukunft** (Uhr zurückgestellt) unterdrückt einen Alarm,
+  bis die Uhr aufgeholt hat. `last > now` sollte als veraltet gelten.
+- **Unterdrückte Alarme schreiben keine Logzeile** — ein stündlich
+  fehlschlagendes Backup erscheint nur alle 6 Stunden im Log.
+- **Backup schreibt direkt auf den endgültigen Namen:** ein Kill während
+  `db.backup()` hinterlässt eine Teil-Datei mit gültigem Namen. Besser nach
+  `*.tmp` schreiben, prüfen, umbenennen; dazu ein Watchdog, der bei einem
+  Backup ohne Ende alarmiert.
+- **Formular nach „Schließen" während des Uploads:** die Uploads laufen
+  weiter, die Vorschau-URLs werden nicht freigegeben, nichts wird abgebrochen.
+  Das Formular eingeklappt statt entfernt zu halten würde beides lösen.
+- **Geschwister-Upload läuft weiter,** wenn ein PUT fehlschlägt
+  (`fileController` wird im `finally` nicht abgebrochen).
+- **Abbrechen-Knopf verliert den Fokus** beim Ausblenden (Tastatur/VoiceOver).
+- **Leerer Zustand widersprüchlich:** bei pausiertem Upload und ohne Fotos
+  steht oben „pausiert", im Raster „lade das erste hoch!".
+- **Zwei „Stopp"-Knöpfe:** der schwebende „Schließen" beendet nur die Ansicht,
+  „Abbrechen" den Upload; der schwebende Knopf kann Abbrechen überdecken.
+- **Vorschau-Speicher:** jede Kachel hält das 800-px-Thumbnail (ca. 2 MB
+  Bitmap) für eine 40-px-Kachel; bei 20 Fotos ca. 40 MB.
+- **Admin-Schalter „Foto-Upload"** sagt nicht, dass der Admin weiter
+  hochladen kann.
+- **Test-Lücken:** Integritätsprüfung mit Zeilen ungleich `ok`, `unref()`,
+  `greetingTimeout`, Log-only-Cool-down, der `NEXT_RUNTIME`-Zweig und der
+  Catch um den dynamischen Import sind nicht von Tests abgedeckt; der
+  Galerie-Test „keeps the upload flag" kann nicht fehlschlagen (Flag ist dort
+  `false`).
+- **Neustart-Schleife:** läuft der Prozess schneller ab, als SMTP fertig
+  wird, kommt gar keine Mail — nur ein externer Uptime-Monitor fängt das.
+
 ## Offene externe Abhängigkeiten (aus der Spec)
 
 - R2/Cloudflare-Zugangsdaten für die Foto-Pipeline (Galerie-Plan)

@@ -20,21 +20,31 @@ export function backupFileName(now: Date): string {
 }
 
 /**
- * Aufbewahrung: die neuesten HOURLY_KEEP Sicherungen plus je die erste
- * Sicherung eines Tages für die neuesten DAILY_KEEP Tage. Dateien, die
+ * Aufbewahrung: die allerneueste Sicherung, dazu je die erste Sicherung einer
+ * Stunde für die neuesten HOURLY_KEEP Stunden und je die erste eines Tages für
+ * die neuesten DAILY_KEEP Tage. Mehrere Sicherungen innerhalb einer Stunde
+ * (z. B. Neustart-Schleife) verdrängen so keine ältere Historie. Dateien, die
  * keine Sicherungen sind, werden nie ausgewählt.
  */
 export function selectBackupsToDelete(fileNames: string[]): string[] {
   const backups = fileNames.filter((name) => BACKUP_FILE_PATTERN.test(name)).sort()
-  const keep = new Set(backups.slice(-HOURLY_KEEP))
+  const keep = new Set<string>()
+  if (backups.length > 0) keep.add(backups[backups.length - 1])
 
+  const firstOfHour = new Map<string, string>()
   const firstOfDay = new Map<string, string>()
   for (const name of backups) {
-    const day = name.slice(8, 16)
+    const hour = name.slice(8, 19) // YYYYMMDD-HH
+    const day = name.slice(8, 16) // YYYYMMDD
+    if (!firstOfHour.has(hour)) firstOfHour.set(hour, name)
     if (!firstOfDay.has(day)) firstOfDay.set(day, name)
   }
-  const newestDays = [...firstOfDay.keys()].sort().slice(-DAILY_KEEP)
-  for (const day of newestDays) keep.add(firstOfDay.get(day) as string)
+  for (const hour of [...firstOfHour.keys()].sort().slice(-HOURLY_KEEP)) {
+    keep.add(firstOfHour.get(hour) as string)
+  }
+  for (const day of [...firstOfDay.keys()].sort().slice(-DAILY_KEEP)) {
+    keep.add(firstOfDay.get(day) as string)
+  }
 
   return backups.filter((name) => !keep.has(name))
 }

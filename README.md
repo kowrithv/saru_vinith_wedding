@@ -116,8 +116,9 @@ Fotos laufen **nie durch den App-Server**:
    löscht jedes Foto.
 
 Der Admin kann im Dashboard die Galerie zwischen **Öffentlich** und
-**Kennwort** umschalten sowie Gästebuch, Erinnerungen und die
-„Wer von uns?“-Abstimmung einzeln sperren. Die Bucket-CORS-Regel muss
+**Kennwort** umschalten sowie Gästebuch, Erinnerungen, die
+„Wer von uns?“-Abstimmung und den **Foto-Upload** einzeln sperren (der Admin
+lädt auch bei gesperrtem Upload weiter hoch). Die Bucket-CORS-Regel muss
 `PUT, GET, HEAD`, die Header `content-type, content-length` und die
 Produktions-Domain sowie `http://localhost:3000` erlauben (Einstellung im
 Cloudflare-Dashboard, nicht im Code).
@@ -156,7 +157,9 @@ IMAGE_TAG=<älterer-tag> docker compose up -d   # Rollback auf festes Image-Tag
 
 **Backup:** Die App sichert die Datenbank beim Start und danach stündlich nach
 `data/backups/` (`wedding-YYYYMMDD-HHmmss.db`, UTC). Aufbewahrt werden die
-letzten 48 Sicherungen plus die erste jedes Tages der letzten 30 Tage. Jede
+neueste Sicherung, je die erste Sicherung der letzten 48 Stunden und je die
+erste jedes Tages der letzten 30 Tage (mehrere Starts in einer Stunde
+verdrängen also keine ältere Historie). Jede
 Kopie wird mit `PRAGMA integrity_check` geprüft; schlägt das fehl, kommt ein
 Alarm. Ab 85 % Plattenbelegung kommt ebenfalls ein Alarm. Alarme gehen ins
 Log und, wenn `SMTP_*` und `ALERT_EMAIL_TO` gesetzt sind, per E-Mail (je

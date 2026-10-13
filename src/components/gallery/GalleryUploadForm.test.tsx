@@ -23,6 +23,10 @@ interface FakeBackendOptions {
   holdComplete?: Promise<void>
   /** R2-PUTs antworten nie - außer das Abbruch-Signal der Anfrage löst aus. */
   hangPuts?: boolean
+  /** R2-PUTs brauchen so viele Millisekunden (Fake-Timer). */
+  putDelayMs?: number
+  /** Fehlertext, den /complete bei failComplete liefert. */
+  completeError?: string
 }
 
 // Minimaler Server: vergibt je Datei ein Ticket, erkennt R2-PUTs und beantwortet
@@ -54,10 +58,18 @@ function createFakeBackend(options: FakeBackendOptions = {}) {
     if (url === '/api/uploads/complete') {
       const { ticket } = JSON.parse(init?.body as string) as { ticket: string }
       events.push('complete')
-      if (options.holdComplete) await options.holdComplete
+      if (options.holdComplete) {
+        // Wie ein echtes fetch: ein abgebrochenes Signal beendet die Anfrage
+        // sofort - der Server hat sie da aber längst angenommen.
+        const hold = options.holdComplete
+        await new Promise<void>((resolve, reject) => {
+          void hold.then(resolve)
+          init?.signal?.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')))
+        })
+      }
       const filename = filenameByTicket.get(ticket) as string
       if (options.failComplete?.has(filename)) {
-        return { ok: false, json: async () => ({ error: `Fehler bei ${filename}` }) }
+        return { ok: false, json: async () => ({ error: options.completeError ?? `Fehler bei ${filename}` }) }
       }
       const id = ticket.replace('ticket-', 'p')
       return {
@@ -82,6 +94,7 @@ function createFakeBackend(options: FakeBackendOptions = {}) {
           init?.signal?.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')))
         })
       }
+      if (options.putDelayMs) await new Promise((resolve) => setTimeout(resolve, options.putDelayMs))
       const ok = !options.failPutUrls?.has(url)
       return { ok, status: ok ? 200 : 403 }
     }
@@ -481,5 +494,121 @@ describe('GalleryUploadForm', () => {
   it('does not show the cancel button while idle', () => {
     render(<GalleryUploadForm isAdmin onUploaded={vi.fn()} />)
     expect(screen.queryByRole('button', { name: /abbrechen/i })).not.toBeInTheDocument()
+  })
+
+  it('lets a file whose bytes are already stored finish registering when the guest presses Abbrechen', async () => {
+    const user = setupUser()
+    let release!: () => void
+    const holdComplete = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    const backend = createFakeBackend({ holdComplete })
+    const onUploaded = vi.fn()
+    render(<GalleryUploadForm isAdmin onUploaded={onUploaded} />)
+    await user.type(screen.getByLabelText(/dein name/i), 'Anna')
+    await user.upload(screen.getByLabelText(/fotos ausw/i), makeFile('a.jpg'))
+    await user.click(screen.getByRole('button', { name: /hochladen/i }))
+    await waitFor(() => expect(backend.events).toContain('complete'))
+
+    await user.click(screen.getByRole('button', { name: /abbrechen/i }))
+    release()
+
+    // Der Server registriert das Foto in jedem Fall - die Seite muss es
+    // genauso zeigen, sonst entsteht beim erneuten Versuch ein Duplikat.
+    await waitFor(() => expect(onUploaded).toHaveBeenCalledTimes(1))
+    expect(await screen.findByText(/1 foto hochgeladen/i)).toBeInTheDocument()
+    expect(backend.requestBodies).toHaveLength(1)
+  })
+
+  it('does not time out a file whose bytes are already stored while the registration is slow', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    try {
+      const user = userEvent.setup({ applyAccept: false, advanceTimers: vi.advanceTimersByTime })
+      let release!: () => void
+      const holdComplete = new Promise<void>((resolve) => {
+        release = resolve
+      })
+      const backend = createFakeBackend({ putDelayMs: 4 * 60 * 1000 + 50 * 1000, holdComplete })
+      render(<GalleryUploadForm isAdmin onUploaded={vi.fn()} />)
+      await user.type(screen.getByLabelText(/dein name/i), 'Anna')
+      await user.upload(screen.getByLabelText(/fotos ausw/i), makeFile('slow.jpg'))
+      await user.click(screen.getByRole('button', { name: /hochladen/i }))
+
+      await vi.advanceTimersByTimeAsync(4 * 60 * 1000 + 50 * 1000)
+      await waitFor(() => expect(backend.events).toContain('complete'))
+      // Gesamtzeit jetzt über fünf Minuten: das Zeitlimit für die Übertragung
+      // darf die bereits gespeicherten Bytes nicht mehr betreffen.
+      await vi.advanceTimersByTimeAsync(20 * 1000)
+      release()
+
+      expect(await screen.findByText(/1 foto hochgeladen/i)).toBeInTheDocument()
+      expect(screen.queryByText(/zeitüberschreitung/i)).not.toBeInTheDocument()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('gives a group of large photos on a slow connection more than five minutes before it counts as stuck', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    try {
+      const user = userEvent.setup({ applyAccept: false, advanceTimers: vi.advanceTimersByTime })
+      createFakeBackend({ hangPuts: true })
+      const files = [1, 2, 3].map((n) => {
+        const file = makeFile(`big-${n}.jpg`)
+        // 3 x 4 MB teilen sich eine Leitung: bei 20 KB/s sind das gut 10 Minuten.
+        Object.defineProperty(file, 'size', { value: 4 * 1024 * 1024 })
+        return file
+      })
+      render(<GalleryUploadForm isAdmin onUploaded={vi.fn()} />)
+      await user.type(screen.getByLabelText(/dein name/i), 'Anna')
+      await user.upload(screen.getByLabelText(/fotos ausw/i), files)
+      await user.click(screen.getByRole('button', { name: /hochladen/i }))
+
+      await vi.advanceTimersByTimeAsync(5 * 60 * 1000 + 1000)
+      expect(screen.queryByText(/zeitüberschreitung/i)).not.toBeInTheDocument()
+
+      await vi.advanceTimersByTimeAsync(5 * 60 * 1000 + 20 * 1000)
+      expect(await screen.findAllByText(/zeitüberschreitung/i)).toHaveLength(3)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('counts every photo that was not uploaded after a cancel, including groups that never started', async () => {
+    const user = setupUser()
+    createFakeBackend({ hangPuts: true })
+    const files = Array.from({ length: 4 }, (_, i) => makeFile(`photo-${i}.jpg`))
+    render(<GalleryUploadForm isAdmin onUploaded={vi.fn()} />)
+    await user.type(screen.getByLabelText(/dein name/i), 'Anna')
+    await user.upload(screen.getByLabelText(/fotos ausw/i), files)
+    await user.click(screen.getByRole('button', { name: /hochladen/i }))
+    await user.click(await screen.findByRole('button', { name: /abbrechen/i }))
+
+    await waitFor(() => expect(screen.getByRole('button', { name: /^hochladen$/i })).toBeEnabled())
+    expect(screen.getByRole('status')).toHaveTextContent(/4 fotos wurden abgebrochen/i)
+  })
+
+  it('does not invite a retry when uploads were paused while a file was on its way', async () => {
+    const user = setupUser()
+    createFakeBackend({ failComplete: new Set(['a.jpg']), completeError: 'Foto-Uploads sind derzeit pausiert.' })
+    render(<GalleryUploadForm isAdmin onUploaded={vi.fn()} />)
+    await user.type(screen.getByLabelText(/dein name/i), 'Anna')
+    await user.upload(screen.getByLabelText(/fotos ausw/i), makeFile('a.jpg'))
+    await user.click(screen.getByRole('button', { name: /hochladen/i }))
+
+    await screen.findByText('Foto-Uploads sind derzeit pausiert.')
+
+    expect(screen.getByRole('status')).toHaveTextContent(/pausiert/i)
+    expect(screen.getByRole('status')).not.toHaveTextContent(/tippe erneut/i)
+  })
+
+  it('keeps the status line and the cancel button in view by scrolling a long file list inside its own box', async () => {
+    const user = setupUser()
+    createFakeBackend()
+    const files = Array.from({ length: 12 }, (_, i) => makeFile(`photo-${i}.jpg`))
+    render(<GalleryUploadForm isAdmin onUploaded={vi.fn()} />)
+    await user.upload(screen.getByLabelText(/fotos ausw/i), files)
+
+    expect(screen.getByRole('list')).toHaveClass('max-h-72', 'overflow-y-auto')
   })
 })

@@ -33,6 +33,16 @@ const bodySchema = z.object({
 const uploadsLimiter = new RateLimiter({ maxAttempts: 30, windowMs: 15 * 60 * 1000 })
 
 export async function POST(request: Request): Promise<Response> {
+  const db = getDb()
+  const isOfficial = isAdminRequest(request, db)
+
+  // Vor dem Rate-Limiter: Anfragen während der Pause dürfen das Kontingent
+  // nicht füllen, sonst wären alle am gemeinsamen WLAN nach dem Wieder-
+  // Freigeben (auch der Admin) für bis zu 15 Minuten gesperrt.
+  if (!isOfficial && isFeatureLocked(db, 'gallery_upload')) {
+    return NextResponse.json({ error: UPLOADS_PAUSED_MESSAGE }, { status: 423 })
+  }
+
   const clientKey = getClientKey(request)
   const limit = uploadsLimiter.check(clientKey)
   if (!limit.allowed) {
@@ -43,13 +53,6 @@ export async function POST(request: Request): Promise<Response> {
   const parsed = bodySchema.safeParse(body)
   if (!parsed.success) {
     return NextResponse.json({ error: 'Ungültige Anfrage.' }, { status: 400 })
-  }
-
-  const db = getDb()
-  const isOfficial = isAdminRequest(request, db)
-
-  if (!isOfficial && isFeatureLocked(db, 'gallery_upload')) {
-    return NextResponse.json({ error: UPLOADS_PAUSED_MESSAGE }, { status: 423 })
   }
 
   if (!isOfficial) {
