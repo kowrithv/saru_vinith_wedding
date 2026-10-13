@@ -81,8 +81,12 @@ einer Route meldet `tsc` ggf. veraltete Dateien in `.next/types` – dann
 
 - Arbeitsbranch ist `develop`. **Nie** nach `clean-start` pushen oder mergen –
   das ist die Produktion der alten Seite (Image-Tag `latest`).
-- Gepusht wird vom Nutzer. Nicht von sich aus pushen, taggen oder
-  mergen; Remote-Zugriff ist freigegeben, aber eine Aktion des Nutzers.
+- `main` wird vom Nutzer gebaut, sobald das Tag `v1.0.0` bereit ist (nur
+  Tags auf `main` erzeugen ein Image). Nicht von sich aus nach `main` mergen
+  oder taggen.
+- Gepusht wird vom Nutzer: sein SSH-Key ist passwortgeschützt und nur auf
+  seinem Rechner nutzbar. Von hier aus ist der Remote nicht erreichbar
+  (`git fetch` schlägt fehl) – nicht versuchen, nur lokale Commits liefern.
 - Keine Secrets committen: `.env*`, `data/*.db*` sind gitignored.
 - Nicht-triviale Entscheidungen oder Rückfragen zu fehlenden Zugangsdaten
   (R2, Cloudflare) an den Nutzer geben, nicht raten.
