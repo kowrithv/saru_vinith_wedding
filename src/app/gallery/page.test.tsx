@@ -204,16 +204,6 @@ describe('GalleryPage', () => {
     expect(screen.getByRole('status')).toHaveTextContent(/hochladen ist gerade pausiert/i)
   })
 
-  it('keeps the upload flag when a photo is added afterwards', async () => {
-    mockFetchSequence([{ body: { mode: 'public', unlocked: true, uploadsLocked: false, photos: [samplePhoto] } }])
-    render(<GalleryPage />)
-    await userEvent.click(await screen.findByRole('button', { name: /fotos hochladen/i }))
-    await userEvent.click(screen.getByRole('button', { name: 'stub-upload' }))
-
-    await waitFor(() => expect(screen.getAllByRole('img')).toHaveLength(2))
-    expect(screen.getByRole('button', { name: /schließen/i })).toBeInTheDocument()
-  })
-
   it('does not tell guests to upload the first photo while uploads are paused', async () => {
     mockFetchSequence([{ body: { mode: 'public', unlocked: true, uploadsLocked: true, photos: [] } }])
     render(<GalleryPage />)

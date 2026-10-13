@@ -120,6 +120,33 @@ describe('register (ops scheduler)', () => {
     await vi.waitFor(() => expect(startOpsScheduler).toHaveBeenCalledTimes(1))
   })
 
+  it('does not start the scheduler on another runtime than Node', async () => {
+    setRequiredEnv()
+    vi.stubEnv('NODE_ENV', 'production')
+    vi.stubEnv('NEXT_RUNTIME', 'edge')
+    register()
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(startOpsScheduler).not.toHaveBeenCalled()
+  })
+
+  it('keeps the server running and logs when the scheduler cannot be started', async () => {
+    setRequiredEnv()
+    vi.stubEnv('NODE_ENV', 'production')
+    vi.stubEnv('NEXT_RUNTIME', 'nodejs')
+    startOpsScheduler.mockImplementationOnce(() => {
+      throw new Error('kaputt')
+    })
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never)
+
+    register()
+
+    await vi.waitFor(() =>
+      expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('Ops-Scheduler'), expect.any(Error))
+    )
+    expect(exitSpy).not.toHaveBeenCalled()
+  })
+
   it('does not start the scheduler when a required variable is missing', async () => {
     setRequiredEnv()
     vi.stubEnv('ADMIN_PASSWORD', '')

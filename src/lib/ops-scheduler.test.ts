@@ -156,6 +156,23 @@ describe('startOpsScheduler', () => {
     expect(deps.createBackup).toHaveBeenCalled()
   })
 
+  it('does not keep the process alive for its timers', () => {
+    const unref = vi.fn()
+    const setIntervalSpy = vi.spyOn(globalThis, 'setInterval').mockImplementation((() => ({ unref })) as never)
+    const clearIntervalSpy = vi.spyOn(globalThis, 'clearInterval').mockImplementation((() => {}) as never)
+    try {
+      start()
+      expect(setIntervalSpy).toHaveBeenCalledTimes(2)
+      expect(unref).toHaveBeenCalledTimes(2)
+      running?.stop()
+      running = undefined
+    } finally {
+      // Vor useRealTimers zurücksetzen: sonst bliebe die Fake-Funktion global stehen.
+      setIntervalSpy.mockRestore()
+      clearIntervalSpy.mockRestore()
+    }
+  })
+
   it('starts only once per process and stop() clears all timers', async () => {
     const first = start()
     const second = startOpsScheduler({ ...deps, backupDir: '/data/backups' } as never)

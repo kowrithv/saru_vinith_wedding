@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import Database from 'better-sqlite3'
@@ -198,6 +198,37 @@ describe('createBackup / pruneBackups', () => {
       'wedding-20261017-110000.db',
       'wedding-20261017-143005.db',
     ])
+  })
+
+  it('rejects and removes a copy that opens fine but fails the integrity check', async () => {
+    // Anders als eine unlesbare Datei: die Kopie ist eine gültige Datenbank,
+    // PRAGMA integrity_check meldet aber Zeilen ungleich "ok" (der Index passt
+    // nicht mehr zur Tabelle).
+    const file = path.join(dir, 'damaged.db')
+    const created = new Database(file)
+    created.exec("CREATE TABLE t (a TEXT); CREATE INDEX idx_t_a ON t (a); INSERT INTO t VALUES ('AAAAAAAA')")
+    const { rootpage } = created.prepare("SELECT rootpage FROM sqlite_master WHERE name = 'idx_t_a'").get() as {
+      rootpage: number
+    }
+    const pageSize = created.pragma('page_size', { simple: true }) as number
+    created.close()
+    const bytes = readFileSync(file)
+    const position = bytes.indexOf('AAAAAAAA', (rootpage - 1) * pageSize)
+    expect(position).toBeGreaterThanOrEqual((rootpage - 1) * pageSize)
+    expect(position).toBeLessThan(rootpage * pageSize)
+    bytes.write('BBBBBBBB', position)
+    writeFileSync(file, bytes)
+
+    const damaged = new Database(file)
+    const backupDir = path.join(dir, 'backups')
+    try {
+      await expect(createBackup(damaged, backupDir, new Date('2026-10-17T14:30:05Z'))).rejects.toThrow(
+        /Integritätsprüfung fehlgeschlagen/
+      )
+      expect(readdirSync(backupDir)).toEqual([])
+    } finally {
+      damaged.close()
+    }
   })
 
   it('prunes the folder according to the retention rules and reports what it deleted', () => {

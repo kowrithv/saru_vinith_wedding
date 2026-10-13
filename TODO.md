@@ -39,8 +39,6 @@
 
 - **Lange Startseite auf dem Handy:** 7 Kacheln ≈ 1.750 px. Kompakte
   Zeilen (Icon + Titel) unterhalb von `sm` würden es halbieren.
-- Der Plan `2026-10-12-homepage.md` nennt noch 8 Kacheln und die
-  Galerie-Ausnahme (historisch, nicht mehr gültig).
 
 ## Gefunden im Ops-/Polish-Review (zurückgestellt, nicht blockierend)
 
@@ -50,11 +48,6 @@
   Bildschirmen liegt der schwebende Knopf über dem unteren Formularrand.
 - **Vorschau-Speicher:** jede Kachel hält das 800-px-Thumbnail (ca. 2 MB
   Bitmap) für eine 40-px-Kachel; bei 20 Fotos ca. 40 MB.
-- **Test-Lücken:** Integritätsprüfung mit Zeilen ungleich `ok`, `unref()`,
-  `greetingTimeout`, Log-only-Cool-down, der `NEXT_RUNTIME`-Zweig und der
-  Catch um den dynamischen Import sind nicht von Tests abgedeckt; der
-  Galerie-Test „keeps the upload flag" kann nicht fehlschlagen (Flag ist dort
-  `false`).
 - **Neustart-Schleife:** läuft der Prozess schneller ab, als SMTP fertig
   wird, kommt gar keine Mail — nur ein externer Uptime-Monitor fängt das.
 

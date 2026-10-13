@@ -63,6 +63,15 @@ describe('sendAlert', () => {
     expect(createTransportMock).not.toHaveBeenCalled()
   })
 
+  it('applies the cool-down also when it can only log (no SMTP configured)', async () => {
+    const input = { key: 'disk-full', subject: 'Platte voll', body: 'Details' }
+    const logOnly = { db, now: () => nowMs, env: {} as NodeJS.ProcessEnv, createTransport }
+
+    expect(await sendAlert(input, logOnly)).toBe('logged')
+    nowMs += 60_000
+    expect(await sendAlert(input, logOnly)).toBe('suppressed')
+  })
+
   it('sends one mail to all recipients with a prefixed subject', async () => {
     const result = await sendAlert({ key: 'backup-failed', subject: 'Backup fehlgeschlagen', body: 'Details' }, options())
 
@@ -84,6 +93,7 @@ describe('sendAlert', () => {
         secure: false,
         requireTLS: true,
         connectionTimeout: 10_000,
+        greetingTimeout: 10_000,
         socketTimeout: 15_000,
       })
     )
