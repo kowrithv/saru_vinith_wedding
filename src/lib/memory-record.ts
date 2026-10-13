@@ -1,5 +1,4 @@
 import type Database from 'better-sqlite3'
-import { getConfigValue, setConfigValue } from '@/lib/app-config'
 import { MEMORY_PAIRS_COUNT } from '@/lib/memory-content'
 
 export interface MemoryResult {
@@ -21,8 +20,17 @@ export const MAX_MOVES = 500
 export const MIN_SECONDS = 4
 export const MAX_SECONDS = 5999
 
-const MOVES_KEY = 'memory_record_moves'
-const SECONDS_KEY = 'memory_record_seconds'
+// Obergrenze der gespeicherten Ergebnisse: ein Skript soll die Tabelle nicht
+// beliebig füllen können. Bei Überschreitung fallen die schlechtesten weg,
+// der Rekord und die Spitze der Liste bleiben also erhalten.
+export const MAX_STORED_RESULTS = 2000
+
+const RANK_ORDER = 'moves ASC, seconds ASC, id ASC'
+
+export interface StoredMemoryResult extends MemoryResult {
+  id: number
+  createdAt: string
+}
 
 /** Weniger Züge sind besser; bei gleich vielen Zügen die kürzere Zeit. */
 export function isBetterResult(candidate: MemoryResult, current: MemoryResult | null): boolean {
@@ -31,31 +39,56 @@ export function isBetterResult(candidate: MemoryResult, current: MemoryResult | 
   return candidate.seconds < current.seconds
 }
 
+/** Der Rekord ist das beste gespeicherte Ergebnis (bei Gleichstand das früheste). */
 export function getMemoryRecord(db: Database.Database): MemoryResult | null {
-  const moves = Number(getConfigValue(db, MOVES_KEY))
-  const seconds = Number(getConfigValue(db, SECONDS_KEY))
-  if (!Number.isInteger(moves) || !Number.isInteger(seconds) || moves <= 0 || seconds <= 0) return null
-  return { moves, seconds }
+  const row = db
+    .prepare(`SELECT moves, seconds FROM memory_results ORDER BY ${RANK_ORDER} LIMIT 1`)
+    .get() as MemoryResult | undefined
+  return row ?? null
 }
 
 /**
- * Meldet ein Ergebnis und ersetzt den Rekord, falls es besser ist. Lesen und
- * Schreiben laufen in einer Transaktion mit sofortiger Schreibsperre, damit
- * gleichzeitig beendete Spiele einander nicht überschreiben.
+ * Speichert ein gemeldetes Ergebnis. Der Rekord ist danach das beste aller
+ * gespeicherten Ergebnisse. Schreiben und Prüfen laufen in einer Transaktion
+ * mit sofortiger Schreibsperre, damit gleichzeitig beendete Spiele einander
+ * nicht in die Quere kommen.
  */
 export function submitMemoryResult(db: Database.Database, result: MemoryResult): SubmitOutcome {
   const apply = db.transaction((candidate: MemoryResult): SubmitOutcome => {
     const current = getMemoryRecord(db)
-    if (isBetterResult(candidate, current)) {
-      setConfigValue(db, MOVES_KEY, String(candidate.moves))
-      setConfigValue(db, SECONDS_KEY, String(candidate.seconds))
-      return { record: candidate, isNewRecord: true }
+    db.prepare('INSERT INTO memory_results (moves, seconds) VALUES (?, ?)').run(candidate.moves, candidate.seconds)
+
+    const { n } = db.prepare('SELECT COUNT(*) AS n FROM memory_results').get() as { n: number }
+    if (n > MAX_STORED_RESULTS) {
+      db.prepare(
+        `DELETE FROM memory_results WHERE id IN (
+           SELECT id FROM memory_results ORDER BY ${RANK_ORDER} LIMIT -1 OFFSET ?
+         )`
+      ).run(MAX_STORED_RESULTS)
     }
-    return { record: current as MemoryResult, isNewRecord: false }
+
+    const isNewRecord = isBetterResult(candidate, current)
+    return { record: isNewRecord ? candidate : (current as MemoryResult), isNewRecord }
   })
   return apply.immediate(result)
 }
 
+/** Die besten gespeicherten Ergebnisse (für den Admin) und die Gesamtzahl. */
+export function listMemoryResults(
+  db: Database.Database,
+  limit = 50
+): { results: StoredMemoryResult[]; total: number } {
+  const results = db
+    .prepare(`SELECT id, moves, seconds, created_at AS createdAt FROM memory_results ORDER BY ${RANK_ORDER} LIMIT ?`)
+    .all(limit) as StoredMemoryResult[]
+  const { n } = db.prepare('SELECT COUNT(*) AS n FROM memory_results').get() as { n: number }
+  return { results, total: n }
+}
+
+export function deleteMemoryResult(db: Database.Database, id: number): boolean {
+  return db.prepare('DELETE FROM memory_results WHERE id = ?').run(id).changes > 0
+}
+
 export function resetMemoryRecord(db: Database.Database): void {
-  db.prepare('DELETE FROM app_config WHERE key IN (?, ?)').run(MOVES_KEY, SECONDS_KEY)
+  db.prepare('DELETE FROM memory_results').run()
 }

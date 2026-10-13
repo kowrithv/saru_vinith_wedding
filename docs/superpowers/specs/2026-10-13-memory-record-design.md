@@ -32,3 +32,23 @@ wird nur der Highscore — **keine Namen, keine Liste der Spiele**.
   auf die erste Karte.
 - Netzwerkfehler und Fehlerstatus stören das Spiel nie.
 - Die Rekord-Zeile reserviert ihre Höhe von Anfang an (kein Springen des Bretts).
+
+## Änderung 13.10.2026 (abends): alle gemeldeten Ergebnisse speichern
+
+Entscheidung (Nutzer): Das Spiel bleibt clientseitig, wir vertrauen darauf, dass
+es fair gespielt wird. Fälschungen werden nicht verhindert, sondern im Admin
+behandelt - dafür werden alle gemeldeten Ergebnisse gespeichert.
+
+- Tabelle `memory_results` (`moves`, `seconds`, `created_at`; weiterhin **keine
+  Namen und keine Adresse**). Der Rekord ist das beste gespeicherte Ergebnis
+  (Züge, dann Zeit, dann das früheste).
+- Obergrenze 2000 Ergebnisse: darüber fallen die schlechtesten weg, der Rekord
+  und die Spitze der Liste bleiben erhalten. Ein Skript kann die Tabelle so nicht
+  beliebig füllen.
+- Admin: Liste der 50 besten (`GET /api/admin/memory-results`), einzelnes
+  Ergebnis mit Bestätigung entfernen (`DELETE /api/admin/memory-results/<id>`);
+  der Rekord fällt dann auf das nächstbeste zurück. „Rekord zurücksetzen"
+  löscht weiterhin alle.
+- Der alte Rekord (zwei `app_config`-Schlüssel) wird beim Start einmalig als
+  Ergebnis übernommen.
+- Öffentlich ändert sich nichts: `GET`/`POST /api/memory-record` antworten wie bisher.

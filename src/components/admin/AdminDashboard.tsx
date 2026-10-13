@@ -47,6 +47,17 @@ const FEATURE_LABELS: Record<keyof Locks, string> = {
   gallery_upload: 'Foto-Upload',
 }
 
+interface MemoryResultRow {
+  id: number
+  moves: number
+  seconds: number
+  createdAt: string
+}
+
+function formatDateTime(iso: string): string {
+  return new Date(iso).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+}
+
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('de-DE', { day: '2-digit', month: 'short', year: 'numeric' })
 }
@@ -71,7 +82,10 @@ export default function AdminDashboard({ initialLocks, initialGalleryMode }: Adm
   const [changingGalleryMode, setChangingGalleryMode] = useState(false)
   const [galleryPhotos, setGalleryPhotos] = useState<GalleryPhotoView[]>([])
   const [memoryRecordMessage, setMemoryRecordMessage] = useState<{ ok: boolean; text: string } | null>(null)
-  const [memoryRecord, setMemoryRecord] = useState<{ moves: number; seconds: number } | null>(null)
+  // Gemeldete Memory-Ergebnisse, beste zuerst (der Rekord ist das erste).
+  const [memoryResults, setMemoryResults] = useState<MemoryResultRow[]>([])
+  const [memoryResultsTotal, setMemoryResultsTotal] = useState(0)
+  const memoryRecord = memoryResults[0] ?? null
 
   useEffect(() => {
     fetch('/api/guestbook')
@@ -91,11 +105,14 @@ export default function AdminDashboard({ initialLocks, initialGalleryMode }: Adm
       .then((data: { photos: GalleryPhotoView[] | null }) => setGalleryPhotos(data.photos ?? []))
       .catch(() => {})
 
-    // Der Admin sieht den aktuellen Memory-Rekord, damit ein unmöglicher Wert
-    // (gefälscht per Skript) auffällt und sich zurücksetzen lässt.
-    fetch('/api/memory-record')
-      .then((res) => (res.ok ? res.json() : { record: null }))
-      .then((data: { record: { moves: number; seconds: number } | null }) => setMemoryRecord(data.record))
+    // Der Admin sieht die gemeldeten Memory-Ergebnisse, damit ein unmöglicher
+    // Wert (gefälscht per Skript) auffällt und sich einzeln entfernen lässt.
+    fetch('/api/admin/memory-results')
+      .then((res) => (res.ok ? res.json() : { results: [], total: 0 }))
+      .then((data: { results: MemoryResultRow[]; total: number }) => {
+        setMemoryResults(data.results)
+        setMemoryResultsTotal(data.total)
+      })
       .catch(() => {})
   }, [])
 
@@ -208,7 +225,8 @@ export default function AdminDashboard({ initialLocks, initialGalleryMode }: Adm
     try {
       const response = await fetch('/api/memory-record', { method: 'DELETE' })
       if (response.ok) {
-        setMemoryRecord(null)
+        setMemoryResults([])
+        setMemoryResultsTotal(0)
         setMemoryRecordMessage({ ok: true, text: 'Rekord zurückgesetzt.' })
       } else if (response.status === 401) {
         // Die Admin-Sitzung läuft nach 12 Stunden ab - ein erneuter Versuch
@@ -219,6 +237,29 @@ export default function AdminDashboard({ initialLocks, initialGalleryMode }: Adm
       }
     } catch {
       setMemoryRecordMessage({ ok: false, text: 'Zurücksetzen fehlgeschlagen. Bitte versuch es erneut.' })
+    }
+  }
+
+  const removeMemoryResult = async (result: MemoryResultRow) => {
+    // Ein entferntes Ergebnis ist endgültig weg; der Rekord fällt dann auf das
+    // nächstbeste zurück.
+    const label = `${result.moves} Züge · ${formatTime(result.seconds)}`
+    if (!window.confirm(`Das Ergebnis „${label}" wirklich entfernen?`)) return
+    setMemoryRecordMessage(null)
+    try {
+      const response = await fetch(`/api/admin/memory-results/${result.id}`, { method: 'DELETE' })
+      if (response.ok) {
+        const data = (await response.json().catch(() => null)) as { total?: number } | null
+        setMemoryResults((prev) => prev.filter((r) => r.id !== result.id))
+        setMemoryResultsTotal((prev) => (typeof data?.total === 'number' ? data.total : Math.max(0, prev - 1)))
+        setMemoryRecordMessage({ ok: true, text: 'Ergebnis entfernt.' })
+      } else if (response.status === 401) {
+        setMemoryRecordMessage({ ok: false, text: 'Sitzung abgelaufen – bitte neu anmelden.' })
+      } else {
+        setMemoryRecordMessage({ ok: false, text: 'Entfernen fehlgeschlagen. Bitte versuch es erneut.' })
+      }
+    } catch {
+      setMemoryRecordMessage({ ok: false, text: 'Entfernen fehlgeschlagen. Bitte versuch es erneut.' })
     }
   }
 
@@ -458,7 +499,7 @@ export default function AdminDashboard({ initialLocks, initialGalleryMode }: Adm
                     : 'Noch kein Rekord.'}
                 </p>
                 <p className="text-xs text-gray-400 mt-1">
-                  Zurücksetzen z. B. nach Testspielen oder bei einem unmöglichen Wert.
+                  Einzelne unmögliche Werte lassen sich unten entfernen; alles zurücksetzen z. B. nach Testspielen.
                 </p>
               </div>
             </div>
@@ -469,6 +510,43 @@ export default function AdminDashboard({ initialLocks, initialGalleryMode }: Adm
             >
               Memory-Rekord zurücksetzen
             </button>
+          </div>
+          <div className="mt-4">
+            <CollapsibleSection id="admin-memory-results" title="Gemeldete Ergebnisse" count={memoryResultsTotal}>
+              {memoryResults.length === 0 ? (
+                <p className="text-sm text-gray-500">Noch keine Ergebnisse gemeldet.</p>
+              ) : (
+                <>
+                  <ul className="divide-y divide-gray-100">
+                    {memoryResults.map((result, index) => {
+                      const label = `${result.moves} Züge · ${formatTime(result.seconds)}`
+                      return (
+                        <li key={result.id} className="flex items-center justify-between gap-3 py-2 text-sm">
+                          <span className="min-w-0">
+                            <span className="text-gray-400 mr-2">{index + 1}.</span>
+                            <span className="font-medium text-dark-blue">{label}</span>
+                            <span className="text-xs text-gray-400 ml-2">{formatDateTime(result.createdAt)}</span>
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => removeMemoryResult(result)}
+                            aria-label={`${label} entfernen`}
+                            className="min-h-11 px-3 rounded-xl text-xs font-medium text-red-600 hover:bg-red-50 transition-colors flex-shrink-0"
+                          >
+                            Entfernen
+                          </button>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                  {memoryResultsTotal > memoryResults.length && (
+                    <p className="text-xs text-gray-400 mt-2">
+                      Es werden die {memoryResults.length} besten von {memoryResultsTotal} Ergebnissen gezeigt.
+                    </p>
+                  )}
+                </>
+              )}
+            </CollapsibleSection>
           </div>
           {memoryRecordMessage && (
             <p

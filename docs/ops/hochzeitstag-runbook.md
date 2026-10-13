@@ -28,7 +28,8 @@ In diesem Ordner liegen auch `.env` (Compose: `IMAGE_TAG`) und `.env.production`
 | **Erinnerungen** | Keine neuen Einträge | dito |
 | **Wer-von-uns-Abstimmung** | Keine neuen Stimmen (Ergebnisse bleiben lesbar) | Auffälliges Abstimmverhalten |
 | **Galerie-Sichtbarkeit: Kennwort** | Fotos nur nach Kennwort vom Empfang | Link ist an Fremde gelangt |
-| **Memory-Rekord zurücksetzen** | Rekord aller Gäste wird gelöscht | unmöglicher Wert (z. B. 8 Züge · 00:04) |
+| **Gemeldete Ergebnisse** (Memory) | einzelne Ergebnisse entfernen, der Rekord fällt auf das nächstbeste zurück | unmöglicher Wert (z. B. 8 Züge · 00:04) |
+| **Memory-Rekord zurücksetzen** | alle gemeldeten Ergebnisse werden gelöscht | nach Testspielen vor der Feier |
 
 Einzelne Einträge/Fotos löscht der Admin in den aufgeklappten Abschnitten.
 
@@ -83,7 +84,7 @@ Einträge nach dem Zeitstempel verloren.
 | Alarm-Mail „Speicherplatz wird knapp" | Platte ≥ 85 % | `df -h`, alte Docker-Logs/Images (`docker system df`) |
 | Alarm-Mail „Sicherung fehlgeschlagen" | Platte voll oder Datenbank beschädigt | `logs`, `df -h`; manuell `cp` der Datenbank sichern |
 | Alarm-Mail „Sicherung hängt" | vorige Sicherung läuft nach einer Stunde noch (Platte blockiert/sehr langsam) | `df -h`, `logs`; hilft nichts: `restart web` (Reste `*.tmp` räumt der nächste Lauf) |
-| Rekord im Memory unrealistisch | Skript hat einen Wert gesendet | Admin: „Memory-Rekord zurücksetzen" |
+| Rekord im Memory unrealistisch | Skript hat einen Wert gesendet | Admin: in „Gemeldete Ergebnisse" das einzelne Ergebnis **entfernen** (der Rekord fällt auf das nächstbeste zurück); „Memory-Rekord zurücksetzen" löscht alle |
 
 ## 5. Plan B
 

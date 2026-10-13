@@ -33,7 +33,11 @@ vi.mock('@/components/gallery/GalleryUploadForm', () => ({
 
 function mockFetchSequence(
   responses: { status?: number; body: unknown }[],
-  options: { memoryRecord?: { moves: number; seconds: number } | null } = {}
+  options: {
+    memoryRecord?: { moves: number; seconds: number } | null
+    memoryResults?: { id: number; moves: number; seconds: number; createdAt: string }[]
+    memoryTotal?: number
+  } = {}
 ) {
   const fn = vi.fn()
   responses.forEach(({ status = 200, body }) => {
@@ -42,8 +46,17 @@ function mockFetchSequence(
   // Das Laden des Memory-Rekords (GET) läuft außerhalb der Reihenfolge der
   // übrigen Aufrufe, damit deren Mock-Sequenzen unverändert bleiben.
   const routed = (url: string, init?: RequestInit) => {
-    if (url === '/api/memory-record' && (!init || !init.method || init.method === 'GET')) {
-      return Promise.resolve({ ok: true, status: 200, json: async () => ({ record: options.memoryRecord ?? null }) })
+    if (url === '/api/admin/memory-results' && (!init || !init.method || init.method === 'GET')) {
+      const results =
+        options.memoryResults ??
+        (options.memoryRecord
+          ? [{ id: 1, ...options.memoryRecord, createdAt: '2026-10-13T10:00:00.000Z' }]
+          : [])
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({ results, total: options.memoryTotal ?? results.length }),
+      })
     }
     return fn(url, init)
   }
@@ -487,6 +500,105 @@ describe('AdminDashboard', () => {
     render(<AdminDashboard initialLocks={noLocks} initialGalleryMode="public" />)
 
     expect(await screen.findByText(/aktueller rekord: 8 züge · 00:04/i)).toBeInTheDocument()
+  })
+
+  describe('submitted memory results', () => {
+    const results = [
+      { id: 7, moves: 8, seconds: 4, createdAt: '2026-10-13T09:15:00.000Z' },
+      { id: 3, moves: 14, seconds: 75, createdAt: '2026-10-13T09:30:00.000Z' },
+      { id: 9, moves: 20, seconds: 130, createdAt: '2026-10-13T09:45:00.000Z' },
+    ]
+    const mounts = [{ body: { entries: [] } }, { body: { entries: [] } }, noGalleryPhotos]
+
+    async function openResults() {
+      await screen.findByText(/aktueller rekord: 8 züge · 00:04/i)
+      await userEvent.click(screen.getByRole('button', { name: /gemeldete ergebnisse/i }))
+    }
+
+    it('reads the results from the admin route', async () => {
+      const fetchMock = mockFetchSequence(mounts, { memoryResults: results })
+      render(<AdminDashboard initialLocks={noLocks} initialGalleryMode="public" />)
+      await screen.findByText(/aktueller rekord: 8 züge/i)
+      // Der Memory-Aufruf läuft außerhalb der Mock-Reihenfolge; die Sequenz bleibt bei drei Aufrufen.
+      expect(fetchMock).toHaveBeenCalledTimes(3)
+    })
+
+    it('lists the submitted results in a collapsed section that shows how many there are', async () => {
+      mockFetchSequence(mounts, { memoryResults: results, memoryTotal: 42 })
+      render(<AdminDashboard initialLocks={noLocks} initialGalleryMode="public" />)
+      await screen.findByText(/aktueller rekord: 8 züge/i)
+
+      const toggle = screen.getByRole('button', { name: /gemeldete ergebnisse \(42\)/i })
+      expect(toggle).toHaveAttribute('aria-expanded', 'false')
+      await userEvent.click(toggle)
+
+      expect(screen.getByRole('button', { name: /8 züge · 00:04 entfernen/i })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /14 züge · 01:15 entfernen/i })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /20 züge · 02:10 entfernen/i })).toBeInTheDocument()
+    })
+
+    it('removes one result after confirmation and shows the next best as the record', async () => {
+      const fetchMock = mockFetchSequence([...mounts, { body: { record: { moves: 14, seconds: 75 }, total: 2 } }], {
+        memoryResults: results,
+      })
+      render(<AdminDashboard initialLocks={noLocks} initialGalleryMode="public" />)
+      await openResults()
+
+      await userEvent.click(screen.getByRole('button', { name: /8 züge · 00:04 entfernen/i }))
+
+      expect(window.confirm).toHaveBeenCalled()
+      await waitFor(() =>
+        expect(fetchMock).toHaveBeenCalledWith('/api/admin/memory-results/7', expect.objectContaining({ method: 'DELETE' }))
+      )
+      expect(await screen.findByText(/aktueller rekord: 14 züge · 01:15/i)).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /8 züge · 00:04 entfernen/i })).not.toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /gemeldete ergebnisse \(2\)/i })).toBeInTheDocument()
+    })
+
+    it('keeps the result when the confirmation is declined', async () => {
+      vi.spyOn(window, 'confirm').mockReturnValue(false)
+      const fetchMock = mockFetchSequence(mounts, { memoryResults: results })
+      render(<AdminDashboard initialLocks={noLocks} initialGalleryMode="public" />)
+      await openResults()
+
+      await userEvent.click(screen.getByRole('button', { name: /8 züge · 00:04 entfernen/i }))
+
+      expect(fetchMock).toHaveBeenCalledTimes(3)
+      expect(screen.getByRole('button', { name: /8 züge · 00:04 entfernen/i })).toBeInTheDocument()
+    })
+
+    it('tells the admin to log in again when the session expired while removing', async () => {
+      mockFetchSequence([...mounts, { status: 401, body: { error: 'Nicht angemeldet.' } }], { memoryResults: results })
+      render(<AdminDashboard initialLocks={noLocks} initialGalleryMode="public" />)
+      await openResults()
+
+      await userEvent.click(screen.getByRole('button', { name: /8 züge · 00:04 entfernen/i }))
+
+      expect(await screen.findByText(/sitzung abgelaufen/i)).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /8 züge · 00:04 entfernen/i })).toBeInTheDocument()
+    })
+
+    it('shows an error and keeps the result when removing failed', async () => {
+      mockFetchSequence([...mounts, { status: 500, body: { error: 'Serverfehler' } }], { memoryResults: results })
+      render(<AdminDashboard initialLocks={noLocks} initialGalleryMode="public" />)
+      await openResults()
+
+      await userEvent.click(screen.getByRole('button', { name: /8 züge · 00:04 entfernen/i }))
+
+      expect(await screen.findByText(/entfernen fehlgeschlagen/i)).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /8 züge · 00:04 entfernen/i })).toBeInTheDocument()
+    })
+
+    it('empties the list when the whole record is reset', async () => {
+      mockFetchSequence([...mounts, { body: { record: null } }], { memoryResults: results })
+      render(<AdminDashboard initialLocks={noLocks} initialGalleryMode="public" />)
+      await openResults()
+
+      await userEvent.click(screen.getByRole('button', { name: /memory-rekord zurücksetzen/i }))
+
+      expect(await screen.findByText(/noch kein rekord/i)).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /züge · .* entfernen/i })).not.toBeInTheDocument()
+    })
   })
 
   it('says so when there is no memory record yet', async () => {

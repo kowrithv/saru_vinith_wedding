@@ -1,5 +1,20 @@
 # TODO
 
+## Einplanung (Stand Di 13.10.2026)
+
+| Wann | Wer | Was |
+|---|---|---|
+| Di 13.10. abends | Betreiber | Domain/R2/Server/Gerätetest/Stimmen-Import nach `docs/ops/heute-abend.md` |
+| bis Mi 14.10. abends | Brautleute | Uhrzeiten der drei „TBA"-Zeilen (Issue-Entwurf); wir tragen sie ein |
+| bis Mi 14.10. | Betreiber | SMTP-Zugang in `.env.production`; Ziel für Off-Box-Kopie und Uptime-Monitor (`hochzeitstag-runbook.md` §7) |
+| Mi 14.10. | Betreiber | Gerätetest auswerten; Funde melden |
+| Mi 14.10. (nur falls nötig) | Entwicklung | **Vorschau-Speicher** (nur wenn der Gerätetest bei 20+ Fotos Probleme zeigt); **Kennwort-Modus-Doppeleingabe** (nur wenn die Galerie am Fest auf „Kennwort" gestellt werden soll) |
+| Do 15.10. bis abends | Betreiber | letzter Smoke- und Lasttest gegen die echte Domain, Tag `v1.0.0`, **Freeze** — danach keine Änderungen mehr |
+| Sa 17.10. | Bereitschaft | `docs/ops/hochzeitstag-runbook.md` |
+| ab So 18.10. | Entwicklung | Export der Originale aus R2 (Runbook §6); **verwaiste R2-Objekte** aufräumen (Skript, Abgleich mit der Datenbank); **Thumbnail-Größenlimit** in der Signatur; Foto-Teil der Erinnerungen; die `process.exit`-Warnung in `instrumentation.ts` |
+
+Nicht geplant: ein vom Server verteiltes Memory-Spiel (bewusst clientseitig).
+
 ## Inhalte vor dem Freeze (von euch)
 
 - **Programm auf `/info` hat drei Zeilen mit „TBA":** Sektempfang &
@@ -37,14 +52,13 @@
 - **Neustart-Schleife:** läuft der Prozess schneller ab, als SMTP fertig
   wird, kommt gar keine Mail — nur ein externer Uptime-Monitor fängt das.
 
-## Memory-Rekord aller Gäste (umgesetzt) — Restrisiken und zurückgestellt
+## Memory-Rekord (umgesetzt, Entscheidung 13.10.)
 
-- **Gefälschter Rekord ist nicht verhinderbar:** Ohne Namen und ohne
-  serverseitig gespieltes Spiel kann ein Skript mit einer Anfrage „8 Züge ·
-  00:04" eintragen; dieser Wert ist praktisch unschlagbar. Die Grenzen im
-  Server halten nur absurde Werte ab. Gegenmittel: Der Admin sieht den
-  aktuellen Rekord in seiner Karte und kann ihn mit einem Tipp zurücksetzen.
-  Echte Abhilfe wäre ein vom Server verteiltes Spiel — für diesen Termin zu groß.
+- Das Spiel bleibt clientseitig; wir vertrauen auf Fairness. Ein gefälschter
+  Wert lässt sich nicht verhindern, aber im Admin einzeln entfernen (alle
+  gemeldeten Ergebnisse werden ohne Namen gespeichert, Obergrenze 2000).
+- Wer das Skript-Fälschen ganz ausschließen will, bräuchte ein vom Server
+  verteiltes Spiel — für diesen Termin bewusst nicht.
 
 ## Offene externe Abhängigkeiten (aus der Spec)
 

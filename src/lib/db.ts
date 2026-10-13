@@ -53,6 +53,28 @@ export function applySchema(db: Database.Database): void {
       key TEXT PRIMARY KEY,
       value TEXT NOT NULL
     );
+
+    -- Jedes gemeldete Memory-Ergebnis (ohne Namen). Der Rekord ist das beste
+    -- davon; der Admin kann einzelne unmögliche Werte entfernen.
+    CREATE TABLE IF NOT EXISTS memory_results (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      moves INTEGER NOT NULL,
+      seconds INTEGER NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_memory_results_rank ON memory_results (moves, seconds, id);
+  `)
+
+  // Ein Rekord im alten Format (zwei app_config-Schlüssel) wird einmalig als
+  // Ergebnis übernommen; die Schlüssel verschwinden danach. Idempotent.
+  db.exec(`
+    INSERT INTO memory_results (moves, seconds)
+    SELECT CAST(m.value AS INTEGER), CAST(s.value AS INTEGER)
+    FROM app_config m, app_config s
+    WHERE m.key = 'memory_record_moves' AND s.key = 'memory_record_seconds'
+      AND CAST(m.value AS INTEGER) > 0 AND CAST(s.value AS INTEGER) > 0
+      AND NOT EXISTS (SELECT 1 FROM memory_results);
+    DELETE FROM app_config WHERE key IN ('memory_record_moves', 'memory_record_seconds');
   `)
 
   // Migration für gallery_photos-Tabellen, die vor dieser Erweiterung
