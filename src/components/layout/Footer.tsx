@@ -1,6 +1,5 @@
-import Link from 'next/link'
 import { Heart } from 'lucide-react'
-import { couple, navigationItems } from '@/lib/site-content'
+import { couple } from '@/lib/site-content'
 
 export default function Footer() {
   const currentYear = new Date().getFullYear()
@@ -8,50 +7,18 @@ export default function Footer() {
   return (
     <footer className="bg-dark-blue text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
-          <div className="text-center md:text-left">
-            <div className="flex items-center justify-center md:justify-start gap-2 mb-3">
-              <Heart size={16} className="text-gold fill-gold" />
-              <span className="font-serif text-2xl font-semibold text-white">
-                {couple.combinedName}
-              </span>
-            </div>
-            <p className="text-baby-blue text-sm leading-relaxed">
-              Zwei Herzen, eine Liebe. Wir freuen uns, diesen besonderen
-              Moment mit euch zu teilen.
-            </p>
-            <p className="mt-3 text-gold text-sm font-medium">{couple.hashtag}</p>
+        <div className="text-center">
+          <div className="flex items-center justify-center gap-2 mb-3">
+            <Heart size={16} className="text-gold fill-gold" />
+            <span className="font-serif text-2xl font-semibold text-white">
+              {couple.combinedName}
+            </span>
           </div>
-
-          <div className="text-center">
-            <h3 className="font-serif text-lg font-medium text-champagne mb-4">Navigation</h3>
-            <nav>
-              <ul className="space-y-2">
-                {navigationItems.slice(0, 4).map((item) => (
-                  <li key={item.href}>
-                    <Link href={item.href} className="text-sm text-gray-300 hover:text-white transition-colors">
-                      {item.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </nav>
-          </div>
-
-          <div className="text-center md:text-right">
-            <h3 className="font-serif text-lg font-medium text-champagne mb-4">Weitere Seiten</h3>
-            <nav>
-              <ul className="space-y-2">
-                {navigationItems.slice(4).map((item) => (
-                  <li key={item.href}>
-                    <Link href={item.href} className="text-sm text-gray-300 hover:text-white transition-colors">
-                      {item.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </nav>
-          </div>
+          <p className="text-baby-blue text-sm leading-relaxed">
+            Zwei Herzen, eine Liebe. Wir freuen uns, diesen besonderen
+            Moment mit euch zu teilen.
+          </p>
+          <p className="mt-3 text-gold text-sm font-medium">{couple.hashtag}</p>
         </div>
 
         <div className="mt-10 pt-8 border-t border-white/10">
