@@ -18,6 +18,8 @@ Geräte: ☐ iPhone (Safari) ☐ Android (Chrome) ☐ ältere Hardware ☐ Deskt
 - [ ] Browser komplett schließen und neu öffnen: weiterhin entsperrt.
 - [ ] Privates Fenster: im Gästebuch mit Kennwort schreiben → danach ist auch die Galerie offen (ein Kennwort für alles).
 - [ ] Im Gästebuch **ohne** Kennwort absenden: Hinweis, kein Eintrag.
+- [ ] Name im Gästebuch eintragen und absenden → in Erinnerungen und im Upload-Formular steht er schon im Feld (änderbar).
+- [ ] Footer: keine zweite Navigation, nur Namen, Hashtag, Datum.
 
 ## Galerie und Upload (braucht R2)
 - [ ] „Fotos hochladen" öffnet das Formular und scrollt es ins Bild.

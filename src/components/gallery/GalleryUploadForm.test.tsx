@@ -191,6 +191,26 @@ describe('GalleryUploadForm', () => {
     })
   })
 
+  it('prefills the name this device remembered from another form', () => {
+    window.localStorage.setItem('wedding-guest-name', 'Anna')
+    render(<GalleryUploadForm hasAccess onUploaded={vi.fn()} />)
+    expect(screen.getByLabelText(/dein name/i)).toHaveValue('Anna')
+  })
+
+  it('remembers the name when the upload starts and uses it for the photos', async () => {
+    const user = setupUser()
+    const onUploaded = vi.fn()
+    createFakeBackend()
+
+    render(<GalleryUploadForm hasAccess onUploaded={onUploaded} />)
+    await user.type(screen.getByLabelText(/dein name/i), ' Lena ')
+    await user.upload(screen.getByLabelText(/fotos ausw/i), makeFile())
+    await user.click(screen.getByRole('button', { name: /hochladen/i }))
+
+    await waitFor(() => expect(onUploaded).toHaveBeenCalled())
+    expect(window.localStorage.getItem('wedding-guest-name')).toBe('Lena')
+  })
+
   it('hides the password field and sends no password once the browser is unlocked', async () => {
     const user = setupUser()
     const backend = createFakeBackend()

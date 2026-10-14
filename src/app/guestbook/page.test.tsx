@@ -18,6 +18,7 @@ describe('GuestbookPage', () => {
 
   afterEach(() => {
     vi.unstubAllGlobals()
+    window.localStorage.clear()
   })
 
   it('loads and renders existing entries', async () => {
@@ -173,6 +174,35 @@ describe('GuestbookPage', () => {
     await waitFor(() =>
       expect(screen.getByText('Neue Einträge sind derzeit vorübergehend gesperrt.')).toBeInTheDocument()
     )
+  })
+
+  it('prefills the name this device remembered from another form', async () => {
+    window.localStorage.setItem('wedding-guest-name', 'Anna')
+    mockFetchRoutes({
+      '/api/access': { body: { unlocked: true } },
+      '/api/guestbook': { body: { entries: [] } },
+    })
+    render(<GuestbookPage />)
+
+    await waitFor(() => expect(screen.getByLabelText(/Name/i)).toHaveValue('Anna'))
+  })
+
+  it('remembers the name on submit and keeps it in the field for the next entry', async () => {
+    mockFetchRoutes({
+      '/api/access': { body: { unlocked: true } },
+      '/api/guestbook': (init) =>
+        init?.method === 'POST' ? { status: 201, body: { entry } } : { body: { entries: [] } },
+    })
+    render(<GuestbookPage />)
+    await waitFor(() => expect(screen.queryByLabelText(/kennwort/i)).not.toBeInTheDocument())
+
+    await fillForm()
+    await userEvent.click(screen.getByRole('button', { name: /eintragen/i }))
+
+    await waitFor(() => expect(screen.getByText('Alles Gute euch beiden zusammen!', { selector: 'p' })).toBeInTheDocument())
+    expect(window.localStorage.getItem('wedding-guest-name')).toBe('Ben')
+    expect(screen.getByLabelText(/Name/i)).toHaveValue('Ben')
+    expect(screen.getByLabelText(/Nachricht/i)).toHaveValue('')
   })
 
   it('carries its own top offset below the fixed navigation', async () => {

@@ -15,6 +15,7 @@ import {
 } from '@/lib/gallery-upload-limits'
 import type { GalleryPhotoView } from '@/lib/gallery-photo-view'
 import { textFieldClassName } from '@/lib/form-styles'
+import { useGuestName } from '@/lib/use-guest-name'
 
 interface GalleryUploadFormProps {
   isAdmin?: boolean
@@ -200,7 +201,8 @@ export default function GalleryUploadForm({
   // Der Admin hat nie ein Kennwortfeld; Gäste nur, solange der Browser nicht
   // entsperrt ist.
   const needsPassword = !isAdmin && !hasAccess
-  const [name, setName] = useState('')
+  // Der Name wird in allen Formularen nur einmal getippt.
+  const { name, setName, remember } = useGuestName()
   const [password, setPassword] = useState('')
   const [category, setCategory] = useState<string>(defaultGalleryCategory)
   const [selectedFiles, setSelectedFiles] = useState<SelectedFile[]>([])
@@ -352,6 +354,10 @@ export default function GalleryUploadForm({
       )
       return
     }
+
+    // Ab hier ist die Eingabe gültig: der Name steht in den anderen Formularen
+    // schon bereit.
+    remember(name)
 
     const controller = new AbortController()
     abortRef.current = controller

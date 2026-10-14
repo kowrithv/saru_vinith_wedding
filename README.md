@@ -150,6 +150,11 @@ Danach merkt sich der Browser die Sitzung 30 Tage (HttpOnly-Cookie
 `gallery_session`): kein Kennwortfeld mehr, auch nicht in Gästebuch, Erinnerungen
 und Upload. Wer die Seite ohne QR-Code öffnet, sieht das Kennwortfeld.
 
+Auch der **Name** wird nur einmal getippt: Gästebuch, Erinnerungen und
+Foto-Upload merken ihn sich im Browser (`localStorage`, Schlüssel
+`wedding-guest-name`) und füllen das Feld damit vor. Er bleibt änderbar und
+verlässt das Gerät nur als Teil eines Eintrags.
+
 QR-Code **lokal** erzeugen, nicht in einem Online-Generator (das Kennwort steckt
 im Link):
 

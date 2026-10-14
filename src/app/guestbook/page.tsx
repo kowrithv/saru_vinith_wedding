@@ -8,6 +8,7 @@ import Button from '@/components/ui/Button'
 import GuestPasswordField from '@/components/ui/GuestPasswordField'
 import { textFieldClassName } from '@/lib/form-styles'
 import { useGuestAccess } from '@/lib/use-guest-access'
+import { useGuestName } from '@/lib/use-guest-name'
 import { cn } from '@/lib/utils'
 
 interface GuestbookEntry {
@@ -32,7 +33,8 @@ function formatDate(iso: string): string {
 
 export default function GuestbookPage() {
   const [entries, setEntries] = useState<GuestbookEntry[]>([])
-  const [name, setName] = useState('')
+  // Der Name wird in allen Formularen nur einmal getippt.
+  const { name, setName, remember } = useGuestName()
   const [message, setMessage] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -66,6 +68,7 @@ export default function GuestbookPage() {
       return
     }
 
+    remember(name)
     setSubmitting(true)
     try {
       const response = await fetch('/api/guestbook', {
@@ -91,7 +94,6 @@ export default function GuestbookPage() {
       }
       const data = (await response.json()) as { entry: GuestbookEntry }
       setEntries((prev) => [data.entry, ...prev])
-      setName('')
       setMessage('')
       setPassword('')
       // Der Server hat mit dem richtigen Kennwort die Sitzung gesetzt.
