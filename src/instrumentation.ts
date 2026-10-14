@@ -1,30 +1,10 @@
-import { InvalidEnvError, MissingEnvError, validateEnv } from '@/lib/env'
-
-// Diese App läuft immer als eigenständiger Node-Server (Docker), nie auf
-// Vercels Edge Runtime - process.exit() ist dort ohnehin nicht verfügbar.
-export const runtime = 'nodejs'
-
-async function startOpsInBackground(): Promise<void> {
-  // Backup und Alarme nur im echten Server: nicht in Tests, nicht in dev.
-  if (process.env.NODE_ENV !== 'production' || process.env.NEXT_RUNTIME !== 'nodejs') return
-  try {
-    const { startOpsScheduler } = await import('@/lib/ops-scheduler')
-    startOpsScheduler()
-  } catch (error) {
-    console.error('Ops-Scheduler konnte nicht gestartet werden:', error)
-  }
-}
-
-export function register(): void {
-  try {
-    validateEnv()
-  } catch (error) {
-    if (error instanceof MissingEnvError || error instanceof InvalidEnvError) {
-      console.error(`FEHLER: ${error.message}`)
-      process.exit(1)
-      return
-    }
-    throw error
-  }
-  void startOpsInBackground()
+// Next ruft register() je Laufzeit (Node und Edge) auf. Die Prüfung der
+// Pflicht-Variablen beendet den Prozess mit process.exit(), das es in der
+// Edge-Runtime nicht gibt - der Code liegt deshalb in einer eigenen Datei, die
+// nur bei NEXT_RUNTIME === 'nodejs' geladen wird (Next-Doku: "Specifying the
+// runtime"). Dieser Server läuft immer als Node-Prozess (Docker).
+export async function register(): Promise<void> {
+  if (process.env.NEXT_RUNTIME !== 'nodejs') return
+  const { registerNode } = await import('./instrumentation-node')
+  registerNode()
 }

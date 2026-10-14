@@ -33,7 +33,8 @@ einer Route meldet `tsc` ggf. veraltete Dateien in `.next/types` – dann
   Element; die Galerie nutzt `pb-28`, damit der schwebende Upload-Knopf nichts verdeckt); im Root-Layout **kein** zusätzliches Padding.
 - `src/lib/` – Server-Logik und Inhalte. SQLite über `getDb()`
   (`globalThis.__appDb`, WAL); Schema und idempotente Migrationen in `db.ts`.
-- `src/lib/env.ts` + `src/instrumentation.ts` – Pflicht-Variablen, Prozess
+- `src/lib/env.ts` + `src/instrumentation.ts` (lädt `instrumentation-node.ts`
+  nur bei `NEXT_RUNTIME=nodejs`, wegen `process.exit`) – Pflicht-Variablen, Prozess
   bricht beim Start ab, wenn eine fehlt.
 - Galerie: Browser lädt per presigned PUT direkt nach R2 (`r2.ts`,
   `upload-ticket.ts`, `api/uploads/*`). Rohe R2-Keys verlassen den Server

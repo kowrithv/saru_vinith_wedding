@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { register } from './instrumentation'
 
 const startOpsScheduler = vi.fn()
@@ -17,7 +17,12 @@ const ENV_KEYS = [
 describe('register', () => {
   const originalValues = Object.fromEntries(ENV_KEYS.map((key) => [key, process.env[key]]))
 
+  beforeEach(() => {
+    vi.stubEnv('NEXT_RUNTIME', 'nodejs')
+  })
+
   afterEach(() => {
+    vi.unstubAllEnvs()
     for (const key of ENV_KEYS) {
       if (originalValues[key] === undefined) {
         delete process.env[key]
@@ -28,18 +33,18 @@ describe('register', () => {
     vi.restoreAllMocks()
   })
 
-  it('does not exit when required env vars are present', () => {
+  it('does not exit when required env vars are present', async () => {
     for (const key of ENV_KEYS) {
       process.env[key] = 'test-value'
     }
     const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => {
       throw new Error('process.exit should not be called')
     })
-    expect(() => register()).not.toThrow()
+    await register()
     expect(exitSpy).not.toHaveBeenCalled()
   })
 
-  it('logs a German error and exits with code 1 when ADMIN_PASSWORD is missing', () => {
+  it('logs a German error and exits with code 1 when ADMIN_PASSWORD is missing', async () => {
     for (const key of ENV_KEYS) {
       process.env[key] = 'test-value'
     }
@@ -49,7 +54,7 @@ describe('register', () => {
       .spyOn(process, 'exit')
       .mockImplementation(() => undefined as never)
 
-    register()
+    await register()
 
     expect(errorSpy).toHaveBeenCalledWith(
       expect.stringContaining('Fehlende Pflicht-Umgebungsvariablen')
@@ -57,7 +62,7 @@ describe('register', () => {
     expect(exitSpy).toHaveBeenCalledWith(1)
   })
 
-  it('logs a German error and exits with code 1 when GUEST_PASSWORD is missing', () => {
+  it('logs a German error and exits with code 1 when GUEST_PASSWORD is missing', async () => {
     for (const key of ENV_KEYS) {
       process.env[key] = 'test-value'
     }
@@ -67,7 +72,7 @@ describe('register', () => {
       .spyOn(process, 'exit')
       .mockImplementation(() => undefined as never)
 
-    register()
+    await register()
 
     expect(errorSpy).toHaveBeenCalledWith(
       expect.stringContaining('Fehlende Pflicht-Umgebungsvariablen')
@@ -75,7 +80,7 @@ describe('register', () => {
     expect(exitSpy).toHaveBeenCalledWith(1)
   })
 
-  it('logs a German error and exits with code 1 when an R2 variable is missing', () => {
+  it('logs a German error and exits with code 1 when an R2 variable is missing', async () => {
     for (const key of ENV_KEYS) {
       process.env[key] = 'test-value'
     }
@@ -85,10 +90,31 @@ describe('register', () => {
       .spyOn(process, 'exit')
       .mockImplementation(() => undefined as never)
 
-    register()
+    await register()
 
     expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('R2_BUCKET_NAME'))
     expect(exitSpy).toHaveBeenCalledWith(1)
+  })
+})
+
+describe('register (runtime)', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs()
+    vi.restoreAllMocks()
+  })
+
+  // Die Prüfung ruft process.exit auf, das es in der Edge-Runtime nicht gibt:
+  // dort darf register() weder prüfen noch beenden.
+  it('does nothing on the Edge runtime, even with missing variables', async () => {
+    vi.stubEnv('NEXT_RUNTIME', 'edge')
+    for (const key of ENV_KEYS) vi.stubEnv(key, '')
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never)
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    await register()
+
+    expect(exitSpy).not.toHaveBeenCalled()
+    expect(errorSpy).not.toHaveBeenCalled()
   })
 })
 
@@ -107,7 +133,7 @@ describe('register (ops scheduler)', () => {
     setRequiredEnv()
     vi.stubEnv('NODE_ENV', 'test')
     vi.stubEnv('NEXT_RUNTIME', 'nodejs')
-    register()
+    await register()
     await new Promise((resolve) => setTimeout(resolve, 0))
     expect(startOpsScheduler).not.toHaveBeenCalled()
   })
@@ -116,7 +142,7 @@ describe('register (ops scheduler)', () => {
     setRequiredEnv()
     vi.stubEnv('NODE_ENV', 'production')
     vi.stubEnv('NEXT_RUNTIME', 'nodejs')
-    register()
+    await register()
     await vi.waitFor(() => expect(startOpsScheduler).toHaveBeenCalledTimes(1))
   })
 
@@ -124,7 +150,7 @@ describe('register (ops scheduler)', () => {
     setRequiredEnv()
     vi.stubEnv('NODE_ENV', 'production')
     vi.stubEnv('NEXT_RUNTIME', 'edge')
-    register()
+    await register()
     await new Promise((resolve) => setTimeout(resolve, 0))
     expect(startOpsScheduler).not.toHaveBeenCalled()
   })
@@ -139,7 +165,7 @@ describe('register (ops scheduler)', () => {
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never)
 
-    register()
+    await register()
 
     await vi.waitFor(() =>
       expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('Ops-Scheduler'), expect.any(Error))
@@ -154,18 +180,19 @@ describe('register (ops scheduler)', () => {
     vi.stubEnv('NEXT_RUNTIME', 'nodejs')
     vi.spyOn(console, 'error').mockImplementation(() => {})
     vi.spyOn(process, 'exit').mockImplementation(() => undefined as never)
-    register()
+    await register()
     await new Promise((resolve) => setTimeout(resolve, 0))
     expect(startOpsScheduler).not.toHaveBeenCalled()
   })
 
-  it('logs a German error and exits with code 1 when R2_JURISDICTION has an unknown value', () => {
+  it('logs a German error and exits with code 1 when R2_JURISDICTION has an unknown value', async () => {
     setRequiredEnv()
+    vi.stubEnv('NEXT_RUNTIME', 'nodejs')
     vi.stubEnv('R2_JURISDICTION', 'germany')
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never)
 
-    register()
+    await register()
 
     expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('R2_JURISDICTION'))
     expect(exitSpy).toHaveBeenCalledWith(1)

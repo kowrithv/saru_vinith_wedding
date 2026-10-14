@@ -91,7 +91,7 @@ src/
   app/            Seiten (App Router) und API-Routen unter app/api/
   components/     admin/, gallery/, layout/, sections/, ui/
   lib/            Server- und Client-Logik, Inhalte (*-content.ts)
-  instrumentation.ts   Prüfung der Pflicht-Variablen beim Start
+  instrumentation.ts   Einstieg je Laufzeit; instrumentation-node.ts prüft die Pflicht-Variablen beim Start
 data/             SQLite-Datenbank (gitignored)
 docs/superpowers/ Spezifikationen und Umsetzungspläne
 scripts/          einmalige Hilfsskripte
