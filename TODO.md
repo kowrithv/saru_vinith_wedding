@@ -8,7 +8,8 @@
 | bis Mi 14.10. abends | Brautleute | Uhrzeiten der drei „TBA"-Zeilen (Issue-Entwurf); wir tragen sie ein |
 | bis Mi 14.10. | Betreiber | SMTP-Zugang in `.env.production`; Ziel für Off-Box-Kopie und Uptime-Monitor (`hochzeitstag-runbook.md` §7) |
 | Mi 14.10. | Betreiber | Gerätetest auswerten; Funde melden |
-| Mi 14.10. (nur falls nötig) | Entwicklung | **Vorschau-Speicher** (nur wenn der Gerätetest bei 20+ Fotos Probleme zeigt); **Kennwort-Modus-Doppeleingabe** (nur wenn die Galerie am Fest auf „Kennwort" gestellt werden soll) |
+| Mi 14.10. (nur falls nötig) | Entwicklung | **Vorschau-Speicher** (nur wenn der Gerätetest bei 20+ Fotos Probleme zeigt) |
+| bis Do 15.10. | Betreiber | kurzes **Gäste-Kennwort** festlegen (`UPLOAD_PASSWORD_EMPFANG`), **QR-Code lokal erzeugen** und für Empfang/Tischkarten drucken (README „Gäste-Zugang"); Gerätetest „Zugang" |
 | Di 13.10. abends bis Do | Betreiber | Vorab-Tags `v1.0.0-rc.1`, `-rc.2` … für Deploys und Tests (`IMAGE_TAG` in der `.env` anpassen) |
 | Do 15.10. bis abends | Betreiber | letzter Smoke- und Lasttest gegen die echte Domain, endgültiger Tag `v1.0.0` (`IMAGE_TAG=1.0.0`), **Freeze** — danach keine Änderungen mehr |
 | Sa 17.10. | Bereitschaft | `docs/ops/hochzeitstag-runbook.md` |
@@ -28,9 +29,6 @@ Nicht geplant: ein vom Server verteiltes Memory-Spiel (bewusst clientseitig).
 
 ## Gefunden im Galerie-Upload-Review (zurückgestellt, nicht blockierend)
 
-- **Kennwort-Modus: doppelte Eingabe:** Gäste tippen das Kennwort einmal zum
-  Entsperren und noch einmal zum Hochladen. Bräuchte eine Backend-Änderung
-  (gültige Galerie-Sitzung als Upload-Berechtigung).
 - **Thumbnail-PUT ohne Größenlimit in der Signatur:** Die Größe steht erst
   nach der Kompression im Browser fest; `/complete` prüft ≤ 2 MB, größere
   Dateien bleiben als Waisen in R2. Option: Vorschau vor der Ticket-Anfrage

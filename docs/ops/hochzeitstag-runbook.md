@@ -10,7 +10,7 @@ In diesem Ordner liegen auch `.env` (Compose: `IMAGE_TAG`) und `.env.production`
 |---|---|
 | Ansprechperson Technik | ______________ |
 | Brautpaar | ______________ |
-| Kennwort vom Empfang (Gäste) | liegt am Empfang aus |
+| Kennwort vom Empfang (Gäste) | liegt am Empfang aus; QR-Code mit `https://vsjourney.de/gallery#k=<Kennwort>` (Erzeugung: README „Gäste-Zugang") |
 | Admin-Zugang | `https://vsjourney.de/admin` (Kennwort im Passwortmanager) |
 
 ## 1. Schnellcheck (1 Minute)
@@ -28,7 +28,7 @@ In diesem Ordner liegen auch `.env` (Compose: `IMAGE_TAG`) und `.env.production`
 | **Gästebuch** | Keine neuen Einträge | Spam oder Beleidigungen |
 | **Erinnerungen** | Keine neuen Einträge | dito |
 | **Wer-von-uns-Abstimmung** | Keine neuen Stimmen (Ergebnisse bleiben lesbar) | Auffälliges Abstimmverhalten |
-| **Galerie-Sichtbarkeit: Kennwort** | Fotos nur nach Kennwort vom Empfang | Link ist an Fremde gelangt |
+| **Galerie-Sichtbarkeit** | **Kennwort** (Standard): Fotos nur mit QR-Code/Kennwort; **Öffentlich**: jeder mit dem Link sieht die Fotos | auf Kennwort lassen; ist der Link an Fremde gelangt: zusätzlich das Kennwort wechseln (§3) |
 | **Gemeldete Ergebnisse** (Memory) | einzelne Ergebnisse entfernen, der Rekord fällt auf das nächstbeste zurück | unmöglicher Wert (z. B. 8 Züge · 00:04) |
 | **Memory-Rekord zurücksetzen** | alle gemeldeten Ergebnisse werden gelöscht | nach Testspielen vor der Feier |
 
@@ -45,11 +45,16 @@ ls -lh data/backups | tail                                       # letzte Sicher
 ```
 
 **Achtung:** `restart` liest `.env.production` **nicht** neu. Nach jeder Änderung
-an den App-Werten (z. B. `CLIENT_IP_HEADER`, SMTP, R2):
+an den App-Werten (z. B. `UPLOAD_PASSWORD_EMPFANG`, `CLIENT_IP_HEADER`, SMTP, R2):
 
 ```bash
 docker compose -f docker-compose.yml up -d --force-recreate web
 ```
+
+**Gäste-Kennwort wechseln:** neuen Wert in `.env.production` setzen, dann
+`up -d --force-recreate web` (siehe oben). Alle bisherigen Sitzungen und
+gedruckten QR-Codes werden ungültig: neuen QR-Code erzeugen (README „Gäste-Zugang"),
+der Empfang gibt das neue Kennwort aus.
 
 **Rollback auf eine ältere Version:**
 
@@ -82,6 +87,7 @@ Einträge nach dem Zeitstempel verloren.
 | Upload scheitert nur bei einzelnen | große Datei (> 20 MB), HEIC, schwaches Netz | Gast soll es später im WLAN erneut versuchen; Meldung nennt den Grund |
 | „Zu viele Anfragen" für viele Gäste | Rate-Limit wegen gemeinsamer WLAN-IP | `CLIENT_IP_HEADER` und den `X-Forwarded-For`-Header von Caddy prüfen, dann `up -d --force-recreate web` (setzt die Zähler zurück; `restart` liest die Werte nicht neu) |
 | Fotos verschwinden nach Löschen nicht | Cache-Purge fehlt | `CLOUDFLARE_API_TOKEN`/`CLOUDFLARE_ZONE_ID` prüfen |
+| Gäste sehen plötzlich wieder das Kennwortfeld; der QR-Code „ist nicht mehr gültig" | Kennwort geändert (Sitzungen und QR-Codes ungültig) oder Cookies gelöscht | Kennwort am Empfang nennen; bei geändertem Kennwort neuen QR-Code erzeugen |
 | Alarm-Mail „Speicherplatz wird knapp" | Platte ≥ 85 % | `df -h`, alte Docker-Logs/Images (`docker system df`) |
 | Alarm-Mail „Sicherung fehlgeschlagen" | Platte voll oder Datenbank beschädigt | `logs`, `df -h`; manuell `cp` der Datenbank sichern |
 | Alarm-Mail „Sicherung hängt" | vorige Sicherung läuft nach einer Stunde noch (Platte blockiert/sehr langsam) | `df -h`, `logs`; hilft nichts: `restart web` (Reste `*.tmp` räumt der nächste Lauf) |

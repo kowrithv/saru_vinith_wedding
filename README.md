@@ -52,7 +52,7 @@ wirklich auszuprobieren.
 | Variable | Pflicht | Zweck |
 |---|---|---|
 | `ADMIN_PASSWORD` | ja | Kennwort für `/admin` |
-| `UPLOAD_PASSWORD_EMPFANG` | ja | Gäste-Kennwort („vom Empfang“) für Uploads und die Galerie im Kennwort-Modus |
+| `UPLOAD_PASSWORD_EMPFANG` | ja | Gäste-Kennwort („vom Empfang“) für Galerie, Gästebuch, Erinnerungen und Uploads; kurz und merkbar, Groß-/Kleinschreibung egal (siehe „Gäste-Zugang“) |
 | `R2_ACCOUNT_ID` | ja | Cloudflare-Konto |
 | `R2_ACCESS_KEY_ID` | ja | R2-API-Token (Object Read & Write, nur für den Bucket) |
 | `R2_SECRET_ACCESS_KEY` | ja | zum Token gehörendes Secret |
@@ -109,7 +109,7 @@ Fotos laufen **nie durch den App-Server**:
 
 1. Der Browser erzeugt ein Vorschaubild (max. 800 px) und fragt per
    `POST /api/uploads/request` ein signiertes Ticket mit presigned PUT-URLs an
-   (15 Minuten gültig, Kennwort-Prüfung für Gäste).
+   (15 Minuten gültig, Gast-Sitzung oder Kennwort wird geprüft).
 2. Der Browser lädt Vorschaubild und Original direkt nach R2.
 3. `POST /api/uploads/complete` prüft die Objekte per `HeadObject` und legt
    die Zeile in SQLite an.
@@ -117,8 +117,8 @@ Fotos laufen **nie durch den App-Server**:
    Speicher des Upload-Geräts (in der DB steht nur dessen Hash); der Admin
    löscht jedes Foto.
 
-Der Admin kann im Dashboard die Galerie zwischen **Öffentlich** und
-**Kennwort** umschalten sowie Gästebuch, Erinnerungen, die
+Der Admin kann im Dashboard die Galerie zwischen **Kennwort** (Standard) und
+**Öffentlich** umschalten sowie Gästebuch, Erinnerungen, die
 „Wer von uns?“-Abstimmung und den **Foto-Upload** einzeln sperren (der Admin
 lädt auch bei gesperrtem Upload weiter hoch). Die Bucket-CORS-Regel muss
 `PUT, GET, HEAD`, die Header `content-type, content-length` und die
@@ -126,6 +126,43 @@ Produktions-Domain sowie `http://localhost:3000` erlauben (Einstellung im
 Cloudflare-Dashboard, nicht im Code).
 
 Details: `docs/superpowers/specs/2026-10-12-gallery-design.md`.
+
+### Gäste-Zugang (Kennwort und QR-Code)
+
+Galerie, Gästebuch, Erinnerungen und Foto-Upload teilen sich **ein** Kennwort
+(`UPLOAD_PASSWORD_EMPFANG`). Es gilt ohne Rücksicht auf Groß-/Kleinschreibung
+und Leerzeichen am Rand und soll kurz und merkbar sein, aber **nicht aus der
+Seite erratbar**: keine Namen, kein Datum, kein Ort (stehen alle auf der Seite).
+Falsche Versuche sind je Adresse begrenzt, ein kurzes Wort hält also Gelegenheits-
+Raten ab, keinen gezielten Angriff. Die Galerie öffnet sich
+erst danach (Standard „Kennwort"); Gästebuch und Erinnerungen bleiben lesbar,
+Einträge brauchen das Kennwort.
+
+Gäste müssen nichts tippen: der **QR-Link** trägt das Kennwort hinter dem `#`.
+Der Browser schickt diesen Teil nie an den Server (kein Log, kein Referer); die
+Seite löst ihn ein und entfernt ihn sofort aus der Adresszeile.
+
+```text
+https://vsjourney.de/gallery#k=<Kennwort>
+```
+
+Danach merkt sich der Browser die Sitzung 30 Tage (HttpOnly-Cookie
+`gallery_session`): kein Kennwortfeld mehr, auch nicht in Gästebuch, Erinnerungen
+und Upload. Wer die Seite ohne QR-Code öffnet, sieht das Kennwortfeld.
+
+QR-Code **lokal** erzeugen, nicht in einem Online-Generator (das Kennwort steckt
+im Link):
+
+```bash
+# Link bauen (Sonderzeichen werden kodiert)
+node -e "console.log('https://vsjourney.de/gallery#k=' + encodeURIComponent(process.argv[1]))" Hochzeit
+# QR-Code als Bild (qrencode: apt install qrencode; oder: npx qrcode -o gaeste-qr.png "<Link>")
+qrencode -s 10 -o gaeste-qr.png 'https://vsjourney.de/gallery#k=Hochzeit'
+```
+
+**Kennwort wechseln** (z. B. wenn der Link an Fremde gelangt ist): neuen Wert in
+`.env.production` setzen und `up -d --force-recreate web`. Alle bisherigen
+Sitzungen und gedruckten QR-Codes sind dann ungültig; neuen QR-Code erzeugen.
 
 ## Deployment
 
@@ -235,9 +272,9 @@ zweites System ist noch offen (`TODO.md`).
   node scripts/load/run.mjs http://localhost:3124 --guests=500 --upload-password=<Kennwort>
   ```
 
-  Simuliert Abstimmungen (inkl. „ein Gerät zählt einmal"), Gästebuch,
-  Memory-Rekord, Galerie-Liste, Polling und – mit Kennwort – Upload-Tickets und
-  Erinnerungen. Prüft, dass nichts verloren geht. Entfernte Adressen werden
+  Simuliert Abstimmungen (inkl. „ein Gerät zählt einmal"), Memory-Rekord,
+  Galerie-Liste, Polling und – mit Kennwort – Gästebuch, Upload-Tickets und
+  Erinnerungen (die Galerie-Liste wird dann mit entsperrter Sitzung gemessen). Prüft, dass nichts verloren geht. Entfernte Adressen werden
   ohne `--allow-remote` abgelehnt.
 - **Hochzeitstag:** `docs/ops/hochzeitstag-runbook.md`,
   **Gerätetest:** `docs/ops/geraetetest-checkliste.md`.

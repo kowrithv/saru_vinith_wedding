@@ -33,6 +33,9 @@ den verlinkten Checklisten; diese Seite hält nur Reihenfolge und Abhängigkeite
   Variante A läuft Schritt 2 sofort.
 - **`.env.production` ist vollständig** (`R2_*`, `ADMIN_PASSWORD`,
   `UPLOAD_PASSWORD_EMPFANG`; SMTP kommt, sobald die Werte da sind).
+  `UPLOAD_PASSWORD_EMPFANG` ist das **Gäste-Kennwort**: kurz, merkbar, nur
+  Buchstaben/Ziffern, **nicht** Namen/Datum/Ort (stehen auf der Seite); es steckt im QR-Link (README „Gäste-Zugang"). Danach
+  einen QR-Code erzeugen und am Handy gegenprüfen.
 
 ## Schritt 5 im Einzelnen (Server, per SSH)
 

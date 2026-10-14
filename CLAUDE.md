@@ -39,15 +39,25 @@ einer Route meldet `tsc` ggf. veraltete Dateien in `.next/types` – dann
   `upload-ticket.ts`, `api/uploads/*`). Rohe R2-Keys verlassen den Server
   nie – Clients bekommen nur `GalleryPhotoView` mit URLs.
 - Schreib-Sperren (`app-config.ts`, `LOCKABLE_FEATURES`):
-  `guestbook | memories | who_votes | gallery_upload` einzeln schaltbar; `gallery_mode` (`public | password`) ist davon getrennt.
+  `guestbook | memories | who_votes | gallery_upload` einzeln schaltbar; `gallery_mode` (`public | password`, Standard `password`) ist davon getrennt.
+- Gäste-Zugang: ein Kennwort (`UPLOAD_PASSWORD_EMPFANG`) für Galerie, Gästebuch,
+  Erinnerungen und Upload. Server: `authorizeGuest`/`hasGuestAccess` in
+  `gallery-auth.ts` (Cookie `gallery_session` oder Kennwort im Request, das das
+  Cookie setzt). Client: `useGuestAccess` (`/api/access`, QR-Link `#k=` einlösen)
+  und `GuestPasswordField`. Kennwort-Vergleich ohne Groß-/Kleinschreibung
+  (`guest-password.ts`), der Admin bleibt exakt.
 - Tailwind v4, Farb-Tokens `dark-blue`, `champagne(-light/-dark)`, `gold`.
 
 ## Fallstricke (aus früheren Reviews)
 
 - **Auth:** Das Galerie-Session-Cookie wird mit einem *abgeleiteten* Schlüssel
-  signiert (`HMAC(adminSecret, 'gallery-session')`), nie mit dem Admin-Schlüssel
-  direkt – sonst ließe es sich als Admin-Cookie fälschen. `isOfficial` darf nur
-  aus `isAdminRequest` kommen.
+  signiert (`HMAC(adminSecret, 'gallery-session' + Gäste-Kennwort)`), nie mit dem
+  Admin-Schlüssel direkt – sonst ließe es sich als Admin-Cookie fälschen; das
+  Kennwort darin entwertet alte Sitzungen bei einem Wechsel. `isOfficial` darf
+  nur aus `isAdminRequest` kommen – eine Gast-Sitzung macht niemanden zum Admin.
+- **QR-Link:** das Kennwort steht im Fragment (`#k=`), nie in Query oder Pfad:
+  Fragmente gehen nicht an den Server und nicht in den Referer. Der Hook entfernt
+  es sofort aus der Adresse.
 - **Allowlists** als `Map`/`Set`, nicht als Objekt-Literal (Prototype-Keys).
 - **Hex-Parsing:** `Buffer.from(str, 'hex')` schneidet ungültige Zeichen
   still ab – vorher per Regex validieren.
