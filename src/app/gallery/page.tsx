@@ -1,14 +1,15 @@
 'use client'
 
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { Camera, KeyRound, X } from 'lucide-react'
+import { Camera, X } from 'lucide-react'
 import SectionTitle from '@/components/ui/SectionTitle'
 import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
 import GalleryGrid from '@/components/gallery/GalleryGrid'
 import GalleryUploadForm from '@/components/gallery/GalleryUploadForm'
+import GuestPasswordField from '@/components/ui/GuestPasswordField'
 import type { GalleryPhotoView } from '@/lib/gallery-photo-view'
-import { textFieldClassName } from '@/lib/form-styles'
+import { useGuestAccess } from '@/lib/use-guest-access'
 
 type GalleryData =
   | { status: 'loading' }
@@ -26,6 +27,10 @@ export default function GalleryPage() {
   // "Schließen" soll laufende Uploads (und Eingaben) nicht verwerfen.
   const [uploadFormMounted, setUploadFormMounted] = useState(false)
   const uploadPanelRef = useRef<HTMLDivElement>(null)
+  const access = useGuestAccess()
+  // Erst wenn feststeht, ob dieser Browser entsperrt ist (QR-Link wird dabei
+  // eingelöst), wird die Liste geladen: sonst käme zuerst die gesperrte Antwort.
+  const accessResolved = access.status !== 'checking'
 
   // Der Button schwebt am unteren Bildschirmrand, das Formular steht aber
   // über dem Raster: ohne Scrollen und Fokus sähe ein Gast, der weiter unten
@@ -62,28 +67,21 @@ export default function GalleryPage() {
   }
 
   useEffect(() => {
-    loadGallery()
-  }, [])
+    if (accessResolved) loadGallery()
+  }, [accessResolved])
 
   const handleUnlock = async (e: FormEvent) => {
     e.preventDefault()
     setUnlockError(null)
     setUnlocking(true)
     try {
-      const response = await fetch('/api/gallery/unlock', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password }),
-      })
-      if (!response.ok) {
-        const body = await response.json().catch(() => null)
-        setUnlockError(body?.error ?? 'Falsches Kennwort.')
+      const result = await access.unlock(password)
+      if (!result.ok) {
+        setUnlockError(result.error)
         return
       }
       setPassword('')
       loadGallery()
-    } catch {
-      setUnlockError('Entsperren fehlgeschlagen. Bitte versuch es erneut.')
     } finally {
       setUnlocking(false)
     }
@@ -121,20 +119,12 @@ export default function GalleryPage() {
         {data.status === 'locked' && (
           <Card padding="lg" className="max-w-md mx-auto">
             <form onSubmit={handleUnlock} className="space-y-4">
-              <div>
-                <label htmlFor="gallery-password" className="block text-sm font-medium text-gray-700 mb-1.5">
-                  <KeyRound size={14} className="inline mr-1" />
-                  Kennwort vom Empfang
-                </label>
-                <input
-                  id="gallery-password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Kennwort"
-                  className={textFieldClassName}
-                />
-              </div>
+              <GuestPasswordField
+                id="gallery-password"
+                value={password}
+                onChange={setPassword}
+                linkRejected={access.linkRejected}
+              />
               {unlockError && <p className="text-sm text-red-600">{unlockError}</p>}
               <Button type="submit" size="lg" disabled={unlocking} className="w-full">
                 {unlocking ? 'Wird geprüft...' : 'Galerie ansehen'}
@@ -170,7 +160,12 @@ export default function GalleryPage() {
                 {uploadFormMounted && (
                   <div id="gallery-upload-panel" ref={uploadPanelRef} hidden={!showUploadForm} className="scroll-mt-28">
                     <Card padding="lg" className="max-w-xl mx-auto mb-10">
-                      <GalleryUploadForm onUploaded={handleUploaded} />
+                      <GalleryUploadForm
+                        hasAccess={access.status === 'unlocked'}
+                        onAccessGranted={access.markUnlocked}
+                        onAccessLost={access.markLocked}
+                        onUploaded={handleUploaded}
+                      />
                     </Card>
                   </div>
                 )}

@@ -3,9 +3,10 @@ import { createDb } from './db'
 import { getGalleryMode, setGalleryMode } from './gallery-mode'
 
 describe('gallery mode', () => {
-  it('defaults to public when never set', () => {
+  // Die Galerie öffnet sich erst nach dem Kennwort (QR-Link oder Eingabe).
+  it('defaults to password when never set', () => {
     const db = createDb(':memory:')
-    expect(getGalleryMode(db)).toBe('public')
+    expect(getGalleryMode(db)).toBe('password')
     db.close()
   })
 

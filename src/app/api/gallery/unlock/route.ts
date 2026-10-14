@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getDb } from '@/lib/db'
-import { verifyPassword } from '@/lib/admin-auth'
-import { createGallerySessionCookieValue, GALLERY_COOKIE_NAME, GALLERY_SESSION_DURATION_MS } from '@/lib/gallery-auth'
+import { verifyGuestPassword } from '@/lib/guest-password'
+import { setGallerySessionCookie } from '@/lib/gallery-auth'
 import { RateLimiter } from '@/lib/rate-limit'
 import { getClientKey } from '@/lib/client-ip'
 
@@ -24,8 +24,7 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   const db = getDb()
-  const uploadPassword = process.env.UPLOAD_PASSWORD_EMPFANG
-  if (!uploadPassword || !verifyPassword(parsed.data.password, uploadPassword)) {
+  if (!verifyGuestPassword(parsed.data.password, process.env.UPLOAD_PASSWORD_EMPFANG)) {
     return NextResponse.json({ error: 'Falsches Kennwort.' }, { status: 401 })
   }
 
@@ -34,15 +33,7 @@ export async function POST(request: Request): Promise<Response> {
   // sonst das Kontingent für alle anderen aufbrauchen.
   unlockLimiter.reset(clientKey)
 
-  const expiresAt = Date.now() + GALLERY_SESSION_DURATION_MS
-  const cookieValue = createGallerySessionCookieValue(db)
   const response = NextResponse.json({ success: true })
-  response.cookies.set(GALLERY_COOKIE_NAME, cookieValue, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/',
-    expires: new Date(expiresAt),
-  })
+  setGallerySessionCookie(response, db)
   return response
 }

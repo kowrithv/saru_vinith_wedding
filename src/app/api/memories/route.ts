@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getDb } from '@/lib/db'
 import { addMemoryEntry, listMemoryEntries } from '@/lib/memories'
-import { verifyPassword } from '@/lib/admin-auth'
+import { authorizeGuest, setGallerySessionCookie } from '@/lib/gallery-auth'
 import { isFeatureLocked } from '@/lib/app-config'
 import { RateLimiter } from '@/lib/rate-limit'
 import { getClientKey } from '@/lib/client-ip'
@@ -45,17 +45,15 @@ export async function POST(request: Request): Promise<Response> {
 
   const body = await request.json().catch(() => null)
 
-  // Kennwort zuerst prüfen, bevor überhaupt auf Name/Nachricht geschaut
-  // wird - ein falsches ODER fehlendes Kennwort verrät so nie, ob der
-  // Rest der Eingabe sonst gültig gewesen wäre. verifyPassword hasht
-  // immer zuerst (wie beim Admin-Login), auch ein leerer Kandidat landet
-  // im zeitkonstanten Vergleich fester Länge, kein Orakel über die Länge.
-  const uploadPassword = process.env.UPLOAD_PASSWORD_EMPFANG
+  // Kennwort (oder eine Sitzung daraus) zuerst prüfen, bevor überhaupt auf
+  // Name/Nachricht geschaut wird - ein falsches ODER fehlendes Kennwort
+  // verrät so nie, ob der Rest der Eingabe sonst gültig gewesen wäre. Der
+  // Vergleich hasht immer zuerst (zeitkonstant, kein Orakel über die Länge).
+  const db = getDb()
   const candidatePassword =
-    body && typeof body === 'object' && typeof (body as Record<string, unknown>).password === 'string'
-      ? ((body as Record<string, unknown>).password as string)
-      : ''
-  if (!uploadPassword || !verifyPassword(candidatePassword, uploadPassword)) {
+    body && typeof body === 'object' ? (body as Record<string, unknown>).password : undefined
+  const access = authorizeGuest(request, db, candidatePassword)
+  if (!access.ok) {
     return NextResponse.json({ error: 'Falsches Kennwort.' }, { status: 401 })
   }
 
@@ -64,6 +62,8 @@ export async function POST(request: Request): Promise<Response> {
     return NextResponse.json({ error: 'Ungültige Anfrage.' }, { status: 400 })
   }
 
-  const entry = addMemoryEntry(getDb(), parsed.data.name, parsed.data.message, null)
-  return NextResponse.json({ entry }, { status: 201 })
+  const entry = addMemoryEntry(db, parsed.data.name, parsed.data.message, null)
+  const response = NextResponse.json({ entry }, { status: 201 })
+  if (access.issueSession) setGallerySessionCookie(response, db)
+  return response
 }

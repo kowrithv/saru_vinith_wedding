@@ -2,7 +2,8 @@ import { randomUUID } from 'node:crypto'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getDb } from '@/lib/db'
-import { verifyPassword, getOrCreateAdminSecret, isAdminRequest } from '@/lib/admin-auth'
+import { getOrCreateAdminSecret, isAdminRequest } from '@/lib/admin-auth'
+import { authorizeGuest, setGallerySessionCookie } from '@/lib/gallery-auth'
 import { createPresignedPutUrl } from '@/lib/r2'
 import { signUploadTicket } from '@/lib/upload-ticket'
 import { RateLimiter } from '@/lib/rate-limit'
@@ -55,11 +56,16 @@ export async function POST(request: Request): Promise<Response> {
     return NextResponse.json({ error: 'Ungültige Anfrage.' }, { status: 400 })
   }
 
+  // Gäste: gültige Sitzung (QR-Link oder früher eingegebenes Kennwort) oder
+  // das Kennwort im Request. Eine Gast-Sitzung macht niemanden zum Admin:
+  // isOfficial kommt allein aus der Admin-Sitzung.
+  let issueSession = false
   if (!isOfficial) {
-    const uploadPassword = process.env.UPLOAD_PASSWORD_EMPFANG
-    if (!parsed.data.password || !uploadPassword || !verifyPassword(parsed.data.password, uploadPassword)) {
+    const access = authorizeGuest(request, db, parsed.data.password)
+    if (!access.ok) {
       return NextResponse.json({ error: 'Falsches Kennwort.' }, { status: 401 })
     }
+    issueSession = access.issueSession
   }
 
   // Das Limit soll Kennwort-Raten bremsen, nicht Gäste: viele teilen sich
@@ -113,5 +119,7 @@ export async function POST(request: Request): Promise<Response> {
     })
   )
 
-  return NextResponse.json({ tickets })
+  const response = NextResponse.json({ tickets })
+  if (issueSession) setGallerySessionCookie(response, db)
+  return response
 }

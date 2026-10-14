@@ -38,6 +38,8 @@ function createFakeServer(options = {}) {
     }
     if (pathname === '/api/guestbook' && method === 'GET') return json(200, { entries: guestbook })
     if (pathname === '/api/guestbook' && method === 'POST') {
+      // Gästebuch-Einträge brauchen wie in der App das Kennwort vom Empfang.
+      if (body.password !== 'empfang') return json(401, { error: 'Falsches Kennwort.' })
       guestbook.push(body)
       return json(201, { entry: body })
     }
@@ -48,7 +50,18 @@ function createFakeServer(options = {}) {
       if (better) record = { moves: body.moves, seconds: body.seconds }
       return json(200, { record, isNewRecord: better })
     }
-    if (pathname === '/api/gallery') return json(200, { mode: 'public', unlocked: true, photos: [] })
+    if (pathname === '/api/gallery/unlock' && method === 'POST') {
+      if (options.rejectUnlock || body.password !== 'empfang') return json(401, { error: 'Falsches Kennwort.' })
+      return new Response(JSON.stringify({ success: true }), {
+        status: 200,
+        headers: { 'content-type': 'application/json', 'set-cookie': 'gallery_session=ok; Path=/; HttpOnly' },
+      })
+    }
+    if (pathname === '/api/gallery') {
+      // Kennwort-Modus (Standard): ohne Sitzung gibt es keine Liste.
+      const unlocked = String(init.headers?.cookie ?? '').includes('gallery_session=ok')
+      return json(200, { mode: 'password', unlocked, photos: unlocked ? [] : null })
+    }
     if (pathname === '/api/uploads/request') {
       if (body.password !== 'empfang') return json(401, { error: 'Falsches Kennwort.' })
       return json(200, { tickets: [{ photoId: 'p', ticket: 't' }] })
@@ -105,11 +118,38 @@ describe('runScenarios', () => {
         if (new URL(url).pathname === '/api/gallery') return new Response('boom', { status: 500 })
         return base(url, init)
       },
+      uploadPassword: 'empfang',
       runId: 'err',
     })
     const gallery = reports.find((r) => r.name === 'Galerie-Liste')
     expect(gallery.failed).toBe(20)
     expect(reports.find((r) => r.name === 'Gästebuch').failed).toBe(0)
+  })
+
+  it('lists the gallery with an unlocked session so the real list is measured', async () => {
+    const reports = await runScenarios({
+      baseUrl: 'http://localhost:3000',
+      guests: 10,
+      concurrency: 5,
+      fetchImpl: createFakeServer(),
+      uploadPassword: 'empfang',
+      runId: 'unlocked',
+    })
+    const gallery = reports.find((r) => r.name === 'Galerie-Liste')
+    expect(gallery.checks.map((c) => [c.name, c.ok])).toEqual([['Liste mit Entsperr-Sitzung abrufbar', true]])
+  })
+
+  it('reports a finding when the gallery cannot be unlocked with the given password', async () => {
+    const reports = await runScenarios({
+      baseUrl: 'http://localhost:3000',
+      guests: 10,
+      concurrency: 5,
+      fetchImpl: createFakeServer({ rejectUnlock: true }),
+      uploadPassword: 'empfang',
+      runId: 'locked',
+    })
+    const gallery = reports.find((r) => r.name === 'Galerie-Liste')
+    expect(gallery.checks.some((c) => !c.ok)).toBe(true)
   })
 
   it('skips the scenarios that need the guest password when none is given', async () => {
@@ -122,5 +162,6 @@ describe('runScenarios', () => {
     })
     expect(reports.map((r) => r.name)).not.toContain('Upload-Tickets')
     expect(reports.map((r) => r.name)).not.toContain('Erinnerungen')
+    expect(reports.map((r) => r.name)).not.toContain('Gästebuch')
   })
 })

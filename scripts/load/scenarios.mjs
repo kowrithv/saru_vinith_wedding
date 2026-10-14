@@ -107,7 +107,11 @@ async function guestbookScenario(ctx) {
     timed(ctx.fetchImpl, `${ctx.baseUrl}/api/guestbook`, {
       method: 'POST',
       headers: json({ 'x-forwarded-for': guestIp(i) }),
-      body: JSON.stringify({ name: `Lastgast ${i}`, message: `Lasttest ${ctx.runId}: Glückwunsch, Nachricht ${i}.` }),
+      body: JSON.stringify({
+        name: `Lastgast ${i}`,
+        message: `Lasttest ${ctx.runId}: Glückwunsch, Nachricht ${i}.`,
+        password: ctx.uploadPassword,
+      }),
     })
   )
   const after = await readCount()
@@ -148,11 +152,39 @@ async function memoryRecordScenario(ctx) {
   ])
 }
 
+// Im Standard (Kennwort-Modus) liefert die Liste ohne Sitzung nur "gesperrt".
+// Mit Kennwort wird deshalb einmal entsperrt und das Cookie mitgeschickt: so
+// misst der Test die echte Liste samt aller Fotos.
+async function unlockSessionCookie(ctx) {
+  try {
+    const response = await ctx.fetchImpl(`${ctx.baseUrl}/api/gallery/unlock`, {
+      method: 'POST',
+      headers: json({ 'x-forwarded-for': guestIp(0) }),
+      body: JSON.stringify({ password: ctx.uploadPassword }),
+    })
+    await response.text()
+    if (!response.ok) return null
+    return response.headers.get('set-cookie')?.split(';')[0] ?? null
+  } catch {
+    return null
+  }
+}
+
 async function galleryScenario(ctx) {
+  const cookie = ctx.uploadPassword ? await unlockSessionCookie(ctx) : null
   const outcomes = await runPool(ctx.guests, ctx.concurrency, () =>
-    timed(ctx.fetchImpl, `${ctx.baseUrl}/api/gallery`, {})
+    timed(ctx.fetchImpl, `${ctx.baseUrl}/api/gallery`, cookie ? { headers: { cookie } } : {})
   )
-  return report('Galerie-Liste', outcomes, 200)
+  const checks = ctx.uploadPassword
+    ? [
+        {
+          name: 'Liste mit Entsperr-Sitzung abrufbar',
+          ok: cookie !== null && outcomes.some((o) => o.data?.unlocked === true),
+          detail: cookie === null ? 'Entsperren mit dem Kennwort fehlgeschlagen' : 'Liste war entsperrt',
+        },
+      ]
+    : []
+  return report('Galerie-Liste', outcomes, 200, checks)
 }
 
 async function pollingScenario(ctx) {
@@ -223,8 +255,9 @@ export async function runScenarios(options) {
     uploadPassword: options.uploadPassword,
     runId: options.runId ?? String(Date.now()),
   }
-  const scenarios = [votesScenario, guestbookScenario, memoryRecordScenario, galleryScenario, pollingScenario]
-  if (ctx.uploadPassword) scenarios.push(uploadTicketsScenario, memoriesScenario)
+  const scenarios = [votesScenario, memoryRecordScenario, galleryScenario, pollingScenario]
+  // Gästebuch, Erinnerungen und Upload brauchen das Kennwort vom Empfang.
+  if (ctx.uploadPassword) scenarios.push(guestbookScenario, uploadTicketsScenario, memoriesScenario)
 
   const reports = []
   for (const scenario of scenarios) {

@@ -191,6 +191,75 @@ describe('GalleryUploadForm', () => {
     })
   })
 
+  it('hides the password field and sends no password once the browser is unlocked', async () => {
+    const user = setupUser()
+    const backend = createFakeBackend()
+
+    render(<GalleryUploadForm hasAccess onUploaded={vi.fn()} />)
+    expect(screen.queryByLabelText(/kennwort/i)).not.toBeInTheDocument()
+
+    await user.type(screen.getByLabelText(/dein name/i), 'Anna')
+    await user.upload(screen.getByLabelText(/fotos ausw/i), makeFile())
+    await user.click(screen.getByRole('button', { name: /hochladen/i }))
+
+    await waitFor(() => expect(backend.requestBodies).toHaveLength(1))
+    expect(backend.requestBodies[0]).toEqual({
+      category: 'Hochzeit',
+      files: [{ filename: 'photo.jpg', size: 100, contentType: 'image/jpeg' }],
+    })
+  })
+
+  it('tells the parent the browser is unlocked after tickets were issued for a typed password', async () => {
+    const user = setupUser()
+    createFakeBackend()
+    const onAccessGranted = vi.fn()
+
+    render(<GalleryUploadForm onAccessGranted={onAccessGranted} onUploaded={vi.fn()} />)
+    await user.type(screen.getByLabelText(/dein name/i), 'Anna')
+    await user.type(screen.getByLabelText(/kennwort/i), 'empfang-secret')
+    await user.upload(screen.getByLabelText(/fotos ausw/i), makeFile())
+    await user.click(screen.getByRole('button', { name: /hochladen/i }))
+
+    await waitFor(() => expect(onAccessGranted).toHaveBeenCalledTimes(1))
+  })
+
+  it('does not report access as granted when the password was wrong', async () => {
+    const user = setupUser()
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ ok: false, status: 401, json: async () => ({ error: 'Falsches Kennwort.' }) })
+    )
+    const onAccessGranted = vi.fn()
+    const onAccessLost = vi.fn()
+
+    render(<GalleryUploadForm onAccessGranted={onAccessGranted} onAccessLost={onAccessLost} onUploaded={vi.fn()} />)
+    await user.type(screen.getByLabelText(/dein name/i), 'Anna')
+    await user.type(screen.getByLabelText(/kennwort/i), 'falsch')
+    await user.upload(screen.getByLabelText(/fotos ausw/i), makeFile())
+    await user.click(screen.getByRole('button', { name: /hochladen/i }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/falsches kennwort/i)
+    expect(onAccessGranted).not.toHaveBeenCalled()
+    expect(onAccessLost).not.toHaveBeenCalled()
+  })
+
+  it('asks for the password again when a remembered session is no longer valid', async () => {
+    const user = setupUser()
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ ok: false, status: 401, json: async () => ({ error: 'Falsches Kennwort.' }) })
+    )
+    const onAccessLost = vi.fn()
+
+    render(<GalleryUploadForm hasAccess onAccessLost={onAccessLost} onUploaded={vi.fn()} />)
+    await user.type(screen.getByLabelText(/dein name/i), 'Anna')
+    await user.upload(screen.getByLabelText(/fotos ausw/i), makeFile())
+    await user.click(screen.getByRole('button', { name: /hochladen/i }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/bitte gib das kennwort vom empfang ein/i)
+    expect(onAccessLost).toHaveBeenCalledTimes(1)
+  })
+
   it('has saved the delete token by the time the parent is told about the new photo', async () => {
     const user = setupUser()
     createFakeBackend()

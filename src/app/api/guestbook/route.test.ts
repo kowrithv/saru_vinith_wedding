@@ -2,27 +2,34 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { GET, POST } from './route'
 import { setFeatureLocked } from '@/lib/app-config'
 import { getDb } from '@/lib/db'
+import { GALLERY_COOKIE_NAME, createGallerySessionCookieValue } from '@/lib/gallery-auth'
 
-function postRequest(body: unknown): Request {
+// Gäste schreiben mit dem Kennwort vom Empfang (oder einer Sitzung daraus).
+const PASSWORD = 'empfang-secret'
+
+function postRequest(body: Record<string, unknown>, headers: Record<string, string> = {}): Request {
   return new Request('http://localhost/api/guestbook', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
+    headers: { 'Content-Type': 'application/json', ...headers },
+    body: JSON.stringify({ password: PASSWORD, ...body }),
   })
 }
 
 describe('/api/guestbook', () => {
   const originalPath = process.env.DATABASE_PATH
+  const originalPassword = process.env.UPLOAD_PASSWORD_EMPFANG
 
   beforeEach(() => {
     delete globalThis.__appDb
     process.env.DATABASE_PATH = ':memory:'
+    process.env.UPLOAD_PASSWORD_EMPFANG = PASSWORD
   })
 
   afterEach(() => {
     globalThis.__appDb?.close()
     delete globalThis.__appDb
     process.env.DATABASE_PATH = originalPath
+    process.env.UPLOAD_PASSWORD_EMPFANG = originalPassword
   })
 
   it('POST adds a valid entry and GET returns it', async () => {
@@ -35,6 +42,67 @@ describe('/api/guestbook', () => {
     const body = await getResponse.json()
     expect(body.entries).toHaveLength(1)
     expect(body.entries[0].name).toBe('Anna')
+  })
+
+  it('POST rejects a wrong password without a cookie and stores nothing', async () => {
+    const response = await POST(
+      postRequest({ name: 'Anna', message: 'Wir freuen uns so sehr für euch beide!', password: 'falsch' })
+    )
+    expect(response.status).toBe(401)
+    expect(response.headers.get('set-cookie')).toBeNull()
+
+    const body = await (await GET()).json()
+    expect(body.entries).toHaveLength(0)
+  })
+
+  it('POST rejects a missing password', async () => {
+    const response = await POST(
+      new Request('http://localhost/api/guestbook', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'Anna', message: 'Wir freuen uns so sehr für euch beide!' }),
+      })
+    )
+    expect(response.status).toBe(401)
+  })
+
+  it('POST checks the password before the content, so a wrong password reveals nothing else', async () => {
+    const response = await POST(postRequest({ name: '', message: 'x', password: 'falsch' }))
+    expect(response.status).toBe(401)
+  })
+
+  it('POST with the correct password accepts case and spaces and sets a session cookie', async () => {
+    const response = await POST(
+      postRequest({ name: 'Anna', message: 'Wir freuen uns so sehr für euch beide!', password: ' EMPFANG-secret' })
+    )
+    expect(response.status).toBe(201)
+    expect(response.headers.get('set-cookie')).toContain(`${GALLERY_COOKIE_NAME}=`)
+  })
+
+  it('POST with a valid session cookie needs no password in the body', async () => {
+    const cookieValue = createGallerySessionCookieValue(getDb())
+    const response = await POST(
+      new Request('http://localhost/api/guestbook', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', cookie: `${GALLERY_COOKIE_NAME}=${cookieValue}` },
+        body: JSON.stringify({ name: 'Anna', message: 'Wir freuen uns so sehr für euch beide!' }),
+      })
+    )
+    expect(response.status).toBe(201)
+    // Die Sitzung gilt schon: keine neue ausstellen.
+    expect(response.headers.get('set-cookie')).toBeNull()
+  })
+
+  it('POST with an expired session cookie and no password is rejected with 401', async () => {
+    const stale = createGallerySessionCookieValue(getDb(), Date.now() - 31 * 24 * 60 * 60 * 1000)
+    const response = await POST(
+      new Request('http://localhost/api/guestbook', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', cookie: `${GALLERY_COOKIE_NAME}=${stale}` },
+        body: JSON.stringify({ name: 'Anna', message: 'Wir freuen uns so sehr für euch beide!' }),
+      })
+    )
+    expect(response.status).toBe(401)
   })
 
   it('POST rejects a message shorter than 10 characters', async () => {
@@ -64,7 +132,7 @@ describe('/api/guestbook', () => {
       new Request('http://localhost/api/guestbook', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-forwarded-for': '203.0.113.9' },
-        body: JSON.stringify({ name: 'Anna', message: 'Eine gültige Nachricht hier drin.' }),
+        body: JSON.stringify({ name: 'Anna', message: 'Eine gültige Nachricht hier drin.', password: PASSWORD }),
       })
 
     for (let i = 0; i < 30; i++) {

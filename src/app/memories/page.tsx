@@ -1,11 +1,13 @@
 'use client'
 
 import { useEffect, useState, type FormEvent } from 'react'
-import { Heart, KeyRound, Send, User } from 'lucide-react'
+import { Heart, Send, User } from 'lucide-react'
 import SectionTitle from '@/components/ui/SectionTitle'
 import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
+import GuestPasswordField from '@/components/ui/GuestPasswordField'
 import { textFieldClassName } from '@/lib/form-styles'
+import { useGuestAccess } from '@/lib/use-guest-access'
 import { cn } from '@/lib/utils'
 
 interface MemoryEntry {
@@ -27,6 +29,9 @@ export default function MemoriesPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const access = useGuestAccess()
+  // Das Feld erscheint nur, solange dieser Browser nicht entsperrt ist.
+  const needsPassword = access.status === 'locked'
 
   useEffect(() => {
     fetch('/api/memories')
@@ -48,7 +53,7 @@ export default function MemoriesPage() {
       setError('Deine Erinnerung ist zu kurz. Bitte schreib mindestens 10 Zeichen.')
       return
     }
-    if (!password) {
+    if (needsPassword && !password.trim()) {
       setError('Bitte gib das Kennwort vom Empfang ein.')
       return
     }
@@ -58,10 +63,17 @@ export default function MemoriesPage() {
       const response = await fetch('/api/memories', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name.trim(), message: trimmedMessage, password }),
+        body: JSON.stringify({
+          name: name.trim(),
+          message: trimmedMessage,
+          ...(needsPassword ? { password } : {}),
+        }),
       })
       if (response.status === 401) {
-        setError('Falsches Kennwort.')
+        // Mit Kennwort: vertippt. Ohne: die gemerkte Sitzung gilt nicht mehr
+        // (abgelaufen oder Kennwort gewechselt) - das Feld wieder zeigen.
+        setError(needsPassword ? 'Falsches Kennwort.' : 'Bitte gib das Kennwort vom Empfang ein.')
+        access.markLocked()
         return
       }
       if (!response.ok) {
@@ -74,6 +86,8 @@ export default function MemoriesPage() {
       setName('')
       setMessage('')
       setPassword('')
+      // Der Server hat mit dem richtigen Kennwort die Sitzung gesetzt.
+      if (needsPassword) access.markUnlocked()
     } catch {
       setError('Erinnerung konnte nicht gespeichert werden. Bitte versuch es erneut.')
     } finally {
@@ -86,7 +100,7 @@ export default function MemoriesPage() {
       <div className="max-w-5xl mx-auto px-4 sm:px-6">
         <SectionTitle
           title="Erinnerungen"
-          subtitle="Nur mit dem Kennwort vom Empfang: teilt eure Erinnerungen an uns und diesen Tag."
+          subtitle="Teilt eure Erinnerungen an uns und diesen Tag."
         />
 
         <Card padding="lg" className="mb-10">
@@ -114,20 +128,14 @@ export default function MemoriesPage() {
               />
             </div>
 
-            <div>
-              <label htmlFor="memories-password" className="block text-sm font-medium text-gray-700 mb-1.5">
-                <KeyRound size={14} className="inline mr-1" />
-                Kennwort vom Empfang
-              </label>
-              <input
+            {needsPassword && (
+              <GuestPasswordField
                 id="memories-password"
-                type="password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Kennwort"
-                className={textFieldClassName}
+                onChange={setPassword}
+                linkRejected={access.linkRejected}
               />
-            </div>
+            )}
 
             <div className="md:col-span-2">
               <label htmlFor="memories-message" className="block text-sm font-medium text-gray-700 mb-1.5">

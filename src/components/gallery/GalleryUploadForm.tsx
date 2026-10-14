@@ -1,8 +1,9 @@
 'use client'
 
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react'
-import { Upload, CheckCircle2, XCircle, Loader2, User, KeyRound, ImageIcon, X } from 'lucide-react'
+import { Upload, CheckCircle2, XCircle, Loader2, User, ImageIcon, X } from 'lucide-react'
 import Button from '@/components/ui/Button'
+import GuestPasswordField from '@/components/ui/GuestPasswordField'
 import { defaultGalleryCategory, galleryCategories } from '@/lib/gallery-categories'
 import { createPlaceholderThumbnailBlob, createThumbnailBlob } from '@/lib/gallery-thumbnail'
 import { saveDeleteToken } from '@/lib/gallery-delete-tokens'
@@ -17,6 +18,12 @@ import { textFieldClassName } from '@/lib/form-styles'
 
 interface GalleryUploadFormProps {
   isAdmin?: boolean
+  /** Dieser Browser ist schon entsperrt (QR-Link/Kennwort): kein Kennwortfeld. */
+  hasAccess?: boolean
+  /** Der Server hat ein getipptes Kennwort angenommen und die Sitzung gesetzt. */
+  onAccessGranted?: () => void
+  /** Die gemerkte Sitzung gilt nicht mehr (abgelaufen, Kennwort gewechselt). */
+  onAccessLost?: () => void
   onUploaded: (photo: GalleryPhotoView) => void
 }
 
@@ -183,7 +190,16 @@ function pluralPhotos(count: number, singular: string, plural: string): string {
   return `${count} ${count === 1 ? singular : plural}`
 }
 
-export default function GalleryUploadForm({ isAdmin = false, onUploaded }: GalleryUploadFormProps) {
+export default function GalleryUploadForm({
+  isAdmin = false,
+  hasAccess = false,
+  onAccessGranted,
+  onAccessLost,
+  onUploaded,
+}: GalleryUploadFormProps) {
+  // Der Admin hat nie ein Kennwortfeld; Gäste nur, solange der Browser nicht
+  // entsperrt ist.
+  const needsPassword = !isAdmin && !hasAccess
   const [name, setName] = useState('')
   const [password, setPassword] = useState('')
   const [category, setCategory] = useState<string>(defaultGalleryCategory)
@@ -238,7 +254,7 @@ export default function GalleryUploadForm({ isAdmin = false, onUploaded }: Galle
       headers: { 'Content-Type': 'application/json' },
       signal,
       body: JSON.stringify({
-        ...(isAdmin ? {} : { password }),
+        ...(needsPassword ? { password } : {}),
         category,
         files: files.map(({ file, contentType }) => ({ filename: file.name, size: file.size, contentType })),
       }),
@@ -251,8 +267,19 @@ export default function GalleryUploadForm({ isAdmin = false, onUploaded }: Galle
       if (isAdmin && (response.status === 401 || response.status === 423)) {
         return { error: 'Sitzung abgelaufen – bitte im Admin-Bereich neu anmelden.' }
       }
+      if (!isAdmin && response.status === 401 && !needsPassword) {
+        // Die gemerkte Sitzung gilt nicht mehr: das Kennwortfeld kommt zurück.
+        onAccessLost?.()
+        return { error: 'Bitte gib das Kennwort vom Empfang ein.' }
+      }
       const body = await response.json().catch(() => null)
       return { error: body?.error ?? 'Hochladen fehlgeschlagen. Bitte versuch es erneut.' }
+    }
+    if (needsPassword) {
+      // Tickets gibt es nur für ein richtiges Kennwort - und der Server hat
+      // dabei die Sitzung gesetzt, das Feld wird nicht mehr gebraucht.
+      setPassword('')
+      onAccessGranted?.()
     }
     return (await response.json()) as { tickets: UploadTicket[] }
   }
@@ -303,7 +330,7 @@ export default function GalleryUploadForm({ isAdmin = false, onUploaded }: Galle
       setFormError('Bitte gib deinen Namen ein.')
       return
     }
-    if (!isAdmin && !password) {
+    if (needsPassword && !password.trim()) {
       setFormError('Bitte gib das Kennwort vom Empfang ein.')
       return
     }
@@ -415,21 +442,8 @@ export default function GalleryUploadForm({ isAdmin = false, onUploaded }: Galle
         />
       </div>
 
-      {!isAdmin && (
-        <div>
-          <label htmlFor="gallery-upload-password" className="block text-sm font-medium text-gray-700 mb-1.5">
-            <KeyRound size={14} className="inline mr-1" />
-            Kennwort vom Empfang
-          </label>
-          <input
-            id="gallery-upload-password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Kennwort"
-            className={textFieldClassName}
-          />
-        </div>
+      {needsPassword && (
+        <GuestPasswordField id="gallery-upload-password" value={password} onChange={setPassword} />
       )}
 
       <div>

@@ -37,14 +37,14 @@ describe('/api/admin/gallery-mode', () => {
     expect(response.status).toBe(401)
   })
 
-  it('GET returns public by default', async () => {
+  it('GET returns password by default', async () => {
     const db = getDb()
     const secret = getOrCreateAdminSecret(db)
     const cookieValue = signCookieValue(Date.now() + 1000, secret)
 
     const response = await GET(requestWithCookie('GET', cookieValue))
     expect(response.status).toBe(200)
-    expect(await response.json()).toEqual({ mode: 'public' })
+    expect(await response.json()).toEqual({ mode: 'password' })
   })
 
   it('POST switches the mode and a subsequent GET reflects it', async () => {

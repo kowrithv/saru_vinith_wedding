@@ -41,6 +41,13 @@ describe('POST /api/gallery/unlock', () => {
     expect(cookie).toContain('HttpOnly')
   })
 
+  it('accepts the password regardless of case and surrounding spaces', async () => {
+    getDb()
+    const response = await POST(unlockRequest('  EMPFANG-Secret '))
+    expect(response.status).toBe(200)
+    expect(response.headers.get('set-cookie')).toContain(`${GALLERY_COOKIE_NAME}=`)
+  })
+
   it('rejects the wrong password without setting a cookie', async () => {
     getDb()
     const response = await POST(unlockRequest('falsch'))

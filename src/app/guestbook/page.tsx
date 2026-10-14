@@ -5,7 +5,9 @@ import { MessageSquare, Send, User } from 'lucide-react'
 import SectionTitle from '@/components/ui/SectionTitle'
 import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
+import GuestPasswordField from '@/components/ui/GuestPasswordField'
 import { textFieldClassName } from '@/lib/form-styles'
+import { useGuestAccess } from '@/lib/use-guest-access'
 import { cn } from '@/lib/utils'
 
 interface GuestbookEntry {
@@ -32,8 +34,12 @@ export default function GuestbookPage() {
   const [entries, setEntries] = useState<GuestbookEntry[]>([])
   const [name, setName] = useState('')
   const [message, setMessage] = useState('')
+  const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const access = useGuestAccess()
+  // Das Feld erscheint nur, solange dieser Browser nicht entsperrt ist.
+  const needsPassword = access.status === 'locked'
 
   useEffect(() => {
     fetch('/api/guestbook')
@@ -55,14 +61,29 @@ export default function GuestbookPage() {
       setError('Deine Nachricht ist zu kurz. Bitte schreib mindestens 10 Zeichen.')
       return
     }
+    if (needsPassword && !password.trim()) {
+      setError('Bitte gib das Kennwort vom Empfang ein.')
+      return
+    }
 
     setSubmitting(true)
     try {
       const response = await fetch('/api/guestbook', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name.trim(), message: trimmedMessage }),
+        body: JSON.stringify({
+          name: name.trim(),
+          message: trimmedMessage,
+          ...(needsPassword ? { password } : {}),
+        }),
       })
+      if (response.status === 401) {
+        // Mit Kennwort: vertippt. Ohne: die gemerkte Sitzung gilt nicht mehr
+        // (abgelaufen oder Kennwort gewechselt) - das Feld wieder zeigen.
+        setError(needsPassword ? 'Falsches Kennwort.' : 'Bitte gib das Kennwort vom Empfang ein.')
+        access.markLocked()
+        return
+      }
       if (!response.ok) {
         const data = await response.json().catch(() => null)
         setError(data?.error ?? 'Eintrag konnte nicht gespeichert werden. Bitte versuch es erneut.')
@@ -72,6 +93,9 @@ export default function GuestbookPage() {
       setEntries((prev) => [data.entry, ...prev])
       setName('')
       setMessage('')
+      setPassword('')
+      // Der Server hat mit dem richtigen Kennwort die Sitzung gesetzt.
+      if (needsPassword) access.markUnlocked()
     } catch {
       setError('Eintrag konnte nicht gespeichert werden. Bitte versuch es erneut.')
     } finally {
@@ -130,6 +154,15 @@ export default function GuestbookPage() {
                   />
                   <p className="text-xs text-gray-400 text-right mt-1">{message.length}/500</p>
                 </div>
+
+                {needsPassword && (
+                  <GuestPasswordField
+                    id="guestbook-password"
+                    value={password}
+                    onChange={setPassword}
+                    linkRejected={access.linkRejected}
+                  />
+                )}
 
                 {error && <p className="text-sm text-red-600">{error}</p>}
 

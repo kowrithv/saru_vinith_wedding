@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { GET, POST } from './route'
 import { setFeatureLocked } from '@/lib/app-config'
 import { getDb } from '@/lib/db'
+import { GALLERY_COOKIE_NAME, createGallerySessionCookieValue } from '@/lib/gallery-auth'
 
 function postRequest(body: unknown): Request {
   return new Request('http://localhost/api/memories', {
@@ -57,6 +58,31 @@ describe('/api/memories', () => {
     const getResponse = await GET()
     const body = await getResponse.json()
     expect(body.entries).toHaveLength(0)
+  })
+
+  it('POST with the correct password accepts case and spaces and sets a session cookie', async () => {
+    const response = await POST(
+      postRequest({
+        name: 'Anna',
+        message: 'Ich erinnere mich an den Tag eures Kennenlernens.',
+        password: ' EMPFANG-secret ',
+      })
+    )
+    expect(response.status).toBe(201)
+    expect(response.headers.get('set-cookie')).toContain(`${GALLERY_COOKIE_NAME}=`)
+  })
+
+  it('POST with a valid session cookie needs no password in the body', async () => {
+    const cookieValue = createGallerySessionCookieValue(getDb())
+    const response = await POST(
+      new Request('http://localhost/api/memories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', cookie: `${GALLERY_COOKIE_NAME}=${cookieValue}` },
+        body: JSON.stringify({ name: 'Anna', message: 'Ich erinnere mich an den Tag eures Kennenlernens.' }),
+      })
+    )
+    expect(response.status).toBe(201)
+    expect(response.headers.get('set-cookie')).toBeNull()
   })
 
   it('POST rejects a missing password', async () => {

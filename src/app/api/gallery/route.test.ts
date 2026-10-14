@@ -31,8 +31,19 @@ describe('GET /api/gallery', () => {
     process.env.R2_PUBLIC_BASE_URL = originalR2Base
   })
 
+  it('hides photos by default: a fresh database starts in password mode', async () => {
+    const db = getDb()
+    addGalleryPhoto(db, { id: 'p1', thumbKey: 't1', originalKey: 'o1', uploaderName: 'Anna', deleteTokenHash: 'h1', category: 'Hochzeit', isOfficial: false })
+
+    const body = await (await GET(requestWithCookies({}))).json()
+    expect(body.mode).toBe('password')
+    expect(body.unlocked).toBe(false)
+    expect(body.photos).toBeNull()
+  })
+
   it('returns photos when the gallery is public, with no cookie at all', async () => {
     const db = getDb()
+    setGalleryMode(db, 'public')
     addGalleryPhoto(db, { id: 'p1', thumbKey: 't1', originalKey: 'o1', uploaderName: 'Anna', deleteTokenHash: 'h1', category: 'Hochzeit', isOfficial: false })
 
     const body = await (await GET(requestWithCookies({}))).json()
@@ -77,6 +88,7 @@ describe('GET /api/gallery', () => {
 
   it('includes category and isOfficial on each returned photo', async () => {
     const db = getDb()
+    setGalleryMode(db, 'public')
     addGalleryPhoto(db, {
       id: 'p1',
       thumbKey: 't1',
@@ -93,6 +105,7 @@ describe('GET /api/gallery', () => {
 
   it('returns thumbUrl/originalUrl instead of raw storage keys', async () => {
     const db = getDb()
+    setGalleryMode(db, 'public')
     addGalleryPhoto(db, {
       id: 'p1',
       thumbKey: 'gallery/p1/thumb.jpg',

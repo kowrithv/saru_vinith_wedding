@@ -3,6 +3,7 @@ import { POST } from './route'
 import { getDb } from '@/lib/db'
 import { setFeatureLocked } from '@/lib/app-config'
 import { ADMIN_COOKIE_NAME, getOrCreateAdminSecret, signCookieValue } from '@/lib/admin-auth'
+import { GALLERY_COOKIE_NAME, createGallerySessionCookieValue } from '@/lib/gallery-auth'
 import { verifyUploadTicket } from '@/lib/upload-ticket'
 
 vi.mock('@/lib/r2', () => ({
@@ -90,6 +91,61 @@ describe('POST /api/uploads/request', () => {
     const payload = verifyUploadTicket(body.tickets[0].ticket, secret)
     expect(payload?.isOfficial).toBe(false)
     expect(payload?.category).toBe('Hochzeit')
+  })
+
+  it('accepts the password regardless of case and spaces, and issues a session cookie', async () => {
+    getDb()
+    const response = await POST(
+      requestBody({
+        password: ' EMPFANG-Secret ',
+        category: 'Hochzeit',
+        files: [{ filename: 'a.jpg', size: 1000, contentType: 'image/jpeg' }],
+      })
+    )
+    expect(response.status).toBe(200)
+    expect(response.headers.get('set-cookie')).toContain(`${GALLERY_COOKIE_NAME}=`)
+  })
+
+  it('issues tickets without a password in the body when the request carries a guest session', async () => {
+    const db = getDb()
+    const secret = getOrCreateAdminSecret(db)
+    const headers = new Headers({
+      'Content-Type': 'application/json',
+      cookie: `${GALLERY_COOKIE_NAME}=${createGallerySessionCookieValue(db)}`,
+    })
+    const response = await POST(
+      new Request('http://localhost/api/uploads/request', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          category: 'Party',
+          files: [{ filename: 'a.jpg', size: 1000, contentType: 'image/jpeg' }],
+        }),
+      })
+    )
+    expect(response.status).toBe(200)
+    expect(response.headers.get('set-cookie')).toBeNull()
+
+    const body = await response.json()
+    const payload = verifyUploadTicket(body.tickets[0].ticket, secret)
+    // Eine Gast-Sitzung macht niemanden zum Admin: das Foto bleibt "inoffiziell".
+    expect(payload?.isOfficial).toBe(false)
+  })
+
+  it('rejects an expired guest session without a password', async () => {
+    const db = getDb()
+    const stale = createGallerySessionCookieValue(db, Date.now() - 31 * 24 * 60 * 60 * 1000)
+    const response = await POST(
+      new Request('http://localhost/api/uploads/request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', cookie: `${GALLERY_COOKIE_NAME}=${stale}` },
+        body: JSON.stringify({
+          category: 'Party',
+          files: [{ filename: 'a.jpg', size: 1000, contentType: 'image/jpeg' }],
+        }),
+      })
+    )
+    expect(response.status).toBe(401)
   })
 
   it('issues an official ticket without any password when the request has a valid admin cookie', async () => {

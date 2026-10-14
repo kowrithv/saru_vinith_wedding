@@ -6,7 +6,7 @@ import { textFieldClassName } from './form-styles'
 const FILES_WITH_TEXT_FIELDS = [
   'src/app/memories/page.tsx',
   'src/app/guestbook/page.tsx',
-  'src/app/gallery/page.tsx',
+  'src/components/ui/GuestPasswordField.tsx',
   'src/components/gallery/GalleryUploadForm.tsx',
   'src/components/admin/AdminLoginForm.tsx',
 ]

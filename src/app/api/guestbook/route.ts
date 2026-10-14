@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { getDb } from '@/lib/db'
 import { addGuestbookEntry, listGuestbookEntries } from '@/lib/guestbook'
 import { isFeatureLocked } from '@/lib/app-config'
+import { authorizeGuest, setGallerySessionCookie } from '@/lib/gallery-auth'
 import { RateLimiter } from '@/lib/rate-limit'
 import { getClientKey } from '@/lib/client-ip'
 
@@ -43,11 +44,27 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   const body = await request.json().catch(() => null)
+
+  // Kennwort (oder eine Sitzung daraus) zuerst prüfen, bevor auf Name und
+  // Nachricht geschaut wird: ein falsches Kennwort verrät so nie, ob der
+  // Rest gültig gewesen wäre.
+  const db = getDb()
+  const candidatePassword =
+    body && typeof body === 'object' ? (body as Record<string, unknown>).password : undefined
+  const access = authorizeGuest(request, db, candidatePassword)
+  if (!access.ok) {
+    return NextResponse.json({ error: 'Falsches Kennwort.' }, { status: 401 })
+  }
+
   const parsed = entrySchema.safeParse(body)
   if (!parsed.success) {
     return NextResponse.json({ error: 'Ungültige Anfrage.' }, { status: 400 })
   }
 
-  const entry = addGuestbookEntry(getDb(), parsed.data.name, parsed.data.message)
-  return NextResponse.json({ entry }, { status: 201 })
+  const entry = addGuestbookEntry(db, parsed.data.name, parsed.data.message)
+  const response = NextResponse.json({ entry }, { status: 201 })
+  // Mit dem Kennwort geschrieben: den Browser gleich für Galerie und
+  // Erinnerungen entsperren.
+  if (access.issueSession) setGallerySessionCookie(response, db)
+  return response
 }
