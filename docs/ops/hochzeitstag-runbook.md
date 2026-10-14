@@ -45,7 +45,7 @@ ls -lh data/backups | tail                                       # letzte Sicher
 ```
 
 **Achtung:** `restart` liest `.env.production` **nicht** neu. Nach jeder Änderung
-an den App-Werten (z. B. `UPLOAD_PASSWORD_EMPFANG`, `CLIENT_IP_HEADER`, SMTP, R2):
+an den App-Werten (z. B. `GUEST_PASSWORD`, `CLIENT_IP_HEADER`, SMTP, R2):
 
 ```bash
 docker compose -f docker-compose.yml up -d --force-recreate web

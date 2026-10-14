@@ -40,7 +40,7 @@ einer Route meldet `tsc` ggf. veraltete Dateien in `.next/types` – dann
   nie – Clients bekommen nur `GalleryPhotoView` mit URLs.
 - Schreib-Sperren (`app-config.ts`, `LOCKABLE_FEATURES`):
   `guestbook | memories | who_votes | gallery_upload` einzeln schaltbar; `gallery_mode` (`public | password`, Standard `password`) ist davon getrennt.
-- Gäste-Zugang: ein Kennwort (`UPLOAD_PASSWORD_EMPFANG`) für Galerie, Gästebuch,
+- Gäste-Zugang: ein Kennwort (`GUEST_PASSWORD`) für Galerie, Gästebuch,
   Erinnerungen und Upload. Server: `authorizeGuest`/`hasGuestAccess` in
   `gallery-auth.ts` (Cookie `gallery_session` oder Kennwort im Request, das das
   Cookie setzt). Client: `useGuestAccess` (`/api/access`, QR-Link `#k=` einlösen)

@@ -17,19 +17,19 @@ function postRequest(body: Record<string, unknown>, headers: Record<string, stri
 
 describe('/api/guestbook', () => {
   const originalPath = process.env.DATABASE_PATH
-  const originalPassword = process.env.UPLOAD_PASSWORD_EMPFANG
+  const originalPassword = process.env.GUEST_PASSWORD
 
   beforeEach(() => {
     delete globalThis.__appDb
     process.env.DATABASE_PATH = ':memory:'
-    process.env.UPLOAD_PASSWORD_EMPFANG = PASSWORD
+    process.env.GUEST_PASSWORD = PASSWORD
   })
 
   afterEach(() => {
     globalThis.__appDb?.close()
     delete globalThis.__appDb
     process.env.DATABASE_PATH = originalPath
-    process.env.UPLOAD_PASSWORD_EMPFANG = originalPassword
+    process.env.GUEST_PASSWORD = originalPassword
   })
 
   it('POST adds a valid entry and GET returns it', async () => {

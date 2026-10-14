@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { normalizeGuestPassword, verifyGuestPassword } from './guest-password'
+import { getGuestPassword, normalizeGuestPassword, verifyGuestPassword } from './guest-password'
 
 describe('verifyGuestPassword', () => {
   it('accepts the exact password', () => {
@@ -44,5 +44,24 @@ describe('verifyGuestPassword', () => {
 describe('normalizeGuestPassword', () => {
   it('trims and lowercases', () => {
     expect(normalizeGuestPassword('  AbC ')).toBe('abc')
+  })
+})
+
+describe('getGuestPassword', () => {
+  it('reads GUEST_PASSWORD', () => {
+    expect(getGuestPassword({ GUEST_PASSWORD: 'Hochzeit' })).toBe('Hochzeit')
+  })
+
+  it('falls back to the former name UPLOAD_PASSWORD_EMPFANG', () => {
+    expect(getGuestPassword({ UPLOAD_PASSWORD_EMPFANG: 'Hochzeit' })).toBe('Hochzeit')
+  })
+
+  it('prefers the new name and ignores empty values', () => {
+    expect(getGuestPassword({ GUEST_PASSWORD: 'neu', UPLOAD_PASSWORD_EMPFANG: 'alt' })).toBe('neu')
+    expect(getGuestPassword({ GUEST_PASSWORD: '', UPLOAD_PASSWORD_EMPFANG: 'alt' })).toBe('alt')
+  })
+
+  it('is undefined when neither is set', () => {
+    expect(getGuestPassword({})).toBeUndefined()
   })
 })

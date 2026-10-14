@@ -1,6 +1,6 @@
 const REQUIRED_KEYS = [
   'ADMIN_PASSWORD',
-  'UPLOAD_PASSWORD_EMPFANG',
+  'GUEST_PASSWORD',
   'R2_ACCOUNT_ID',
   'R2_ACCESS_KEY_ID',
   'R2_SECRET_ACCESS_KEY',
@@ -14,6 +14,17 @@ export const R2_JURISDICTIONS = ['eu', 'fedramp'] as const
 
 // Quelle der Client-IP für die Rate-Limiter (siehe client-ip.ts).
 export const CLIENT_IP_HEADERS = ['x-forwarded-for', 'cf-connecting-ip'] as const
+
+/**
+ * Das Gäste-Kennwort (Galerie, Gästebuch, Erinnerungen, Upload). Früher hieß
+ * die Variable UPLOAD_PASSWORD_EMPFANG; der alte Name gilt als Rückfall, damit
+ * eine vorbereitete .env.production beim Start nicht abbricht.
+ */
+export function getGuestPassword(
+  source: Record<string, string | undefined> = process.env
+): string | undefined {
+  return source.GUEST_PASSWORD || source.UPLOAD_PASSWORD_EMPFANG || undefined
+}
 
 export class InvalidEnvError extends Error {
   readonly variable: string
@@ -37,7 +48,7 @@ export class MissingEnvError extends Error {
 
 export interface AppEnv {
   adminPassword: string
-  uploadPasswordEmpfang: string
+  guestPassword: string
   r2AccountId: string
   r2AccessKeyId: string
   r2SecretAccessKey: string
@@ -50,7 +61,9 @@ export interface AppEnv {
 export function validateEnv(
   source: Record<string, string | undefined> = process.env
 ): AppEnv {
-  const missing = REQUIRED_KEYS.filter((key) => !source[key])
+  const missing = REQUIRED_KEYS.filter((key) =>
+    key === 'GUEST_PASSWORD' ? !getGuestPassword(source) : !source[key]
+  )
   if (missing.length > 0) {
     throw new MissingEnvError(missing)
   }
@@ -70,7 +83,7 @@ export function validateEnv(
   }
   return {
     adminPassword: source.ADMIN_PASSWORD as string,
-    uploadPasswordEmpfang: source.UPLOAD_PASSWORD_EMPFANG as string,
+    guestPassword: getGuestPassword(source) as string,
     r2AccountId: source.R2_ACCOUNT_ID as string,
     r2AccessKeyId: source.R2_ACCESS_KEY_ID as string,
     r2SecretAccessKey: source.R2_SECRET_ACCESS_KEY as string,

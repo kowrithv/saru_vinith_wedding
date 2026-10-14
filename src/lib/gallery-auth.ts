@@ -2,7 +2,7 @@ import { createHmac } from 'node:crypto'
 import type Database from 'better-sqlite3'
 import type { NextResponse } from 'next/server'
 import { getOrCreateAdminSecret, isAdminRequest, signCookieValue, verifyCookieValue } from './admin-auth'
-import { normalizeGuestPassword, verifyGuestPassword } from './guest-password'
+import { getGuestPassword, normalizeGuestPassword, verifyGuestPassword } from './guest-password'
 
 export const GALLERY_COOKIE_NAME = 'gallery_session'
 // Der Browser merkt sich das Kennwort für Galerie, Gästebuch und Erinnerungen
@@ -18,7 +18,7 @@ export const GALLERY_SESSION_DURATION_MS = 30 * 24 * 60 * 60 * 1000 // 30 Tage
 // Das aktuelle Gäste-Kennwort fließt mit ein: ein Kennwortwechsel (Neustart
 // mit neuem Wert) entwertet alle ausgestellten Sitzungen.
 function deriveGallerySecret(adminSecret: string): string {
-  const guestPassword = normalizeGuestPassword(process.env.UPLOAD_PASSWORD_EMPFANG ?? '')
+  const guestPassword = normalizeGuestPassword(getGuestPassword() ?? '')
   return createHmac('sha256', adminSecret)
     .update('gallery-session')
     .update('\0')
@@ -80,7 +80,7 @@ export function authorizeGuest(
   if (hasGuestAccess(request, db)) return { ok: true, issueSession: false }
   if (
     typeof candidatePassword === 'string' &&
-    verifyGuestPassword(candidatePassword, process.env.UPLOAD_PASSWORD_EMPFANG)
+    verifyGuestPassword(candidatePassword, getGuestPassword())
   ) {
     return { ok: true, issueSession: true }
   }

@@ -27,19 +27,19 @@ function requestBody(body: unknown, cookieValue?: string, clientIp?: string): Re
 
 describe('POST /api/uploads/request', () => {
   const originalPath = process.env.DATABASE_PATH
-  const originalPassword = process.env.UPLOAD_PASSWORD_EMPFANG
+  const originalPassword = process.env.GUEST_PASSWORD
 
   beforeEach(() => {
     delete globalThis.__appDb
     process.env.DATABASE_PATH = ':memory:'
-    process.env.UPLOAD_PASSWORD_EMPFANG = 'empfang-secret'
+    process.env.GUEST_PASSWORD = 'empfang-secret'
   })
 
   afterEach(() => {
     globalThis.__appDb?.close()
     delete globalThis.__appDb
     process.env.DATABASE_PATH = originalPath
-    process.env.UPLOAD_PASSWORD_EMPFANG = originalPassword
+    process.env.GUEST_PASSWORD = originalPassword
   })
 
   it('rejects the wrong password without issuing any ticket', async () => {

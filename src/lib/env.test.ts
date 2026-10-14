@@ -3,7 +3,7 @@ import { InvalidEnvError, MissingEnvError, validateEnv } from './env'
 
 const allSet = {
   ADMIN_PASSWORD: 'secret',
-  UPLOAD_PASSWORD_EMPFANG: 'empfang-secret',
+  GUEST_PASSWORD: 'empfang-secret',
   R2_ACCOUNT_ID: 'acc',
   R2_ACCESS_KEY_ID: 'key',
   R2_SECRET_ACCESS_KEY: 'secretkey',
@@ -15,7 +15,7 @@ describe('validateEnv', () => {
   it('returns the parsed env when every required variable is set', () => {
     expect(validateEnv(allSet)).toEqual({
       adminPassword: 'secret',
-      uploadPasswordEmpfang: 'empfang-secret',
+      guestPassword: 'empfang-secret',
       r2AccountId: 'acc',
       r2AccessKeyId: 'key',
       r2SecretAccessKey: 'secretkey',
@@ -32,7 +32,7 @@ describe('validateEnv', () => {
       expect(error).toBeInstanceOf(MissingEnvError)
       expect((error as MissingEnvError).missing).toEqual([
         'ADMIN_PASSWORD',
-        'UPLOAD_PASSWORD_EMPFANG',
+        'GUEST_PASSWORD',
         'R2_ACCOUNT_ID',
         'R2_ACCESS_KEY_ID',
         'R2_SECRET_ACCESS_KEY',
@@ -49,9 +49,27 @@ describe('validateEnv', () => {
     }
   })
 
-  it('still requires ADMIN_PASSWORD and UPLOAD_PASSWORD_EMPFANG', () => {
+  it('still requires ADMIN_PASSWORD and GUEST_PASSWORD', () => {
     expect(() => validateEnv({ ...allSet, ADMIN_PASSWORD: undefined })).toThrow(/ADMIN_PASSWORD/)
-    expect(() => validateEnv({ ...allSet, UPLOAD_PASSWORD_EMPFANG: undefined })).toThrow(/UPLOAD_PASSWORD_EMPFANG/)
+    expect(() => validateEnv({ ...allSet, GUEST_PASSWORD: undefined })).toThrow(/GUEST_PASSWORD/)
+  })
+
+  // Ein vor der Umbenennung vorbereitetes .env.production soll beim Start nicht
+  // abbrechen: der frühere Name UPLOAD_PASSWORD_EMPFANG gilt als Rückfall.
+  it('still reads the former name UPLOAD_PASSWORD_EMPFANG as a fallback', () => {
+    const { GUEST_PASSWORD: _unused, ...withoutNew } = allSet
+    void _unused
+    const legacy = { ...withoutNew, UPLOAD_PASSWORD_EMPFANG: 'altes-kennwort' }
+    expect(validateEnv(legacy).guestPassword).toBe('altes-kennwort')
+  })
+
+  it('prefers GUEST_PASSWORD over the former name', () => {
+    const both = { ...allSet, GUEST_PASSWORD: 'neu', UPLOAD_PASSWORD_EMPFANG: 'alt' }
+    expect(validateEnv(both).guestPassword).toBe('neu')
+  })
+
+  it('treats an empty GUEST_PASSWORD as unset', () => {
+    expect(() => validateEnv({ ...allSet, GUEST_PASSWORD: '' })).toThrow(/GUEST_PASSWORD/)
   })
 
   it('exposes an optional R2 jurisdiction, normalised to lower case', () => {

@@ -1,5 +1,7 @@
 import { verifyPassword } from './admin-auth'
 
+export { getGuestPassword } from './env'
+
 // Das Gäste-Kennwort ist ein kurzes, merkbares Wort (steht auch im QR-Link).
 // Gäste tippen es am Handy: Groß-/Kleinschreibung, Leerzeichen am Rand und
 // die Zerlegung von Umlauten sollen deshalb keine Rolle spielen. Das

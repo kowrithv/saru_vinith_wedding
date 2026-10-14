@@ -80,7 +80,7 @@ jobs:
           # Werte kommen zur Laufzeit aus der Server-Umgebung
           # (docker-compose/.env.production).
           ADMIN_PASSWORD: ci-build-only
-          UPLOAD_PASSWORD_EMPFANG: ci-build-only
+          GUEST_PASSWORD: ci-build-only
           R2_ACCOUNT_ID: ci-build-only
           R2_ACCESS_KEY_ID: ci-build-only
           R2_SECRET_ACCESS_KEY: ci-build-only

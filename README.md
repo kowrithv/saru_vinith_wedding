@@ -52,7 +52,7 @@ wirklich auszuprobieren.
 | Variable | Pflicht | Zweck |
 |---|---|---|
 | `ADMIN_PASSWORD` | ja | Kennwort für `/admin` |
-| `UPLOAD_PASSWORD_EMPFANG` | ja | Gäste-Kennwort („vom Empfang“) für Galerie, Gästebuch, Erinnerungen und Uploads; kurz und merkbar, Groß-/Kleinschreibung egal (siehe „Gäste-Zugang“) |
+| `GUEST_PASSWORD` | ja | Gäste-Kennwort („vom Empfang“) für Galerie, Gästebuch, Erinnerungen und Uploads; kurz und merkbar, Groß-/Kleinschreibung egal (siehe „Gäste-Zugang“). Der frühere Name `UPLOAD_PASSWORD_EMPFANG` wird als Rückfall weiter gelesen. |
 | `R2_ACCOUNT_ID` | ja | Cloudflare-Konto |
 | `R2_ACCESS_KEY_ID` | ja | R2-API-Token (Object Read & Write, nur für den Bucket) |
 | `R2_SECRET_ACCESS_KEY` | ja | zum Token gehörendes Secret |
@@ -130,7 +130,7 @@ Details: `docs/superpowers/specs/2026-10-12-gallery-design.md`.
 ### Gäste-Zugang (Kennwort und QR-Code)
 
 Galerie, Gästebuch, Erinnerungen und Foto-Upload teilen sich **ein** Kennwort
-(`UPLOAD_PASSWORD_EMPFANG`). Es gilt ohne Rücksicht auf Groß-/Kleinschreibung
+(`GUEST_PASSWORD`). Es gilt ohne Rücksicht auf Groß-/Kleinschreibung
 und Leerzeichen am Rand und soll kurz und merkbar sein, aber **nicht aus der
 Seite erratbar**: keine Namen, kein Datum, kein Ort (stehen alle auf der Seite).
 Falsche Versuche sind je Adresse begrenzt, ein kurzes Wort hält also Gelegenheits-

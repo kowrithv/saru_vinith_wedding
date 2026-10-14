@@ -17,19 +17,19 @@ function unlockRequest(password?: string, clientIp?: string): Request {
 
 describe('POST /api/gallery/unlock', () => {
   const originalPath = process.env.DATABASE_PATH
-  const originalPassword = process.env.UPLOAD_PASSWORD_EMPFANG
+  const originalPassword = process.env.GUEST_PASSWORD
 
   beforeEach(() => {
     delete globalThis.__appDb
     process.env.DATABASE_PATH = ':memory:'
-    process.env.UPLOAD_PASSWORD_EMPFANG = 'empfang-secret'
+    process.env.GUEST_PASSWORD = 'empfang-secret'
   })
 
   afterEach(() => {
     globalThis.__appDb?.close()
     delete globalThis.__appDb
     process.env.DATABASE_PATH = originalPath
-    process.env.UPLOAD_PASSWORD_EMPFANG = originalPassword
+    process.env.GUEST_PASSWORD = originalPassword
   })
 
   it('sets a gallery session cookie on the correct password', async () => {

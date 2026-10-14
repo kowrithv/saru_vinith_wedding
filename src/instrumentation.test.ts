@@ -6,7 +6,7 @@ vi.mock('@/lib/ops-scheduler', () => ({ startOpsScheduler: () => startOpsSchedul
 
 const ENV_KEYS = [
   'ADMIN_PASSWORD',
-  'UPLOAD_PASSWORD_EMPFANG',
+  'GUEST_PASSWORD',
   'R2_ACCOUNT_ID',
   'R2_ACCESS_KEY_ID',
   'R2_SECRET_ACCESS_KEY',
@@ -57,11 +57,11 @@ describe('register', () => {
     expect(exitSpy).toHaveBeenCalledWith(1)
   })
 
-  it('logs a German error and exits with code 1 when UPLOAD_PASSWORD_EMPFANG is missing', () => {
+  it('logs a German error and exits with code 1 when GUEST_PASSWORD is missing', () => {
     for (const key of ENV_KEYS) {
       process.env[key] = 'test-value'
     }
-    delete process.env.UPLOAD_PASSWORD_EMPFANG
+    delete process.env.GUEST_PASSWORD
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     const exitSpy = vi
       .spyOn(process, 'exit')

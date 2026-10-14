@@ -21,14 +21,14 @@ function requestWithCookie(cookieValue?: string): Request {
 }
 
 describe('gallery session', () => {
-  const originalPassword = process.env.UPLOAD_PASSWORD_EMPFANG
+  const originalPassword = process.env.GUEST_PASSWORD
 
   beforeEach(() => {
-    process.env.UPLOAD_PASSWORD_EMPFANG = 'Hochzeit'
+    process.env.GUEST_PASSWORD = 'Hochzeit'
   })
 
   afterEach(() => {
-    process.env.UPLOAD_PASSWORD_EMPFANG = originalPassword
+    process.env.GUEST_PASSWORD = originalPassword
   })
 
   it('is not unlocked without a cookie', () => {
@@ -89,7 +89,7 @@ describe('gallery session', () => {
     const cookieValue = createGallerySessionCookieValue(db)
     expect(isGalleryUnlocked(requestWithCookie(cookieValue), db)).toBe(true)
 
-    process.env.UPLOAD_PASSWORD_EMPFANG = 'Anderes-Wort'
+    process.env.GUEST_PASSWORD = 'Anderes-Wort'
     expect(isGalleryUnlocked(requestWithCookie(cookieValue), db)).toBe(false)
     db.close()
   })
@@ -97,21 +97,21 @@ describe('gallery session', () => {
   it('survives a change of letter case in the configured password', () => {
     const db = createDb(':memory:')
     const cookieValue = createGallerySessionCookieValue(db)
-    process.env.UPLOAD_PASSWORD_EMPFANG = 'HOCHZEIT'
+    process.env.GUEST_PASSWORD = 'HOCHZEIT'
     expect(isGalleryUnlocked(requestWithCookie(cookieValue), db)).toBe(true)
     db.close()
   })
 })
 
 describe('hasGuestAccess', () => {
-  const originalPassword = process.env.UPLOAD_PASSWORD_EMPFANG
+  const originalPassword = process.env.GUEST_PASSWORD
 
   beforeEach(() => {
-    process.env.UPLOAD_PASSWORD_EMPFANG = 'Hochzeit'
+    process.env.GUEST_PASSWORD = 'Hochzeit'
   })
 
   afterEach(() => {
-    process.env.UPLOAD_PASSWORD_EMPFANG = originalPassword
+    process.env.GUEST_PASSWORD = originalPassword
   })
 
   it('is false for a request without any cookie', () => {
@@ -136,14 +136,14 @@ describe('hasGuestAccess', () => {
 })
 
 describe('authorizeGuest', () => {
-  const originalPassword = process.env.UPLOAD_PASSWORD_EMPFANG
+  const originalPassword = process.env.GUEST_PASSWORD
 
   beforeEach(() => {
-    process.env.UPLOAD_PASSWORD_EMPFANG = 'Hochzeit'
+    process.env.GUEST_PASSWORD = 'Hochzeit'
   })
 
   afterEach(() => {
-    process.env.UPLOAD_PASSWORD_EMPFANG = originalPassword
+    process.env.GUEST_PASSWORD = originalPassword
   })
 
   it('lets a valid session through without issuing a new cookie', () => {
@@ -169,7 +169,7 @@ describe('authorizeGuest', () => {
   })
 
   it('rejects everything when no guest password is configured', () => {
-    delete process.env.UPLOAD_PASSWORD_EMPFANG
+    delete process.env.GUEST_PASSWORD
     const db = createDb(':memory:')
     expect(authorizeGuest(requestWithCookie(), db, '')).toEqual({ ok: false })
     expect(authorizeGuest(requestWithCookie(), db, 'irgendwas')).toEqual({ ok: false })
@@ -178,14 +178,14 @@ describe('authorizeGuest', () => {
 })
 
 describe('setGallerySessionCookie', () => {
-  const originalPassword = process.env.UPLOAD_PASSWORD_EMPFANG
+  const originalPassword = process.env.GUEST_PASSWORD
 
   beforeEach(() => {
-    process.env.UPLOAD_PASSWORD_EMPFANG = 'Hochzeit'
+    process.env.GUEST_PASSWORD = 'Hochzeit'
   })
 
   afterEach(() => {
-    process.env.UPLOAD_PASSWORD_EMPFANG = originalPassword
+    process.env.GUEST_PASSWORD = originalPassword
   })
 
   it('sets a httpOnly, lax, site-wide cookie that unlocks the next request', () => {

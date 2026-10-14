@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getDb } from '@/lib/db'
-import { verifyGuestPassword } from '@/lib/guest-password'
+import { getGuestPassword, verifyGuestPassword } from '@/lib/guest-password'
 import { setGallerySessionCookie } from '@/lib/gallery-auth'
 import { RateLimiter } from '@/lib/rate-limit'
 import { getClientKey } from '@/lib/client-ip'
@@ -24,7 +24,7 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   const db = getDb()
-  if (!verifyGuestPassword(parsed.data.password, process.env.UPLOAD_PASSWORD_EMPFANG)) {
+  if (!verifyGuestPassword(parsed.data.password, getGuestPassword())) {
     return NextResponse.json({ error: 'Falsches Kennwort.' }, { status: 401 })
   }
 

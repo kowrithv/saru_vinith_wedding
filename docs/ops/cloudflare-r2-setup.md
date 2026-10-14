@@ -138,7 +138,7 @@ CLOUDFLARE_API_TOKEN=<Cache-Purge-Token>
 CLOUDFLARE_ZONE_ID=<Zone ID der Foto-Domain>
 ```
 
-Dazu `ADMIN_PASSWORD`, `UPLOAD_PASSWORD_EMPFANG` (neu setzen, nicht die alten),
+Dazu `ADMIN_PASSWORD`, `GUEST_PASSWORD` (neu setzen, nicht die alten),
 `DOMAIN=vsjourney.de` und optional `SMTP_*`/`ALERT_EMAIL_TO`. Container neu
 starten; die App bricht beim Start ab, wenn ein Pflichtwert fehlt oder
 `R2_JURISDICTION` ungültig ist.
