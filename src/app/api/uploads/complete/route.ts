@@ -1,11 +1,9 @@
-import { randomBytes, createHash } from 'node:crypto'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getDb } from '@/lib/db'
 import { getOrCreateAdminSecret } from '@/lib/admin-auth'
 import { verifyUploadTicket } from '@/lib/upload-ticket'
-import { headObject } from '@/lib/r2'
-import { addGalleryPhoto } from '@/lib/gallery-photos'
+import { checkUploadedObjects, storeUploadedPhoto } from '@/lib/gallery-upload-complete'
 import { toGalleryPhotoView } from '@/lib/gallery-photo-view'
 import { isFeatureLocked } from '@/lib/app-config'
 import { UPLOADS_PAUSED_MESSAGE } from '@/lib/gallery-upload-limits'
@@ -36,30 +34,18 @@ export async function POST(request: Request): Promise<Response> {
     return NextResponse.json({ error: UPLOADS_PAUSED_MESSAGE }, { status: 423 })
   }
 
-  const [thumbInfo, originalInfo] = await Promise.all([
-    headObject(payload.thumbKey),
-    headObject(payload.originalKey),
-  ])
-
-  if (!thumbInfo || thumbInfo.size > payload.thumbMaxSize) {
-    return NextResponse.json({ error: 'Thumbnail fehlt oder ist zu groß.' }, { status: 400 })
-  }
-  if (!originalInfo || originalInfo.size !== payload.originalSize) {
-    return NextResponse.json({ error: 'Original fehlt oder Größe stimmt nicht.' }, { status: 400 })
+  const check = await checkUploadedObjects(payload)
+  if (!check.ok) {
+    return NextResponse.json({ error: check.error }, { status: check.status })
   }
 
-  const deleteToken = randomBytes(32).toString('hex')
-  const deleteTokenHash = createHash('sha256').update(deleteToken, 'utf8').digest('hex')
+  const stored = storeUploadedPhoto(db, payload, parsed.data.uploaderName)
+  if (!stored.ok) {
+    return NextResponse.json({ error: stored.error }, { status: stored.status })
+  }
 
-  const photo = addGalleryPhoto(db, {
-    id: payload.photoId,
-    thumbKey: payload.thumbKey,
-    originalKey: payload.originalKey,
-    uploaderName: parsed.data.uploaderName,
-    deleteTokenHash,
-    category: payload.category,
-    isOfficial: payload.isOfficial,
-  })
-
-  return NextResponse.json({ photo: toGalleryPhotoView(photo), deleteToken }, { status: 201 })
+  return NextResponse.json(
+    { photo: toGalleryPhotoView(stored.photo), deleteToken: stored.deleteToken },
+    { status: 201 }
+  )
 }

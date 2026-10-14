@@ -35,8 +35,8 @@ describe('app-config feature locks', () => {
 })
 
 describe('LOCKABLE_FEATURES', () => {
-  it('contains the three write locks and the gallery upload', () => {
-    expect([...LOCKABLE_FEATURES]).toEqual(['guestbook', 'memories', 'who_votes', 'gallery_upload'])
+  it('contains the three write locks, the gallery upload and the memory photos', () => {
+    expect([...LOCKABLE_FEATURES]).toEqual(['guestbook', 'memories', 'who_votes', 'gallery_upload', 'memory_photos'])
   })
 
   it('locks and unlocks gallery_upload independently of the other features', () => {
@@ -58,6 +58,19 @@ describe('config values', () => {
     expect(getConfigValue(db, 'alert_last_sent:test')).toBe('123')
     setConfigValue(db, 'alert_last_sent:test', '456')
     expect(getConfigValue(db, 'alert_last_sent:test')).toBe('456')
+    db.close()
+  })
+})
+
+describe('memory_photos lock', () => {
+  it('is unlocked by default and independent of the memories text lock', () => {
+    const db = createDb(':memory:')
+    expect(isFeatureLocked(db, 'memory_photos')).toBe(false)
+
+    setFeatureLocked(db, 'memory_photos', true)
+    expect(isFeatureLocked(db, 'memory_photos')).toBe(true)
+    expect(isFeatureLocked(db, 'memories')).toBe(false)
+    expect(isFeatureLocked(db, 'gallery_upload')).toBe(false)
     db.close()
   })
 })

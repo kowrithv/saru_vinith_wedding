@@ -7,6 +7,7 @@ interface Locks {
   memories: boolean
   who_votes: boolean
   gallery_upload: boolean
+  memory_photos: boolean
 }
 
 type GalleryMode = 'public' | 'password'
@@ -48,13 +49,13 @@ describe('AdminPage', () => {
   it('shows the dashboard with the fetched lock status and gallery mode when already authenticated', async () => {
     vi.stubGlobal(
       'fetch',
-      mockAuthFetch(true, { guestbook: true, memories: false, who_votes: false, gallery_upload: false }, true, 'password')
+      mockAuthFetch(true, { guestbook: true, memories: false, who_votes: false, gallery_upload: false, memory_photos: false }, true, 'password')
     )
     render(<AdminPage />)
     await waitFor(() =>
       expect(screen.getByTestId('dashboard-stub')).toHaveTextContent(
         JSON.stringify({
-          initialLocks: { guestbook: true, memories: false, who_votes: false, gallery_upload: false },
+          initialLocks: { guestbook: true, memories: false, who_votes: false, gallery_upload: false, memory_photos: false },
           initialGalleryMode: 'password',
         })
       )
@@ -66,7 +67,7 @@ describe('AdminPage', () => {
     render(<AdminPage />)
     const loginButton = await screen.findByText('stub-login-success')
 
-    vi.stubGlobal('fetch', mockAuthFetch(true, { guestbook: false, memories: false, who_votes: false, gallery_upload: false }))
+    vi.stubGlobal('fetch', mockAuthFetch(true, { guestbook: false, memories: false, who_votes: false, gallery_upload: false, memory_photos: false }))
     loginButton.click()
 
     await waitFor(() => expect(screen.getByTestId('dashboard-stub')).toBeInTheDocument())

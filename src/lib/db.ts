@@ -46,6 +46,7 @@ export function applySchema(db: Database.Database): void {
       name TEXT NOT NULL,
       message TEXT NOT NULL,
       photo_key TEXT,
+      photo_id TEXT,
       created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
     );
 
@@ -86,6 +87,12 @@ export function applySchema(db: Database.Database): void {
   }
   if (!columnExists(db, 'gallery_photos', 'is_official')) {
     db.exec(`ALTER TABLE gallery_photos ADD COLUMN is_official INTEGER NOT NULL DEFAULT 0`)
+  }
+  // Fotos zu Erinnerungen: Verweis auf gallery_photos.id (photo_key bleibt
+  // ungenutzt). Kein Fremdschlüssel: ein in der Galerie gelöschtes Foto soll
+  // die Erinnerung nicht blockieren, sie zeigt dann nur den Text.
+  if (!columnExists(db, 'memories_entries', 'photo_id')) {
+    db.exec(`ALTER TABLE memories_entries ADD COLUMN photo_id TEXT`)
   }
 }
 

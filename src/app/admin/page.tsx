@@ -9,6 +9,7 @@ interface Locks {
   memories: boolean
   who_votes: boolean
   gallery_upload: boolean
+  memory_photos: boolean
 }
 
 type GalleryMode = 'public' | 'password'

@@ -1,10 +1,18 @@
 import type Database from 'better-sqlite3'
 
+/** Das Galerie-Foto einer Erinnerung (Schlüssel nur serverseitig, siehe memories-view). */
+export interface MemoryPhoto {
+  id: string
+  thumbKey: string
+  originalKey: string
+}
+
 export interface MemoryEntry {
   id: number
   name: string
   message: string
-  photoKey: string | null
+  /** null: kein Foto angehängt oder das Foto wurde aus der Galerie gelöscht. */
+  photo: MemoryPhoto | null
   createdAt: string
 }
 
@@ -12,16 +20,29 @@ interface MemoryRow {
   id: number
   name: string
   message: string
-  photo_key: string | null
   created_at: string
+  photo_id: string | null
+  thumb_key: string | null
+  original_key: string | null
 }
+
+// LEFT JOIN: ein gelöschtes Galerie-Foto lässt die Zeile bestehen, die
+// Schlüssel sind dann NULL.
+const SELECT_ENTRY = `
+  SELECT m.id, m.name, m.message, m.created_at,
+         g.id AS photo_id, g.thumb_key, g.original_key
+  FROM memories_entries m
+  LEFT JOIN gallery_photos g ON g.id = m.photo_id`
 
 function toEntry(row: MemoryRow): MemoryEntry {
   return {
     id: row.id,
     name: row.name,
     message: row.message,
-    photoKey: row.photo_key,
+    photo:
+      row.photo_id && row.thumb_key && row.original_key
+        ? { id: row.photo_id, thumbKey: row.thumb_key, originalKey: row.original_key }
+        : null,
     createdAt: row.created_at,
   }
 }
@@ -30,21 +51,21 @@ export function addMemoryEntry(
   db: Database.Database,
   name: string,
   message: string,
-  photoKey: string | null
+  photoId: string | null
 ): MemoryEntry {
   const result = db
-    .prepare('INSERT INTO memories_entries (name, message, photo_key) VALUES (?, ?, ?)')
-    .run(name, message, photoKey)
-  const row = db
-    .prepare('SELECT id, name, message, photo_key, created_at FROM memories_entries WHERE id = ?')
-    .get(result.lastInsertRowid) as MemoryRow
-  return toEntry(row)
+    .prepare('INSERT INTO memories_entries (name, message, photo_id) VALUES (?, ?, ?)')
+    .run(name, message, photoId)
+  return getMemoryEntry(db, Number(result.lastInsertRowid)) as MemoryEntry
+}
+
+export function getMemoryEntry(db: Database.Database, id: number): MemoryEntry | undefined {
+  const row = db.prepare(`${SELECT_ENTRY} WHERE m.id = ?`).get(id) as MemoryRow | undefined
+  return row ? toEntry(row) : undefined
 }
 
 export function listMemoryEntries(db: Database.Database): MemoryEntry[] {
-  const rows = db
-    .prepare('SELECT id, name, message, photo_key, created_at FROM memories_entries ORDER BY id DESC')
-    .all() as MemoryRow[]
+  const rows = db.prepare(`${SELECT_ENTRY} ORDER BY m.id DESC`).all() as MemoryRow[]
   return rows.map(toEntry)
 }
 

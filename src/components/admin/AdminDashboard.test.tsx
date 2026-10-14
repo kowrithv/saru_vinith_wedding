@@ -69,7 +69,7 @@ function mockFetchSequence(
   return fn
 }
 
-const noLocks = { guestbook: false, memories: false, who_votes: false, gallery_upload: false }
+const noLocks = { guestbook: false, memories: false, who_votes: false, gallery_upload: false, memory_photos: false }
 
 // Die Mount-Fetches laufen in dieser Reihenfolge: Gästebuch, Erinnerungen,
 // Galerie-Fotos. Alles danach (Umschalten, Löschen) hängt hinten an.
@@ -98,7 +98,7 @@ describe('AdminDashboard', () => {
   it('loads and shows guestbook and memories entries', async () => {
     mockFetchSequence([
       { body: { entries: [{ id: 1, name: 'Anna', message: 'Herzlichen Glückwunsch euch!', createdAt: '2026-10-11T10:00:00.000Z' }] } },
-      { body: { entries: [{ id: 5, name: 'Ben', message: 'Schöne Erinnerung an euch.', photoKey: null, createdAt: '2026-10-11T11:00:00.000Z' }] } },
+      { body: { entries: [{ id: 5, name: 'Ben', message: 'Schöne Erinnerung an euch.', hasPhoto: false, photo: null, createdAt: '2026-10-11T11:00:00.000Z' }] } },
       noGalleryPhotos,
     ])
 
@@ -136,12 +136,12 @@ describe('AdminDashboard', () => {
     answerMemories({
       ok: true,
       status: 200,
-      json: async () => ({ locks: { guestbook: true, memories: true, who_votes: false, gallery_upload: false } }),
+      json: async () => ({ locks: { guestbook: true, memories: true, who_votes: false, gallery_upload: false, memory_photos: false } }),
     })
     answerGuestbook({
       ok: true,
       status: 200,
-      json: async () => ({ locks: { guestbook: true, memories: false, who_votes: false, gallery_upload: false } }),
+      json: async () => ({ locks: { guestbook: true, memories: false, who_votes: false, gallery_upload: false, memory_photos: false } }),
     })
 
     await waitFor(() => expect(screen.getByRole('switch', { name: /gästebuch/i })).toHaveAttribute('aria-checked', 'true'))
@@ -157,7 +157,7 @@ describe('AdminDashboard', () => {
       { body: { entries: [] } },
       noGalleryPhotos,
       { status: 500, body: { error: 'Serverfehler' } },
-      { body: { locks: { guestbook: false, memories: true, who_votes: false, gallery_upload: false } } },
+      { body: { locks: { guestbook: false, memories: true, who_votes: false, gallery_upload: false, memory_photos: false } } },
     ])
     render(<AdminDashboard initialLocks={noLocks} initialGalleryMode="public" />)
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3))
@@ -176,7 +176,7 @@ describe('AdminDashboard', () => {
       { body: { entries: [] } },
       noGalleryPhotos,
       { status: 500, body: { error: 'Serverfehler' } },
-      { body: { locks: { guestbook: true, memories: false, who_votes: false, gallery_upload: false } } },
+      { body: { locks: { guestbook: true, memories: false, who_votes: false, gallery_upload: false, memory_photos: false } } },
     ])
     render(<AdminDashboard initialLocks={noLocks} initialGalleryMode="public" />)
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3))
@@ -426,7 +426,7 @@ describe('AdminDashboard', () => {
       { body: { entries: [] } },
       { body: { entries: [] } },
       noGalleryPhotos,
-      { body: { locks: { guestbook: false, memories: false, who_votes: false, gallery_upload: true } } },
+      { body: { locks: { guestbook: false, memories: false, who_votes: false, gallery_upload: true, memory_photos: false } } },
     ])
     render(<AdminDashboard initialLocks={noLocks} initialGalleryMode="public" />)
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3))
@@ -442,6 +442,87 @@ describe('AdminDashboard', () => {
       expect.objectContaining({ body: JSON.stringify({ feature: 'gallery_upload', locked: true }) })
     )
     expect(screen.getByRole('switch', { name: /gästebuch/i })).toHaveAttribute('aria-checked', 'false')
+  })
+
+  it('shows a switch for memory photos and sends memory_photos when it is toggled', async () => {
+    const fetchMock = mockFetchSequence([
+      { body: { entries: [] } },
+      { body: { entries: [] } },
+      noGalleryPhotos,
+      { body: { locks: { ...noLocks, memory_photos: true } } },
+    ])
+    render(<AdminDashboard initialLocks={noLocks} initialGalleryMode="public" />)
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3))
+
+    const toggle = screen.getByRole('switch', { name: /erinnerungs-fotos/i })
+    expect(toggle).toHaveAttribute('aria-checked', 'false')
+
+    await userEvent.click(toggle)
+
+    await waitFor(() => expect(toggle).toHaveAttribute('aria-checked', 'true'))
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/admin/write-lock',
+      expect.objectContaining({ body: JSON.stringify({ feature: 'memory_photos', locked: true }) })
+    )
+    // Der Text-Schalter der Erinnerungen bleibt davon unberührt.
+    expect(screen.getByRole('switch', { name: /schreib-sperre: erinnerungen$/i })).toHaveAttribute('aria-checked', 'false')
+  })
+
+  describe('memory entries with a photo', () => {
+    const entryWithPhoto = {
+      id: 8,
+      name: 'Lena',
+      message: 'Das war der schönste Tag überhaupt.',
+      createdAt: '2026-10-11T12:00:00.000Z',
+      hasPhoto: true,
+      photo: {
+        id: 'p8',
+        thumbUrl: 'https://fotos.example.de/p8/thumb.jpg',
+        originalUrl: 'https://fotos.example.de/p8/original.jpg',
+      },
+    }
+
+    it('shows the photo next to the text', async () => {
+      mockFetchSequence([{ body: { entries: [] } }, { body: { entries: [entryWithPhoto] } }, noGalleryPhotos])
+      render(<AdminDashboard initialLocks={noLocks} initialGalleryMode="public" />)
+
+      const image = await screen.findByAltText(/foto von lena/i)
+      expect(image).toHaveAttribute('src', entryWithPhoto.photo.thumbUrl)
+    })
+
+    it('warns that the photo goes too, and deletes nothing when the admin declines', async () => {
+      const fetchMock = mockFetchSequence([
+        { body: { entries: [] } },
+        { body: { entries: [entryWithPhoto] } },
+        noGalleryPhotos,
+      ])
+      vi.mocked(window.confirm).mockReturnValue(false)
+      render(<AdminDashboard initialLocks={noLocks} initialGalleryMode="public" />)
+      await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3))
+
+      await userEvent.click(await screen.findByRole('button', { name: /^erinnerungen/i }))
+      await userEvent.click(await screen.findByRole('button', { name: /löschen: eintrag von lena/i }))
+
+      expect(window.confirm).toHaveBeenCalledWith(expect.stringMatching(/foto.*galerie/i))
+      expect(fetchMock).toHaveBeenCalledTimes(3)
+    })
+
+    it('deletes the entry with its photo once the admin confirms', async () => {
+      const fetchMock = mockFetchSequence([
+        { body: { entries: [] } },
+        { body: { entries: [entryWithPhoto] } },
+        noGalleryPhotos,
+        { body: { success: true } },
+      ])
+      render(<AdminDashboard initialLocks={noLocks} initialGalleryMode="public" />)
+      await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3))
+
+      await userEvent.click(await screen.findByRole('button', { name: /^erinnerungen/i }))
+      await userEvent.click(await screen.findByRole('button', { name: /löschen: eintrag von lena/i }))
+
+      await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/memories/8', { method: 'DELETE' }))
+      await waitFor(() => expect(screen.queryByText(/schönste Tag überhaupt/)).not.toBeInTheDocument())
+    })
   })
 
   it('starts with guestbook and memories collapsed and the gallery open', async () => {
@@ -672,7 +753,7 @@ describe('AdminDashboard', () => {
     mockFetchSequence([{ body: { entries: [] } }, { body: { entries: [] } }, noGalleryPhotos])
     render(
       <AdminDashboard
-        initialLocks={{ ...noLocks, gallery_upload: true }}
+        initialLocks={{ ...noLocks, gallery_upload: true, memory_photos: false }}
         initialGalleryMode="public"
       />
     )

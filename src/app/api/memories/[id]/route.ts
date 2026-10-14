@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
-import { deleteMemoryEntry } from '@/lib/memories'
+import { deleteMemoryEntry, getMemoryEntry } from '@/lib/memories'
 import { isAdminRequest } from '@/lib/admin-auth'
+import { removeGalleryPhoto } from '@/lib/gallery-photo-removal'
 
 export async function DELETE(
   request: Request,
@@ -18,10 +19,17 @@ export async function DELETE(
     return NextResponse.json({ error: 'Ungültige ID.' }, { status: 400 })
   }
 
-  const deleted = deleteMemoryEntry(db, numericId)
-  if (!deleted) {
+  const entry = getMemoryEntry(db, numericId)
+  if (!entry) {
     return NextResponse.json({ error: 'Eintrag nicht gefunden.' }, { status: 404 })
   }
+
+  // Das Foto zuerst: scheitert R2, bleibt der Eintrag stehen und der Admin
+  // kann es erneut versuchen (statt einer Galerie-Waise ohne Erinnerung).
+  if (entry.photo) {
+    await removeGalleryPhoto(db, entry.photo)
+  }
+  deleteMemoryEntry(db, numericId)
 
   return NextResponse.json({ success: true })
 }

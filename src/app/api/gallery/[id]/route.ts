@@ -3,9 +3,8 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getDb } from '@/lib/db'
 import { isAdminRequest } from '@/lib/admin-auth'
-import { getGalleryPhotoById, deleteGalleryPhotoRow } from '@/lib/gallery-photos'
-import { deleteObjects } from '@/lib/r2'
-import { purgeCache } from '@/lib/cloudflare-purge'
+import { getGalleryPhotoById } from '@/lib/gallery-photos'
+import { removeGalleryPhoto } from '@/lib/gallery-photo-removal'
 
 const bodySchema = z.object({ deleteToken: z.string().optional() })
 
@@ -39,11 +38,7 @@ export async function DELETE(
     }
   }
 
-  await deleteObjects([photo.thumbKey, photo.originalKey])
-  deleteGalleryPhotoRow(db, id)
-
-  const baseUrl = process.env.R2_PUBLIC_BASE_URL ?? ''
-  await purgeCache([`${baseUrl}/${photo.thumbKey}`, `${baseUrl}/${photo.originalKey}`])
+  await removeGalleryPhoto(db, photo)
 
   return NextResponse.json({ success: true })
 }

@@ -109,7 +109,9 @@ Fotos laufen **nie durch den App-Server**:
 
 1. Der Browser erzeugt ein Vorschaubild (max. 800 px) und fragt per
    `POST /api/uploads/request` ein signiertes Ticket mit presigned PUT-URLs an
-   (15 Minuten gültig, Gast-Sitzung oder Kennwort wird geprüft).
+   (15 Minuten gültig, Gast-Sitzung oder Kennwort wird geprüft). Die Größe der
+   Vorschau (`thumbSize`, höchstens 2 MB) wird mitgemeldet und fest signiert,
+   wie die des Originals: R2 lehnt einen größeren PUT ab.
 2. Der Browser lädt Vorschaubild und Original direkt nach R2.
 3. `POST /api/uploads/complete` prüft die Objekte per `HeadObject` und legt
    die Zeile in SQLite an.
@@ -119,13 +121,25 @@ Fotos laufen **nie durch den App-Server**:
 
 Der Admin kann im Dashboard die Galerie zwischen **Kennwort** (Standard) und
 **Öffentlich** umschalten sowie Gästebuch, Erinnerungen, die
-„Wer von uns?“-Abstimmung und den **Foto-Upload** einzeln sperren (der Admin
-lädt auch bei gesperrtem Upload weiter hoch). Die Bucket-CORS-Regel muss
+„Wer von uns?“-Abstimmung, den **Foto-Upload** und die **Erinnerungs-Fotos**
+einzeln sperren (der Admin lädt auch bei gesperrtem Upload weiter hoch). Die Bucket-CORS-Regel muss
 `PUT, GET, HEAD`, die Header `content-type, content-length` und die
 Produktions-Domain sowie `http://localhost:3000` erlauben (Einstellung im
 Cloudflare-Dashboard, nicht im Code).
 
 Details: `docs/superpowers/specs/2026-10-12-gallery-design.md`.
+
+### Fotos zu Erinnerungen
+
+Eine Erinnerung kann **ein Foto** tragen. Es ist ein normales Galerie-Foto
+(Kategorie „Erinnerungen", gleiche Pipeline wie oben) und erscheint dort *und* an
+der Erinnerung. Der Browser lädt es per Ticket nach R2 und schickt dann
+`POST /api/memories` mit dem Ticket; Server legt Foto und Eintrag in einer
+Transaktion an. Die Foto-URLs liefert `GET /api/memories` nur an entsperrte
+Browser (der Text ist weiter offen). Ein Admin-Löschen entfernt Eintrag und Foto
+(R2, Zeile, Cache); das Foto in der Galerie zu löschen lässt den Text stehen.
+Notaus: Schalter „Erinnerungs-Fotos" (plus „Foto-Upload"). Entwurf:
+`docs/superpowers/specs/2026-10-14-memory-photos-design.md`.
 
 ### Gäste-Zugang (Kennwort und QR-Code)
 

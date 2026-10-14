@@ -22,8 +22,9 @@ interface MemoryEntry {
   id: number
   name: string
   message: string
-  photoKey: string | null
   createdAt: string
+  hasPhoto: boolean
+  photo: { id: string; thumbUrl: string; originalUrl: string } | null
 }
 
 interface Locks {
@@ -31,6 +32,7 @@ interface Locks {
   memories: boolean
   who_votes: boolean
   gallery_upload: boolean
+  memory_photos: boolean
 }
 
 type GalleryMode = 'public' | 'password'
@@ -45,6 +47,7 @@ const FEATURE_LABELS: Record<keyof Locks, string> = {
   memories: 'Erinnerungen',
   who_votes: 'Wer-von-uns-Abstimmung',
   gallery_upload: 'Foto-Upload',
+  memory_photos: 'Erinnerungs-Fotos',
 }
 
 interface MemoryResultRow {
@@ -140,7 +143,18 @@ export default function AdminDashboard({ initialLocks, initialGalleryMode }: Adm
     }
   }
 
-  const deleteMemoryEntry = async (id: number) => {
+  const deleteMemoryEntry = async (entry: MemoryEntry) => {
+    const { id } = entry
+    // Das Foto einer Erinnerung ist ein Galerie-Foto: es verschwindet mit ihr,
+    // endgültig (Original und Vorschau in R2).
+    if (
+      entry.photo &&
+      !window.confirm(
+        `Eintrag von ${entry.name} samt Foto (auch aus der Galerie) wirklich endgültig löschen?`
+      )
+    ) {
+      return
+    }
     setDeleteError(null)
     try {
       const response = await fetch(`/api/memories/${id}`, { method: 'DELETE' })
@@ -315,7 +329,9 @@ export default function AdminDashboard({ initialLocks, initialGalleryMode }: Adm
                           ? 'Erlaubt.'
                           : feature === 'gallery_upload'
                             ? 'Gesperrt für Gäste – du lädst weiter hoch.'
-                            : 'Gesperrt.'}
+                            : feature === 'memory_photos'
+                              ? 'Gesperrt – Erinnerungen nur noch mit Text.'
+                              : 'Gesperrt.'}
                       </p>
                     </div>
                   </div>
@@ -440,10 +456,19 @@ export default function AdminDashboard({ initialLocks, initialGalleryMode }: Adm
                         <p className="text-xs text-gray-400">{formatDate(entry.createdAt)}</p>
                       </div>
                       <p className="text-sm text-gray-600">{entry.message}</p>
+                      {entry.photo && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={entry.photo.thumbUrl}
+                          alt={`Foto von ${entry.name}`}
+                          loading="lazy"
+                          className="mt-2 h-24 w-auto rounded-lg object-cover"
+                        />
+                      )}
                     </div>
                     <button
                       type="button"
-                      onClick={() => deleteMemoryEntry(entry.id)}
+                      onClick={() => deleteMemoryEntry(entry)}
                       aria-label={`Löschen: Eintrag von ${entry.name}`}
                       className="text-gray-400 hover:text-red-600 transition-colors flex-shrink-0"
                     >

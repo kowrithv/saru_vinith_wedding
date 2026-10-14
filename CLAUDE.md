@@ -41,6 +41,12 @@ einer Route meldet `tsc` ggf. veraltete Dateien in `.next/types` – dann
   nie – Clients bekommen nur `GalleryPhotoView` mit URLs.
 - Schreib-Sperren (`app-config.ts`, `LOCKABLE_FEATURES`):
   `guestbook | memories | who_votes | gallery_upload` einzeln schaltbar; `gallery_mode` (`public | password`, Standard `password`) ist davon getrennt.
+- Fotos zu Erinnerungen sind **Galerie-Fotos** (`gallery_photos`, Kategorie
+  `MEMORY_PHOTO_CATEGORY`); `memories_entries.photo_id` verweist darauf
+  (`photo_key` ist ungenutzt). Foto und Eintrag entstehen in `POST /api/memories`
+  in einer Transaktion (`checkUploadedObjects` + `storeUploadedPhoto`);
+  Foto-URLs nur für entsperrte Browser (`toMemoryEntryView`). Löschen über
+  `removeGalleryPhoto`. Schalter: `memory_photos`.
 - Gäste-Zugang: ein Kennwort (`GUEST_PASSWORD`) für Galerie, Gästebuch,
   Erinnerungen und Upload. Server: `authorizeGuest`/`hasGuestAccess` in
   `gallery-auth.ts` (Cookie `gallery_session` oder Kennwort im Request, das das

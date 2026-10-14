@@ -147,7 +147,7 @@ async function runAdminCheck(fetchImpl, baseUrl, password) {
     try {
       const data = JSON.parse(locks.text)
       const keys = Object.keys(data.locks ?? {})
-      ok = ['guestbook', 'memories', 'who_votes', 'gallery_upload'].every((key) => keys.includes(key))
+      ok = ['guestbook', 'memories', 'who_votes', 'gallery_upload', 'memory_photos'].every((key) => keys.includes(key))
       detail = ok ? 'vier Schalter lesbar' : `Schalter unvollständig: ${keys.join(', ')}`
     } catch {
       ok = false

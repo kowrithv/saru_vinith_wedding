@@ -1,12 +1,20 @@
 'use client'
 
-import { useEffect, useState, type FormEvent } from 'react'
-import { Heart, Send, User } from 'lucide-react'
+import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
+import { Camera, Heart, Send, User, X } from 'lucide-react'
 import SectionTitle from '@/components/ui/SectionTitle'
 import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
 import GuestPasswordField from '@/components/ui/GuestPasswordField'
 import { textFieldClassName } from '@/lib/form-styles'
+import { MEMORY_PHOTO_CATEGORY } from '@/lib/gallery-categories'
+import { saveDeleteToken } from '@/lib/gallery-delete-tokens'
+import {
+  IMAGE_CONTENT_TYPE_EXTENSIONS,
+  MAX_ORIGINAL_BYTES,
+  resolveImageContentType,
+} from '@/lib/gallery-upload-limits'
+import { uploadPhotoForTicket } from '@/lib/photo-upload'
 import { useGuestAccess } from '@/lib/use-guest-access'
 import { useGuestName } from '@/lib/use-guest-name'
 import { cn } from '@/lib/utils'
@@ -15,8 +23,10 @@ interface MemoryEntry {
   id: number
   name: string
   message: string
-  photoKey: string | null
   createdAt: string
+  /** Es gibt ein Foto, auch wenn dieser Browser es (noch) nicht sieht. */
+  hasPhoto: boolean
+  photo: { id: string; thumbUrl: string; originalUrl: string } | null
 }
 
 function formatDate(iso: string): string {
@@ -31,16 +41,48 @@ export default function MemoriesPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [uploadingPhoto, setUploadingPhoto] = useState(false)
+  // Der Server sagt, ob Fotos gerade angehängt werden können (Notaus).
+  const [photosEnabled, setPhotosEnabled] = useState(false)
+  const [photoFile, setPhotoFile] = useState<File | null>(null)
+  const [photoError, setPhotoError] = useState<string | null>(null)
+  // Neuer key setzt das (unkontrollierte) Datei-Feld zurück.
+  const [photoInputKey, setPhotoInputKey] = useState(0)
   const access = useGuestAccess()
   // Das Feld erscheint nur, solange dieser Browser nicht entsperrt ist.
   const needsPassword = access.status === 'locked'
 
   useEffect(() => {
     fetch('/api/memories')
-      .then((res) => (res.ok ? res.json() : { entries: [] }))
-      .then((data: { entries: MemoryEntry[] }) => setEntries(data.entries))
+      .then((res) => (res.ok ? res.json() : { entries: [], photosEnabled: false }))
+      .then((data: { entries: MemoryEntry[]; photosEnabled?: boolean }) => {
+        setEntries(data.entries)
+        setPhotosEnabled(Boolean(data.photosEnabled))
+      })
       .catch(() => {})
   }, [])
+
+  const handlePhotoChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null
+    setPhotoError(null)
+    setPhotoFile(null)
+    if (!file) return
+    if (!IMAGE_CONTENT_TYPE_EXTENSIONS.has(resolveImageContentType(file))) {
+      setPhotoError('Dateityp nicht unterstützt. Bitte wähle ein Foto (JPG, PNG, WebP oder HEIC).')
+      return
+    }
+    if (file.size > MAX_ORIGINAL_BYTES) {
+      setPhotoError('Das Foto ist zu groß (max. 20 MB).')
+      return
+    }
+    setPhotoFile(file)
+  }
+
+  const removePhoto = () => {
+    setPhotoFile(null)
+    setPhotoError(null)
+    setPhotoInputKey((key) => key + 1)
+  }
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -63,12 +105,33 @@ export default function MemoriesPage() {
     remember(name)
     setSubmitting(true)
     try {
+      // Mit Foto: erst die Übertragung nach R2, dann wird der Eintrag mit dem
+      // Ticket gespeichert. Scheitert der Upload, bleibt der Text stehen.
+      let ticket: string | undefined
+      if (photoFile) {
+        setUploadingPhoto(true)
+        const upload = await uploadPhotoForTicket({
+          file: photoFile,
+          contentType: resolveImageContentType(photoFile),
+          category: MEMORY_PHOTO_CATEGORY,
+          password: needsPassword ? password : undefined,
+        })
+        setUploadingPhoto(false)
+        if (!upload.ok) {
+          setError(upload.error)
+          if (upload.unauthorized) access.markLocked()
+          return
+        }
+        ticket = upload.ticket
+      }
+
       const response = await fetch('/api/memories', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: name.trim(),
           message: trimmedMessage,
+          ...(ticket ? { ticket } : {}),
           ...(needsPassword ? { password } : {}),
         }),
       })
@@ -84,15 +147,19 @@ export default function MemoriesPage() {
         setError(data?.error ?? 'Erinnerung konnte nicht gespeichert werden. Bitte versuch es erneut.')
         return
       }
-      const data = (await response.json()) as { entry: MemoryEntry }
+      const data = (await response.json()) as { entry: MemoryEntry; deleteToken?: string }
+      // Das Foto ist auch in der Galerie: das Lösch-Token bleibt auf diesem Gerät.
+      if (data.deleteToken && data.entry.photo) saveDeleteToken(data.entry.photo.id, data.deleteToken)
       setEntries((prev) => [data.entry, ...prev])
       setMessage('')
       setPassword('')
+      removePhoto()
       // Der Server hat mit dem richtigen Kennwort die Sitzung gesetzt.
       if (needsPassword) access.markUnlocked()
     } catch {
       setError('Erinnerung konnte nicht gespeichert werden. Bitte versuch es erneut.')
     } finally {
+      setUploadingPhoto(false)
       setSubmitting(false)
     }
   }
@@ -156,12 +223,44 @@ export default function MemoriesPage() {
               <p className="text-xs text-gray-400 text-right mt-1">{message.length}/500</p>
             </div>
 
+            {photosEnabled && (
+              <div className="md:col-span-2">
+                <label htmlFor="memories-photo" className="block text-sm font-medium text-gray-700 mb-1.5">
+                  <Camera size={14} className="inline mr-1" />
+                  Foto (optional)
+                </label>
+                <input
+                  key={photoInputKey}
+                  id="memories-photo"
+                  type="file"
+                  accept="image/*"
+                  onChange={handlePhotoChange}
+                  className="block w-full text-sm text-gray-600 file:mr-3 file:rounded-full file:border-0 file:bg-champagne file:px-4 file:py-2 file:text-sm file:font-medium file:text-dark-blue"
+                />
+                {photoFile && (
+                  <p className="mt-2 flex items-center gap-2 text-sm text-gray-600">
+                    <span className="break-all">{photoFile.name}</span>
+                    <button
+                      type="button"
+                      onClick={removePhoto}
+                      aria-label="Foto entfernen"
+                      className="rounded-full p-1 text-gray-500 hover:bg-champagne hover:text-dark-blue"
+                    >
+                      <X size={14} />
+                    </button>
+                  </p>
+                )}
+                {photoError && <p className="mt-2 text-sm text-red-600">{photoError}</p>}
+                <p className="mt-1 text-xs text-gray-500">Das Foto erscheint auch in der Galerie.</p>
+              </div>
+            )}
+
             {error && <p className="md:col-span-2 text-sm text-red-600">{error}</p>}
 
             <div className="md:col-span-2">
               <Button type="submit" size="lg" disabled={submitting} className="w-full">
                 <Send size={16} />
-                {submitting ? 'Wird geteilt...' : 'Erinnerung teilen'}
+                {uploadingPhoto ? 'Foto wird hochgeladen...' : submitting ? 'Wird geteilt...' : 'Erinnerung teilen'}
               </Button>
             </div>
           </form>
@@ -191,6 +290,29 @@ export default function MemoriesPage() {
                   </div>
                 </div>
                 <p className="text-sm text-gray-700 leading-relaxed italic pl-2">&quot;{entry.message}&quot;</p>
+                {entry.photo ? (
+                  <a
+                    href={entry.photo.originalUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-3 block overflow-hidden rounded-xl"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={entry.photo.thumbUrl}
+                      alt={`Foto von ${entry.name}`}
+                      loading="lazy"
+                      className="w-full h-auto object-cover"
+                    />
+                  </a>
+                ) : (
+                  entry.hasPhoto && (
+                    <p className="mt-3 flex items-center gap-2 pl-2 text-xs text-gray-500">
+                      <Camera size={14} aria-hidden="true" />
+                      Foto – sichtbar nach dem Entsperren (QR-Code oder Kennwort)
+                    </p>
+                  )
+                )}
               </Card>
             ))}
           </div>

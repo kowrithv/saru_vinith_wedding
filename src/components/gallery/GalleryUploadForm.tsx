@@ -5,12 +5,11 @@ import { Upload, CheckCircle2, XCircle, Loader2, User, ImageIcon, X } from 'luci
 import Button from '@/components/ui/Button'
 import GuestPasswordField from '@/components/ui/GuestPasswordField'
 import { defaultGalleryCategory, galleryCategories } from '@/lib/gallery-categories'
-import { createPlaceholderThumbnailBlob, createThumbnailBlob } from '@/lib/gallery-thumbnail'
+import { createPreviewImage, type PreviewImage } from '@/lib/gallery-preview'
 import { saveDeleteToken } from '@/lib/gallery-delete-tokens'
 import {
   IMAGE_CONTENT_TYPE_EXTENSIONS,
   MAX_ORIGINAL_BYTES,
-  MAX_THUMB_BYTES,
   resolveImageContentType,
   UPLOADS_PAUSED_MESSAGE,
 } from '@/lib/gallery-upload-limits'
@@ -85,26 +84,6 @@ function toSelectedFile(file: File): SelectedFile {
     return { file, contentType, status: 'error', invalid: true, message: 'Zu groß (max. 20 MB).' }
   }
   return { file, contentType, status: 'pending', invalid: false }
-}
-
-interface PreviewImage {
-  blob: Blob
-  isPlaceholder: boolean
-}
-
-async function createThumbnailOrPlaceholder(file: File): Promise<PreviewImage> {
-  try {
-    const blob = await createThumbnailBlob(file)
-    // Die Größe wird im Ticket fest signiert und der Server lehnt mehr als
-    // MAX_THUMB_BYTES ab: ein ungewöhnlich großes Bild bekommt die neutrale
-    // Fläche, das Original wird trotzdem hochgeladen.
-    if (blob.size > MAX_THUMB_BYTES) return { blob: await createPlaceholderThumbnailBlob(), isPlaceholder: true }
-    return { blob, isPlaceholder: false }
-  } catch {
-    // Nicht dekodierbar (z. B. HEIC außerhalb von Safari): das Original
-    // wird trotzdem hochgeladen, die Galerie zeigt eine neutrale Fläche.
-    return { blob: await createPlaceholderThumbnailBlob(), isPlaceholder: true }
-  }
 }
 
 interface UploadControl {
@@ -395,7 +374,7 @@ export default function GalleryUploadForm({
         // fest signiert. Das Ticket (15 Minuten) läuft so erst nach der
         // Verkleinerung los.
         const previews = await Promise.all(
-          group.map(({ selected }) => createThumbnailOrPlaceholder(selected.file))
+          group.map(({ selected }) => createPreviewImage(selected.file))
         )
         if (controller.signal.aborted) break
         const ticketsResult = await requestTickets(

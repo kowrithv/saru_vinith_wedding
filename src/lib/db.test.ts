@@ -108,6 +108,36 @@ describe('createDb', () => {
   })
 })
 
+describe('memories_entries photo_id', () => {
+  it('has a photo_id column on a fresh database', () => {
+    const db = createDb(':memory:')
+    const columns = db.prepare('PRAGMA table_info(memories_entries)').all() as { name: string }[]
+    expect(columns.map((c) => c.name)).toContain('photo_id')
+    db.close()
+  })
+
+  it('adds photo_id to a memories_entries table created before photos existed, keeping its rows', () => {
+    const db = new Database(':memory:')
+    db.exec(`
+      CREATE TABLE memories_entries (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        message TEXT NOT NULL,
+        photo_key TEXT,
+        created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+      )
+    `)
+    db.prepare('INSERT INTO memories_entries (name, message) VALUES (?, ?)').run('Anna', 'Eine alte Erinnerung.')
+
+    applySchema(db)
+    applySchema(db) // idempotent
+
+    const row = db.prepare('SELECT name, photo_id FROM memories_entries').get() as { name: string; photo_id: string | null }
+    expect(row).toEqual({ name: 'Anna', photo_id: null })
+    db.close()
+  })
+})
+
 describe('getDb', () => {
   const originalPath = process.env.DATABASE_PATH
 

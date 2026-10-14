@@ -32,6 +32,15 @@ Geräte: ☐ iPhone (Safari) ☐ Android (Chrome) ☐ ältere Hardware ☐ Deskt
 - [ ] Lightbox: öffnen, wischen/Pfeile, Original herunterladen, eigenes Foto löschen (nur auf dem Upload-Gerät).
 - [ ] Mobil-Menü offen: der schwebende Knopf liegt **unter** dem Menü.
 
+## Erinnerung mit Foto (braucht R2)
+- [ ] Erinnerungen: Name, Text und ein Foto wählen → Dateiname und „×" erscheinen; absenden → Eintrag mit Foto in der Liste, Button zeigt „Foto wird hochgeladen…".
+- [ ] Dasselbe Foto steht in der **Galerie** (Kategorie „Erinnerungen", „Von <Name>") und lässt sich mit dem Lösch-Knopf in der Lightbox entfernen (nur auf diesem Gerät).
+- [ ] **iPhone** (Foto direkt aus der Kamera/HEIC) und **Android-Chrome**: hochladen; nicht dekodierbare Bilder werden trotzdem angenommen (graue Vorschau in der Galerie).
+- [ ] Datei > 20 MB oder keine Bilddatei: Meldung, es wird nichts hochgeladen.
+- [ ] Privates Fenster ohne Entsperren: die Erinnerung zeigt den Text und „Foto – sichtbar nach dem Entsperren", kein Bild.
+- [ ] Admin: Eintrag mit Foto löschen (mit Rückfrage) → auch in der Galerie weg; Bild-URL liefert sofort 404.
+- [ ] Schalter „Erinnerungs-Fotos" sperren → das Fotofeld verschwindet, Text geht weiter.
+
 ## Spiele und Einträge
 - [ ] Quiz klassisch und „Wer von uns?": Abstimmen, Ergebnis aktualisiert sich.
 - [ ] Memory: komplettes Spiel, „Neuer Rekord"-Meldung, Rekord aller Gäste wird angezeigt; Brett springt nicht.

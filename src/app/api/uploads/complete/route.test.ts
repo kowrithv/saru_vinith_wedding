@@ -65,6 +65,18 @@ describe('POST /api/uploads/complete', () => {
     expect(body.deleteToken.length).toBeGreaterThan(10)
   })
 
+  it('answers 409, not a server error, when the same ticket is completed twice', async () => {
+    const db = getDb()
+    const secret = getOrCreateAdminSecret(db)
+    const ticket = signUploadTicket(validPayload(), secret)
+    mockHeadObject.mockImplementation(async (key: string) =>
+      key.includes('thumb') ? { size: 100_000 } : { size: 4_000_000 }
+    )
+
+    expect((await POST(completeRequest({ ticket, uploaderName: 'Anna' }))).status).toBe(201)
+    expect((await POST(completeRequest({ ticket, uploaderName: 'Anna' }))).status).toBe(409)
+  })
+
   it('rejects when the real original size does not match the ticket', async () => {
     const db = getDb()
     const secret = getOrCreateAdminSecret(db)

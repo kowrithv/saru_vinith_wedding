@@ -243,6 +243,21 @@ describe('POST /api/uploads/request', () => {
     expect(payload?.isOfficial).toBe(false)
   })
 
+  it('issues a ticket for the category used by photos attached to memories', async () => {
+    getDb()
+    const response = await POST(
+      requestBody({
+        password: 'empfang-secret',
+        category: 'Erinnerungen',
+        files: [{ filename: 'a.jpg', size: 1000, contentType: 'image/jpeg', thumbSize: 50_000 }],
+      })
+    )
+    expect(response.status).toBe(200)
+    const body = await response.json()
+    const payload = verifyUploadTicket(body.tickets[0].ticket, getOrCreateAdminSecret(getDb()))
+    expect(payload?.category).toBe('Erinnerungen')
+  })
+
   it('rejects an unknown category value', async () => {
     getDb()
     const response = await POST(

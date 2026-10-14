@@ -1,8 +1,45 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { GET, POST } from './route'
 import { setFeatureLocked } from '@/lib/app-config'
 import { getDb } from '@/lib/db'
 import { GALLERY_COOKIE_NAME, createGallerySessionCookieValue } from '@/lib/gallery-auth'
+import { getOrCreateAdminSecret } from '@/lib/admin-auth'
+import { signUploadTicket, type TicketPayload } from '@/lib/upload-ticket'
+import { listGalleryPhotos } from '@/lib/gallery-photos'
+import { listMemoryEntries } from '@/lib/memories'
+
+const mockHeadObject = vi.fn()
+vi.mock('@/lib/r2', () => ({
+  headObject: (key: string) => mockHeadObject(key),
+}))
+
+function listMemoryEntriesCount(): number {
+  return listMemoryEntries(getDb()).length
+}
+
+function photoPayload(overrides: Partial<TicketPayload> = {}): TicketPayload {
+  return {
+    photoId: 'photo-1',
+    thumbKey: 'gallery/photo-1/thumb.jpg',
+    originalKey: 'gallery/photo-1/original.jpg',
+    thumbMaxSize: 50_000,
+    originalSize: 3_000_000,
+    expiresAt: Date.now() + 60_000,
+    category: 'Erinnerungen',
+    isOfficial: false,
+    ...overrides,
+  }
+}
+
+function signedTicket(overrides: Partial<TicketPayload> = {}): string {
+  return signUploadTicket(photoPayload(overrides), getOrCreateAdminSecret(getDb()))
+}
+
+function objectsExist() {
+  mockHeadObject.mockImplementation(async (key: string) =>
+    key.endsWith('thumb.jpg') ? { size: 40_000 } : { size: 3_000_000 }
+  )
+}
 
 function postRequest(body: unknown): Request {
   return new Request('http://localhost/api/memories', {
@@ -20,6 +57,8 @@ describe('/api/memories', () => {
     delete globalThis.__appDb
     process.env.DATABASE_PATH = ':memory:'
     process.env.GUEST_PASSWORD = 'empfang-secret'
+    process.env.R2_PUBLIC_BASE_URL = 'https://fotos.example.de'
+    mockHeadObject.mockReset()
   })
 
   afterEach(() => {
@@ -39,10 +78,11 @@ describe('/api/memories', () => {
     )
     expect(response.status).toBe(201)
 
-    const getResponse = await GET()
+    const getResponse = await GET(new Request('http://localhost/api/memories'))
     const body = await getResponse.json()
     expect(body.entries).toHaveLength(1)
-    expect(body.entries[0].photoKey).toBeNull()
+    expect(body.entries[0].photo).toBeNull()
+    expect(body.entries[0].hasPhoto).toBe(false)
   })
 
   it('POST rejects a wrong password without revealing anything else', async () => {
@@ -55,7 +95,7 @@ describe('/api/memories', () => {
     )
     expect(response.status).toBe(401)
 
-    const getResponse = await GET()
+    const getResponse = await GET(new Request('http://localhost/api/memories'))
     const body = await getResponse.json()
     expect(body.entries).toHaveLength(0)
   })
@@ -135,7 +175,7 @@ describe('/api/memories', () => {
     )
     expect(response.status).toBe(423)
 
-    const getResponse = await GET()
+    const getResponse = await GET(new Request('http://localhost/api/memories'))
     expect(getResponse.status).toBe(200)
   })
 
@@ -151,5 +191,148 @@ describe('/api/memories', () => {
       })
     )
     expect(response.status).toBe(201)
+  })
+
+  describe('with a photo', () => {
+    function postWithTicket(extra: Record<string, unknown> = {}, headers: Record<string, string> = {}): Request {
+      return new Request('http://localhost/api/memories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...headers },
+        body: JSON.stringify({
+          name: 'Anna',
+          message: 'Mit einem Foto von damals, lang genug.',
+          password: 'empfang-secret',
+          ticket: signedTicket(),
+          ...extra,
+        }),
+      })
+    }
+
+    it('stores the entry and a gallery photo together and returns the delete token', async () => {
+      objectsExist()
+      const response = await POST(postWithTicket())
+
+      expect(response.status).toBe(201)
+      const body = await response.json()
+      expect(body.entry.photo).toEqual({
+        id: 'photo-1',
+        thumbUrl: 'https://fotos.example.de/gallery/photo-1/thumb.jpg',
+        originalUrl: 'https://fotos.example.de/gallery/photo-1/original.jpg',
+      })
+      expect(body.deleteToken).toMatch(/^[0-9a-f]{64}$/)
+
+      const photos = listGalleryPhotos(getDb())
+      expect(photos).toHaveLength(1)
+      expect(photos[0]).toMatchObject({ id: 'photo-1', uploaderName: 'Anna', category: 'Erinnerungen' })
+    })
+
+    it('shows the photo to an unlocked browser and only hints at it to a locked one', async () => {
+      objectsExist()
+      await POST(postWithTicket())
+
+      const locked = await (await GET(new Request('http://localhost/api/memories'))).json()
+      expect(locked.entries[0].photo).toBeNull()
+      expect(locked.entries[0].hasPhoto).toBe(true)
+
+      const cookieValue = createGallerySessionCookieValue(getDb())
+      const unlocked = await (
+        await GET(
+          new Request('http://localhost/api/memories', {
+            headers: { cookie: `${GALLERY_COOKIE_NAME}=${cookieValue}` },
+          })
+        )
+      ).json()
+      expect(unlocked.entries[0].photo.thumbUrl).toContain('/gallery/photo-1/thumb.jpg')
+    })
+
+    it('never puts storage keys into the response', async () => {
+      objectsExist()
+      await POST(postWithTicket())
+      const cookieValue = createGallerySessionCookieValue(getDb())
+      const response = await GET(
+        new Request('http://localhost/api/memories', { headers: { cookie: `${GALLERY_COOKIE_NAME}=${cookieValue}` } })
+      )
+      const text = await response.text()
+      expect(text).not.toContain('thumbKey')
+      expect(text).not.toContain('thumb_key')
+    })
+
+    it('reports whether photos can currently be attached', async () => {
+      const get = async () => (await (await GET(new Request('http://localhost/api/memories'))).json()).photosEnabled
+      expect(await get()).toBe(true)
+
+      setFeatureLocked(getDb(), 'memory_photos', true)
+      expect(await get()).toBe(false)
+
+      setFeatureLocked(getDb(), 'memory_photos', false)
+      setFeatureLocked(getDb(), 'gallery_upload', true)
+      expect(await get()).toBe(false)
+    })
+
+    it('rejects a photo with 423 while memory photos are locked, but still accepts text', async () => {
+      setFeatureLocked(getDb(), 'memory_photos', true)
+      const withPhoto = await POST(postWithTicket())
+      expect(withPhoto.status).toBe(423)
+      expect(mockHeadObject).not.toHaveBeenCalled()
+
+      const textOnly = await POST(
+        postRequest({ name: 'Anna', message: 'Nur Text bleibt möglich, lang genug.', password: 'empfang-secret' })
+      )
+      expect(textOnly.status).toBe(201)
+    })
+
+    it('rejects a photo with 423 while gallery uploads are paused', async () => {
+      setFeatureLocked(getDb(), 'gallery_upload', true)
+      expect((await POST(postWithTicket())).status).toBe(423)
+    })
+
+    it('checks the password before it looks at the ticket', async () => {
+      const response = await POST(postWithTicket({ password: 'falsch' }))
+      expect(response.status).toBe(401)
+      expect(mockHeadObject).not.toHaveBeenCalled()
+    })
+
+    it('rejects an invalid or expired ticket and stores nothing', async () => {
+      expect((await POST(postWithTicket({ ticket: 'nope' }))).status).toBe(400)
+      expect(
+        (await POST(postWithTicket({ ticket: signedTicket({ expiresAt: Date.now() - 1000 }) }))).status
+      ).toBe(400)
+
+      expect(listMemoryEntriesCount()).toBe(0)
+      expect(listGalleryPhotos(getDb())).toHaveLength(0)
+    })
+
+    it('only accepts tickets issued for the memories category', async () => {
+      objectsExist()
+      const response = await POST(postWithTicket({ ticket: signedTicket({ category: 'Hochzeit' }) }))
+      expect(response.status).toBe(400)
+      expect(listMemoryEntriesCount()).toBe(0)
+    })
+
+    it('stores nothing when the uploaded objects are missing', async () => {
+      mockHeadObject.mockResolvedValue(null)
+      const response = await POST(postWithTicket())
+
+      expect(response.status).toBe(400)
+      expect(listMemoryEntriesCount()).toBe(0)
+      expect(listGalleryPhotos(getDb())).toHaveLength(0)
+    })
+
+    it('answers 409 and stores no second entry when the same ticket is used twice', async () => {
+      objectsExist()
+      const ticket = signedTicket()
+      expect((await POST(postWithTicket({ ticket }))).status).toBe(201)
+      expect((await POST(postWithTicket({ ticket }))).status).toBe(409)
+      expect(listMemoryEntriesCount()).toBe(1)
+    })
+
+    it('accepts the session cookie instead of a password', async () => {
+      objectsExist()
+      const cookieValue = createGallerySessionCookieValue(getDb())
+      const response = await POST(
+        postWithTicket({ password: undefined }, { cookie: `${GALLERY_COOKIE_NAME}=${cookieValue}` })
+      )
+      expect(response.status).toBe(201)
+    })
   })
 })

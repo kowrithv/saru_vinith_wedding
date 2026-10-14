@@ -134,7 +134,7 @@ describe('admin check', () => {
         calls.push(['locks', init.headers?.cookie ?? init.headers?.Cookie])
         return {
           status: 200,
-          json: { locks: { guestbook: false, memories: false, who_votes: false, gallery_upload: false } },
+          json: { locks: { guestbook: false, memories: false, who_votes: false, gallery_upload: false, memory_photos: false } },
         }
       },
       'POST /api/admin/logout': () => ({ status: 200, json: { success: true } }),

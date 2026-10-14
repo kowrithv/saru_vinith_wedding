@@ -37,7 +37,7 @@ describe('/api/admin/write-lock', () => {
     expect(response.status).toBe(401)
   })
 
-  it('GET returns all four lock states (false by default) for an admin', async () => {
+  it('GET returns all five lock states (false by default) for an admin', async () => {
     const db = getDb()
     const secret = getOrCreateAdminSecret(db)
     const cookieValue = signCookieValue(Date.now() + 1000, secret)
@@ -45,7 +45,7 @@ describe('/api/admin/write-lock', () => {
     const response = await GET(requestWithCookie('GET', cookieValue))
     expect(response.status).toBe(200)
     const body = await response.json()
-    expect(body.locks).toEqual({ guestbook: false, memories: false, who_votes: false, gallery_upload: false })
+    expect(body.locks).toEqual({ guestbook: false, memories: false, who_votes: false, gallery_upload: false, memory_photos: false })
   })
 
   it('POST rejects a request without a valid admin cookie', async () => {
@@ -63,11 +63,11 @@ describe('/api/admin/write-lock', () => {
     )
     expect(postResponse.status).toBe(200)
     const postBody = await postResponse.json()
-    expect(postBody.locks).toEqual({ guestbook: true, memories: false, who_votes: false, gallery_upload: false })
+    expect(postBody.locks).toEqual({ guestbook: true, memories: false, who_votes: false, gallery_upload: false, memory_photos: false })
 
     const getResponse = await GET(requestWithCookie('GET', cookieValue))
     const getBody = await getResponse.json()
-    expect(getBody.locks).toEqual({ guestbook: true, memories: false, who_votes: false, gallery_upload: false })
+    expect(getBody.locks).toEqual({ guestbook: true, memories: false, who_votes: false, gallery_upload: false, memory_photos: false })
   })
 
   it('POST rejects an unknown feature value', async () => {
@@ -81,7 +81,7 @@ describe('/api/admin/write-lock', () => {
     expect(response.status).toBe(400)
   })
 
-  it.each(['guestbook', 'memories', 'who_votes', 'gallery_upload'] as const)(
+  it.each(['guestbook', 'memories', 'who_votes', 'gallery_upload', 'memory_photos'] as const)(
     'POST locks only %s and leaves the other features alone',
     async (feature) => {
       const db = getDb()

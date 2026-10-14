@@ -25,6 +25,7 @@ In diesem Ordner liegen auch `.env` (Compose: `IMAGE_TAG`) und `.env.production`
 | Schalter | Wirkung | Wann |
 |---|---|---|
 | **Foto-Upload** | Gäste können nicht hochladen, die Galerie bleibt sichtbar; Admin lädt weiter hoch | R2 macht Probleme, Missbrauch, Kosten steigen unerwartet |
+| **Erinnerungs-Fotos** | Erinnerungen nur noch mit Text; das Fotofeld verschwindet, Galerie und Foto-Upload bleiben | Anhängen von Fotos macht Probleme oder wird missbraucht |
 | **Gästebuch** | Keine neuen Einträge | Spam oder Beleidigungen |
 | **Erinnerungen** | Keine neuen Einträge | dito |
 | **Wer-von-uns-Abstimmung** | Keine neuen Stimmen (Ergebnisse bleiben lesbar) | Auffälliges Abstimmverhalten |
@@ -84,6 +85,7 @@ Einträge nach dem Zeitstempel verloren.
 | Seite lädt nicht | Container gestoppt oder Caddy/DNS | `ps` und `logs` prüfen, `restart web`; `curl -sI http://127.0.0.1:3000/api/health` (App) und `systemctl status caddy` (Proxy); `dig vsjourney.de` |
 | Seite lädt, API-Fehler | Datenbank oder Start fehlgeschlagen | `logs --tail 200`: „FEHLER: Fehlende Pflicht-Umgebungsvariablen" = `.env.production` prüfen, dann `up -d --force-recreate web` |
 | Foto-Upload scheitert bei allen | R2-Token, CORS oder Domain | Foto-Upload **sperren**, `logs`; CORS-Regel und Token in Cloudflare prüfen |
+| Erinnerung mit Foto scheitert, ohne Foto geht es | Foto-Pfad (R2, Ticket, Größe) | Schalter **Erinnerungs-Fotos** sperren (Text bleibt möglich), `logs` ansehen; scheitert auch der Galerie-Upload, wie die Zeile darüber |
 | Upload scheitert nur bei einzelnen | große Datei (> 20 MB), HEIC, schwaches Netz | Gast soll es später im WLAN erneut versuchen; Meldung nennt den Grund |
 | „Zu viele Anfragen" für viele Gäste | Rate-Limit wegen gemeinsamer WLAN-IP | `CLIENT_IP_HEADER` und den `X-Forwarded-For`-Header von Caddy prüfen, dann `up -d --force-recreate web` (setzt die Zähler zurück; `restart` liest die Werte nicht neu) |
 | Fotos verschwinden nach Löschen nicht | Cache-Purge fehlt | `CLOUDFLARE_API_TOKEN`/`CLOUDFLARE_ZONE_ID` prüfen |

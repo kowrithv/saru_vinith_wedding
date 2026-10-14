@@ -1,4 +1,7 @@
-export const galleryCategories = ['Kennenlernen', 'Verlobung', 'Hochzeit', 'Party'] as const
+export const galleryCategories = ['Kennenlernen', 'Verlobung', 'Hochzeit', 'Party', 'Erinnerungen'] as const
+
+// Fotos, die Gäste an eine Erinnerung hängen, landen unter dieser Kategorie.
+export const MEMORY_PHOTO_CATEGORY = 'Erinnerungen' as const satisfies (typeof galleryCategories)[number]
 
 export type GalleryCategory = (typeof galleryCategories)[number]
 

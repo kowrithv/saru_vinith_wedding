@@ -13,7 +13,7 @@
 | Di 13.10. abends bis Do | Betreiber | Vorab-Tags `v1.0.0-rc.1`, `-rc.2` … für Deploys und Tests (`IMAGE_TAG` in der `.env` anpassen) |
 | Do 15.10. bis abends | Betreiber | letzter Smoke- und Lasttest gegen die echte Domain, endgültiger Tag `v1.0.0` (`IMAGE_TAG=1.0.0`), **Freeze** — danach keine Änderungen mehr |
 | Sa 17.10. | Bereitschaft | `docs/ops/hochzeitstag-runbook.md` |
-| ab So 18.10. | Entwicklung | Export der Originale aus R2 (Runbook §6); **verwaiste R2-Objekte** aufräumen (Skript, Abgleich mit der Datenbank); **Thumbnail-Größenlimit** in der Signatur; Foto-Teil der Erinnerungen (beides vorgezogen: vor den Freeze) |
+| ab So 18.10. | Entwicklung | Export der Originale aus R2 (Runbook §6); **verwaiste R2-Objekte** aufräumen (Skript, Abgleich mit der Datenbank) |
 
 Nicht geplant: ein vom Server verteiltes Memory-Spiel (bewusst clientseitig).
 
@@ -29,12 +29,8 @@ Nicht geplant: ein vom Server verteiltes Memory-Spiel (bewusst clientseitig).
 
 ## Gefunden im Galerie-Upload-Review (zurückgestellt, nicht blockierend)
 
-- **Thumbnail-PUT ohne Größenlimit in der Signatur:** Die Größe steht erst
-  nach der Kompression im Browser fest; `/complete` prüft ≤ 2 MB, größere
-  Dateien bleiben als Waisen in R2. Option: Vorschau vor der Ticket-Anfrage
-  erzeugen und `thumbSize` mitsignieren.
 - **Verwaiste R2-Objekte** bei abgebrochenen Uploads (Tab geschlossen, Netz
-  weg): kein Aufräum-Job. Beim Export nach der Hochzeit mit aufräumen oder
+  weg, Erinnerung nach dem Foto-Upload nicht abgesendet): kein Aufräum-Job. Beim Export nach der Hochzeit mit aufräumen oder
   per Lifecycle-Regel.
 - **Kein Schutz gegen Massen-Uploads mit gültigem Kennwort:** Der
   Upload-Rate-Limiter zählt nur noch Fehlversuche (sonst sperrt er das
@@ -88,11 +84,9 @@ Nicht geplant: ein vom Server verteiltes Memory-Spiel (bewusst clientseitig).
 
 ## Noch zu planende Subsysteme (Backlog aus der Spec)
 
-- Foto-Teil von Erinnerungen über die R2-Pipeline (im
-  Gästebuch/Erinnerungen-Plan bewusst ausgeklammert, `photo_key` bleibt
-  bis dahin immer `null`). Die Galerie selbst (Backend, Ansicht, Upload,
-  Admin-Modus-Schalter und Lösch-Liste) ist gebaut und mit Mocks getestet;
-  echte R2-Zugangsdaten stehen noch aus (siehe oben).
+- Die Galerie (Backend, Ansicht, Upload, Admin-Modus-Schalter, Lösch-Liste)
+  und der Foto-Teil der Erinnerungen sind gebaut und mit Mocks getestet; der
+  Gerätetest mit echtem R2 steht aus (siehe oben).
 - Betriebs-Härtung, Rest: Off-Box-Kopie der Sicherungen (die stündliche
   lokale Sicherung mit Rotation, der Disk-Alarm und die E-Mail-Alarme sind
   gebaut) und ein externer Uptime-Monitor auf `/api/health`. Die Einrichtung
