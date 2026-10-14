@@ -15,15 +15,11 @@ export const R2_JURISDICTIONS = ['eu', 'fedramp'] as const
 // Quelle der Client-IP für die Rate-Limiter (siehe client-ip.ts).
 export const CLIENT_IP_HEADERS = ['x-forwarded-for', 'cf-connecting-ip'] as const
 
-/**
- * Das Gäste-Kennwort (Galerie, Gästebuch, Erinnerungen, Upload). Früher hieß
- * die Variable UPLOAD_PASSWORD_EMPFANG; der alte Name gilt als Rückfall, damit
- * eine vorbereitete .env.production beim Start nicht abbricht.
- */
+/** Das Gäste-Kennwort (Galerie, Gästebuch, Erinnerungen, Upload). */
 export function getGuestPassword(
   source: Record<string, string | undefined> = process.env
 ): string | undefined {
-  return source.GUEST_PASSWORD || source.UPLOAD_PASSWORD_EMPFANG || undefined
+  return source.GUEST_PASSWORD || undefined
 }
 
 export class InvalidEnvError extends Error {

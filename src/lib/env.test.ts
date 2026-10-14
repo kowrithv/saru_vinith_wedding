@@ -54,16 +54,18 @@ describe('validateEnv', () => {
     expect(() => validateEnv({ ...allSet, GUEST_PASSWORD: undefined })).toThrow(/GUEST_PASSWORD/)
   })
 
-  // Ein vor der Umbenennung vorbereitetes .env.production soll beim Start nicht
-  // abbrechen: der frühere Name UPLOAD_PASSWORD_EMPFANG gilt als Rückfall.
-  it('still reads the former name UPLOAD_PASSWORD_EMPFANG as a fallback', () => {
+  // Der frühere Name UPLOAD_PASSWORD_EMPFANG gilt nicht mehr: ein vergessenes
+  // Umbenennen soll beim Start auffallen, nicht stillschweigend weiterlaufen.
+  it('no longer reads the former name UPLOAD_PASSWORD_EMPFANG', () => {
     const { GUEST_PASSWORD: _unused, ...withoutNew } = allSet
     void _unused
     const legacy = { ...withoutNew, UPLOAD_PASSWORD_EMPFANG: 'altes-kennwort' }
-    expect(validateEnv(legacy).guestPassword).toBe('altes-kennwort')
+
+    expect(() => validateEnv(legacy)).toThrowError(MissingEnvError)
+    expect(() => validateEnv(legacy)).toThrow(/GUEST_PASSWORD/)
   })
 
-  it('prefers GUEST_PASSWORD over the former name', () => {
+  it('ignores the former name even when GUEST_PASSWORD is set', () => {
     const both = { ...allSet, GUEST_PASSWORD: 'neu', UPLOAD_PASSWORD_EMPFANG: 'alt' }
     expect(validateEnv(both).guestPassword).toBe('neu')
   })

@@ -52,7 +52,7 @@ wirklich auszuprobieren.
 | Variable | Pflicht | Zweck |
 |---|---|---|
 | `ADMIN_PASSWORD` | ja | Kennwort für `/admin` |
-| `GUEST_PASSWORD` | ja | Gäste-Kennwort („vom Empfang“) für Galerie, Gästebuch, Erinnerungen und Uploads; kurz und merkbar, Groß-/Kleinschreibung egal (siehe „Gäste-Zugang“). Der frühere Name `UPLOAD_PASSWORD_EMPFANG` wird als Rückfall weiter gelesen. |
+| `GUEST_PASSWORD` | ja | Gäste-Kennwort („vom Empfang“) für Galerie, Gästebuch, Erinnerungen und Uploads; kurz und merkbar, Groß-/Kleinschreibung egal (siehe „Gäste-Zugang“) |
 | `R2_ACCOUNT_ID` | ja | Cloudflare-Konto |
 | `R2_ACCESS_KEY_ID` | ja | R2-API-Token (Object Read & Write, nur für den Bucket) |
 | `R2_SECRET_ACCESS_KEY` | ja | zum Token gehörendes Secret |

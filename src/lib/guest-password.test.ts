@@ -52,16 +52,13 @@ describe('getGuestPassword', () => {
     expect(getGuestPassword({ GUEST_PASSWORD: 'Hochzeit' })).toBe('Hochzeit')
   })
 
-  it('falls back to the former name UPLOAD_PASSWORD_EMPFANG', () => {
-    expect(getGuestPassword({ UPLOAD_PASSWORD_EMPFANG: 'Hochzeit' })).toBe('Hochzeit')
-  })
-
-  it('prefers the new name and ignores empty values', () => {
+  it('does not read the former name UPLOAD_PASSWORD_EMPFANG any more', () => {
+    expect(getGuestPassword({ UPLOAD_PASSWORD_EMPFANG: 'Hochzeit' })).toBeUndefined()
     expect(getGuestPassword({ GUEST_PASSWORD: 'neu', UPLOAD_PASSWORD_EMPFANG: 'alt' })).toBe('neu')
-    expect(getGuestPassword({ GUEST_PASSWORD: '', UPLOAD_PASSWORD_EMPFANG: 'alt' })).toBe('alt')
   })
 
-  it('is undefined when neither is set', () => {
+  it('is undefined when it is unset or empty', () => {
     expect(getGuestPassword({})).toBeUndefined()
+    expect(getGuestPassword({ GUEST_PASSWORD: '' })).toBeUndefined()
   })
 })
