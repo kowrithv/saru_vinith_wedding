@@ -15,6 +15,10 @@ export const IMAGE_CONTENT_TYPE_EXTENSIONS = new Map<string, string>([
 
 export const MAX_ORIGINAL_BYTES = 20 * 1024 * 1024
 
+// Obergrenze der Vorschau (800 px JPEG sind real wenige hundert KB). Der Browser
+// meldet die tatsächliche Größe vorab, der Server signiert sie fest.
+export const MAX_THUMB_BYTES = 2 * 1024 * 1024
+
 const CONTENT_TYPE_BY_EXTENSION = new Map<string, string>([
   ['jpg', 'image/jpeg'],
   ['jpeg', 'image/jpeg'],

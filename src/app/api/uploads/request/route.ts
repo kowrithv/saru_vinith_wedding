@@ -12,17 +12,20 @@ import { galleryCategories } from '@/lib/gallery-categories'
 import {
   IMAGE_CONTENT_TYPE_EXTENSIONS as CONTENT_TYPE_EXTENSIONS,
   MAX_ORIGINAL_BYTES,
+  MAX_THUMB_BYTES,
   UPLOADS_PAUSED_MESSAGE,
 } from '@/lib/gallery-upload-limits'
 import { isFeatureLocked } from '@/lib/app-config'
 
-const MAX_THUMB_BYTES = 2 * 1024 * 1024
 const TICKET_DURATION_MS = 15 * 60 * 1000
 
 const fileSchema = z.object({
   filename: z.string().min(1).max(200),
   size: z.number().int().positive(),
   contentType: z.string(),
+  // Größe der Vorschau, die der Browser schon erzeugt hat: sie wird fest
+  // signiert, ein größerer PUT wird von R2 abgelehnt.
+  thumbSize: z.number().int().positive().max(MAX_THUMB_BYTES),
 })
 
 const bodySchema = z.object({
@@ -93,11 +96,7 @@ export async function POST(request: Request): Promise<Response> {
       const expiresAt = Date.now() + TICKET_DURATION_MS
 
       const [thumbPutUrl, originalPutUrl] = await Promise.all([
-        // Kein signiertes ContentLength für das Thumbnail: seine Größe
-        // steht erst nach der Browser-seitigen Kompression fest. Die
-        // tatsächliche Größe wird in /api/uploads/complete per HeadObject
-        // gegen MAX_THUMB_BYTES geprüft.
-        createPresignedPutUrl(thumbKey, 'image/jpeg'),
+        createPresignedPutUrl(thumbKey, 'image/jpeg', file.thumbSize),
         createPresignedPutUrl(originalKey, file.contentType, file.size),
       ])
 
@@ -106,7 +105,7 @@ export async function POST(request: Request): Promise<Response> {
           photoId,
           thumbKey,
           originalKey,
-          thumbMaxSize: MAX_THUMB_BYTES,
+          thumbMaxSize: file.thumbSize,
           originalSize: file.size,
           expiresAt,
           category: parsed.data.category,

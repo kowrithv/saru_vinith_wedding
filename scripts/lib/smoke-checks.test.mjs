@@ -164,3 +164,15 @@ describe('formatReport', () => {
     expect(formatReport([{ name: 'A', ok: true, detail: '200', ms: 1 }])).toMatch(/Alle 1 Prüfungen bestanden/)
   })
 })
+
+describe('upload route probe', () => {
+  // Die Route validiert die Form des Bodys vor dem Kennwort: ohne die
+  // angekündigte Vorschau-Größe käme 400 statt 401 und der Check schlüge an.
+  it('sends the announced preview size like the real upload form', () => {
+    const check = buildSmokeChecks().find((c) => c.path === '/api/uploads/request')
+    const body = JSON.parse(check.body)
+    expect(body.files[0]).toEqual(
+      expect.objectContaining({ filename: expect.any(String), size: expect.any(Number), thumbSize: expect.any(Number) })
+    )
+  })
+})

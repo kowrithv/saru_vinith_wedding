@@ -199,7 +199,7 @@ async function uploadTicketsScenario(ctx) {
     JSON.stringify({
       password,
       category: 'Hochzeit',
-      files: [{ filename: 'last.jpg', size: 2_000_000, contentType: 'image/jpeg' }],
+      files: [{ filename: 'last.jpg', size: 2_000_000, contentType: 'image/jpeg', thumbSize: 150_000 }],
     })
   const outcomes = await runPool(ctx.guests, ctx.concurrency, (i) =>
     timed(ctx.fetchImpl, `${ctx.baseUrl}/api/uploads/request`, {

@@ -33,7 +33,10 @@ interface FakeBackendOptions {
 // /complete. `events` hält die Reihenfolge der Server-Aufrufe fest.
 function createFakeBackend(options: FakeBackendOptions = {}) {
   const events: string[] = []
-  const requestBodies: { files: { filename: string; size: number; contentType: string }[]; [key: string]: unknown }[] = []
+  const requestBodies: {
+    files: { filename: string; size: number; contentType: string; thumbSize: number }[]
+    [key: string]: unknown
+  }[] = []
   const filenameByTicket = new Map<string, string>()
   let counter = 0
 
@@ -187,7 +190,7 @@ describe('GalleryUploadForm', () => {
     expect(backend.requestBodies[0]).toEqual({
       password: 'empfang-secret',
       category: 'Party',
-      files: [{ filename: 'photo.jpg', size: 100, contentType: 'image/jpeg' }],
+      files: [{ filename: 'photo.jpg', size: 100, contentType: 'image/jpeg', thumbSize: 5 }],
     })
   })
 
@@ -211,6 +214,42 @@ describe('GalleryUploadForm', () => {
     expect(window.localStorage.getItem('wedding-guest-name')).toBe('Lena')
   })
 
+  // Die Länge der Vorschau wird im Ticket mitsigniert, also muss sie vor der
+  // Ticket-Anfrage feststehen.
+  it('creates the preview before asking for tickets and announces its size', async () => {
+    const user = setupUser()
+    const backend = createFakeBackend()
+    vi.mocked(createThumbnailBlob).mockImplementation(async () => {
+      backend.events.push('preview')
+      return new Blob(['x'.repeat(1234)])
+    })
+
+    render(<GalleryUploadForm hasAccess onUploaded={vi.fn()} />)
+    await user.type(screen.getByLabelText(/dein name/i), 'Anna')
+    await user.upload(screen.getByLabelText(/fotos ausw/i), makeFile())
+    await user.click(screen.getByRole('button', { name: /hochladen/i }))
+
+    await waitFor(() => expect(backend.events).toContain('complete'))
+    expect(backend.events.slice(0, 2)).toEqual(['preview', 'request'])
+    expect(backend.requestBodies[0].files[0].thumbSize).toBe(1234)
+  })
+
+  it('uses the neutral placeholder when the preview would exceed the size limit', async () => {
+    const user = setupUser()
+    const backend = createFakeBackend()
+    vi.mocked(createThumbnailBlob).mockResolvedValue(new Blob(['x'.repeat(2 * 1024 * 1024 + 1)]))
+    vi.mocked(createPlaceholderThumbnailBlob).mockResolvedValue(new Blob(['placeholder']))
+
+    render(<GalleryUploadForm hasAccess onUploaded={vi.fn()} />)
+    await user.type(screen.getByLabelText(/dein name/i), 'Anna')
+    await user.upload(screen.getByLabelText(/fotos ausw/i), makeFile())
+    await user.click(screen.getByRole('button', { name: /hochladen/i }))
+
+    await waitFor(() => expect(backend.requestBodies).toHaveLength(1))
+    expect(createPlaceholderThumbnailBlob).toHaveBeenCalled()
+    expect(backend.requestBodies[0].files[0].thumbSize).toBe('placeholder'.length)
+  })
+
   it('hides the password field and sends no password once the browser is unlocked', async () => {
     const user = setupUser()
     const backend = createFakeBackend()
@@ -225,7 +264,7 @@ describe('GalleryUploadForm', () => {
     await waitFor(() => expect(backend.requestBodies).toHaveLength(1))
     expect(backend.requestBodies[0]).toEqual({
       category: 'Hochzeit',
-      files: [{ filename: 'photo.jpg', size: 100, contentType: 'image/jpeg' }],
+      files: [{ filename: 'photo.jpg', size: 100, contentType: 'image/jpeg', thumbSize: 5 }],
     })
   })
 
@@ -311,7 +350,7 @@ describe('GalleryUploadForm', () => {
     await waitFor(() => expect(backend.requestBodies).toHaveLength(1))
     expect(backend.requestBodies[0]).toEqual({
       category: 'Hochzeit',
-      files: [{ filename: 'photo.jpg', size: 100, contentType: 'image/jpeg' }],
+      files: [{ filename: 'photo.jpg', size: 100, contentType: 'image/jpeg', thumbSize: 5 }],
     })
   })
 
@@ -371,7 +410,7 @@ describe('GalleryUploadForm', () => {
 
     await waitFor(() => expect(onUploaded).toHaveBeenCalledTimes(2))
     expect(backend.requestBodies).toHaveLength(2)
-    expect(backend.requestBodies[1].files).toEqual([{ filename: 'b.jpg', size: 100, contentType: 'image/jpeg' }])
+    expect(backend.requestBodies[1].files).toEqual([{ filename: 'b.jpg', size: 100, contentType: 'image/jpeg', thumbSize: 5 }])
   })
 
   it('tells the guest to keep the page open while uploading, then thanks them', async () => {
@@ -450,7 +489,7 @@ describe('GalleryUploadForm', () => {
     await user.click(screen.getByRole('button', { name: /hochladen/i }))
 
     await waitFor(() => expect(onUploaded).toHaveBeenCalledTimes(1))
-    expect(backend.requestBodies[0].files).toEqual([{ filename: 'ok.jpg', size: 100, contentType: 'image/jpeg' }])
+    expect(backend.requestBodies[0].files).toEqual([{ filename: 'ok.jpg', size: 100, contentType: 'image/jpeg', thumbSize: 5 }])
   })
 
   it('names a file that is over the size limit instead of rejecting the whole batch', async () => {

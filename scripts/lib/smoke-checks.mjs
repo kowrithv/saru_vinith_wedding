@@ -104,7 +104,7 @@ export function buildSmokeChecks(options = {}) {
     body: JSON.stringify({
       password: 'smoke-test-falsch',
       category: 'Hochzeit',
-      files: [{ filename: 'smoke.jpg', size: 1000, contentType: 'image/jpeg' }],
+      files: [{ filename: 'smoke.jpg', size: 1000, contentType: 'image/jpeg', thumbSize: 1000 }],
     }),
     // 401 = Kennwort geprüft, 423 = Upload pausiert, 429 = Limit - alle zeigen
     // eine lebende Route. Ein 5xx oder ein Ticket (200) wäre ein Befund.

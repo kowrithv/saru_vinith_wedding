@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { POST } from './route'
+import { createPresignedPutUrl } from '@/lib/r2'
 import { getDb } from '@/lib/db'
 import { setFeatureLocked } from '@/lib/app-config'
 import { ADMIN_COOKIE_NAME, getOrCreateAdminSecret, signCookieValue } from '@/lib/admin-auth'
@@ -42,13 +43,72 @@ describe('POST /api/uploads/request', () => {
     process.env.GUEST_PASSWORD = originalPassword
   })
 
+  it('rejects a file without the announced preview size', async () => {
+    getDb()
+    const response = await POST(
+      requestBody({
+        password: 'empfang-secret',
+        category: 'Hochzeit',
+        files: [{ filename: 'a.jpg', size: 1000, contentType: 'image/jpeg' }],
+      })
+    )
+    expect(response.status).toBe(400)
+  })
+
+  it('rejects a preview larger than 2 MB before any ticket is issued', async () => {
+    getDb()
+    const response = await POST(
+      requestBody({
+        password: 'empfang-secret',
+        category: 'Hochzeit',
+        files: [{ filename: 'a.jpg', size: 1000, contentType: 'image/jpeg', thumbSize: 2 * 1024 * 1024 + 1 }],
+      })
+    )
+    expect(response.status).toBe(400)
+  })
+
+  // Die Länge steht in der Signatur: R2 lehnt einen größeren PUT ab, es
+  // entstehen keine übergroßen Waisen mehr.
+  it('signs the exact announced length for the preview and the original', async () => {
+    getDb()
+    vi.mocked(createPresignedPutUrl).mockClear()
+    const response = await POST(
+      requestBody({
+        password: 'empfang-secret',
+        category: 'Hochzeit',
+        files: [{ filename: 'a.jpg', size: 1_234_567, contentType: 'image/jpeg', thumbSize: 45_678 }],
+      })
+    )
+    expect(response.status).toBe(200)
+
+    const calls = vi.mocked(createPresignedPutUrl).mock.calls
+    const thumbCall = calls.find(([key]) => key.endsWith('/thumb.jpg'))
+    const originalCall = calls.find(([key]) => key.endsWith('/original.jpg'))
+    expect(thumbCall).toEqual([expect.stringContaining('gallery/'), 'image/jpeg', 45_678])
+    expect(originalCall).toEqual([expect.stringContaining('gallery/'), 'image/jpeg', 1_234_567])
+  })
+
+  it('binds the ticket to the announced preview size', async () => {
+    const db = getDb()
+    const response = await POST(
+      requestBody({
+        password: 'empfang-secret',
+        category: 'Hochzeit',
+        files: [{ filename: 'a.jpg', size: 1000, contentType: 'image/jpeg', thumbSize: 45_678 }],
+      })
+    )
+    const body = await response.json()
+    const payload = verifyUploadTicket(body.tickets[0].ticket, getOrCreateAdminSecret(db))
+    expect(payload?.thumbMaxSize).toBe(45_678)
+  })
+
   it('rejects the wrong password without issuing any ticket', async () => {
     getDb()
     const response = await POST(
       requestBody({
         password: 'falsch',
         category: 'Hochzeit',
-        files: [{ filename: 'a.jpg', size: 1000, contentType: 'image/jpeg' }],
+        files: [{ filename: 'a.jpg', size: 1000, contentType: 'image/jpeg', thumbSize: 50_000 }],
       })
     )
     expect(response.status).toBe(401)
@@ -59,7 +119,7 @@ describe('POST /api/uploads/request', () => {
     const response = await POST(
       requestBody({
         category: 'Hochzeit',
-        files: [{ filename: 'a.jpg', size: 1000, contentType: 'image/jpeg' }],
+        files: [{ filename: 'a.jpg', size: 1000, contentType: 'image/jpeg', thumbSize: 50_000 }],
       })
     )
     expect(response.status).toBe(401)
@@ -72,8 +132,8 @@ describe('POST /api/uploads/request', () => {
         password: 'empfang-secret',
         category: 'Hochzeit',
         files: [
-          { filename: 'a.jpg', size: 1_000_000, contentType: 'image/jpeg' },
-          { filename: 'b.png', size: 2_000_000, contentType: 'image/png' },
+          { filename: 'a.jpg', size: 1_000_000, contentType: 'image/jpeg', thumbSize: 50_000 },
+          { filename: 'b.png', size: 2_000_000, contentType: 'image/png', thumbSize: 50_000 },
         ],
       })
     )
@@ -99,7 +159,7 @@ describe('POST /api/uploads/request', () => {
       requestBody({
         password: ' EMPFANG-Secret ',
         category: 'Hochzeit',
-        files: [{ filename: 'a.jpg', size: 1000, contentType: 'image/jpeg' }],
+        files: [{ filename: 'a.jpg', size: 1000, contentType: 'image/jpeg', thumbSize: 50_000 }],
       })
     )
     expect(response.status).toBe(200)
@@ -119,7 +179,7 @@ describe('POST /api/uploads/request', () => {
         headers,
         body: JSON.stringify({
           category: 'Party',
-          files: [{ filename: 'a.jpg', size: 1000, contentType: 'image/jpeg' }],
+          files: [{ filename: 'a.jpg', size: 1000, contentType: 'image/jpeg', thumbSize: 50_000 }],
         }),
       })
     )
@@ -141,7 +201,7 @@ describe('POST /api/uploads/request', () => {
         headers: { 'Content-Type': 'application/json', cookie: `${GALLERY_COOKIE_NAME}=${stale}` },
         body: JSON.stringify({
           category: 'Party',
-          files: [{ filename: 'a.jpg', size: 1000, contentType: 'image/jpeg' }],
+          files: [{ filename: 'a.jpg', size: 1000, contentType: 'image/jpeg', thumbSize: 50_000 }],
         }),
       })
     )
@@ -155,7 +215,7 @@ describe('POST /api/uploads/request', () => {
 
     const response = await POST(
       requestBody(
-        { category: 'Verlobung', files: [{ filename: 'a.jpg', size: 1000, contentType: 'image/jpeg' }] },
+        { category: 'Verlobung', files: [{ filename: 'a.jpg', size: 1000, contentType: 'image/jpeg', thumbSize: 50_000 }] },
         cookieValue
       )
     )
@@ -173,7 +233,7 @@ describe('POST /api/uploads/request', () => {
         password: 'empfang-secret',
         category: 'Hochzeit',
         isOfficial: true,
-        files: [{ filename: 'a.jpg', size: 1000, contentType: 'image/jpeg' }],
+        files: [{ filename: 'a.jpg', size: 1000, contentType: 'image/jpeg', thumbSize: 50_000 }],
       })
     )
     const body = await response.json()
@@ -189,7 +249,7 @@ describe('POST /api/uploads/request', () => {
       requestBody({
         password: 'empfang-secret',
         category: 'Geburtstag',
-        files: [{ filename: 'a.jpg', size: 1000, contentType: 'image/jpeg' }],
+        files: [{ filename: 'a.jpg', size: 1000, contentType: 'image/jpeg', thumbSize: 50_000 }],
       })
     )
     expect(response.status).toBe(400)
@@ -201,7 +261,7 @@ describe('POST /api/uploads/request', () => {
       requestBody({
         password: 'empfang-secret',
         category: 'Hochzeit',
-        files: [{ filename: 'a.mov', size: 1000, contentType: 'video/quicktime' }],
+        files: [{ filename: 'a.mov', size: 1000, contentType: 'video/quicktime', thumbSize: 50_000 }],
       })
     )
     expect(response.status).toBe(400)
@@ -213,7 +273,7 @@ describe('POST /api/uploads/request', () => {
       requestBody({
         password: 'empfang-secret',
         category: 'Hochzeit',
-        files: [{ filename: 'a.jpg', size: 1000, contentType: 'constructor' }],
+        files: [{ filename: 'a.jpg', size: 1000, contentType: 'constructor', thumbSize: 50_000 }],
       })
     )
     expect(response.status).toBe(400)
@@ -225,7 +285,7 @@ describe('POST /api/uploads/request', () => {
       requestBody({
         password: 'empfang-secret',
         category: 'Hochzeit',
-        files: [{ filename: 'a.jpg', size: 21 * 1024 * 1024, contentType: 'image/jpeg' }],
+        files: [{ filename: 'a.jpg', size: 21 * 1024 * 1024, contentType: 'image/jpeg', thumbSize: 50_000 }],
       })
     )
     expect(response.status).toBe(400)
@@ -243,7 +303,7 @@ describe('POST /api/uploads/request', () => {
           {
             password: 'empfang-secret',
             category: 'Hochzeit',
-            files: [{ filename: 'a.jpg', size: 1000, contentType: 'image/jpeg' }],
+            files: [{ filename: 'a.jpg', size: 1000, contentType: 'image/jpeg', thumbSize: 50_000 }],
           },
           undefined,
           '10.0.0.1'
@@ -262,7 +322,7 @@ describe('POST /api/uploads/request', () => {
           {
             password: 'falsch',
             category: 'Hochzeit',
-            files: [{ filename: 'a.jpg', size: 1000, contentType: 'image/jpeg' }],
+            files: [{ filename: 'a.jpg', size: 1000, contentType: 'image/jpeg', thumbSize: 50_000 }],
           },
           undefined,
           '10.0.0.2'
@@ -283,8 +343,8 @@ describe('POST /api/uploads/request', () => {
           password: 'empfang-secret',
           category: 'Hochzeit',
           files: [
-            { filename: 'a.jpg', size: 1000, contentType: 'image/jpeg' },
-            { filename: 'b.heic', size: 2000, contentType: 'image/heic' },
+            { filename: 'a.jpg', size: 1000, contentType: 'image/jpeg', thumbSize: 50_000 },
+            { filename: 'b.heic', size: 2000, contentType: 'image/heic', thumbSize: 50_000 },
           ],
         },
         undefined,
@@ -302,7 +362,7 @@ describe('POST /api/uploads/request', () => {
     setFeatureLocked(db, 'gallery_upload', true)
     const response = await POST(
       requestBody(
-        { password: 'falsch', category: 'Hochzeit', files: [{ filename: 'a.jpg', size: 1000, contentType: 'image/jpeg' }] },
+        { password: 'falsch', category: 'Hochzeit', files: [{ filename: 'a.jpg', size: 1000, contentType: 'image/jpeg', thumbSize: 50_000 }] },
         undefined,
         '10.0.1.1'
       )
@@ -318,7 +378,7 @@ describe('POST /api/uploads/request', () => {
     const cookieValue = signCookieValue(Date.now() + 60_000, secret)
     const response = await POST(
       requestBody(
-        { category: 'Hochzeit', files: [{ filename: 'a.jpg', size: 1000, contentType: 'image/jpeg' }] },
+        { category: 'Hochzeit', files: [{ filename: 'a.jpg', size: 1000, contentType: 'image/jpeg', thumbSize: 50_000 }] },
         cookieValue,
         '10.0.1.2'
       )
@@ -332,7 +392,7 @@ describe('POST /api/uploads/request', () => {
     const body = {
       password: 'empfang-secret',
       category: 'Hochzeit',
-      files: [{ filename: 'a.jpg', size: 1000, contentType: 'image/jpeg' }],
+      files: [{ filename: 'a.jpg', size: 1000, contentType: 'image/jpeg', thumbSize: 50_000 }],
     }
     for (let i = 0; i < 35; i++) {
       expect((await POST(requestBody(body, undefined, '10.0.2.1'))).status).toBe(423)

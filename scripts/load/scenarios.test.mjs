@@ -165,3 +165,25 @@ describe('runScenarios', () => {
     expect(reports.map((r) => r.name)).not.toContain('Gästebuch')
   })
 })
+
+describe('upload ticket scenario', () => {
+  it('announces the preview size like the real upload form', async () => {
+    const seen = []
+    const base = createFakeServer()
+    await runScenarios({
+      baseUrl: 'http://localhost:3000',
+      guests: 5,
+      concurrency: 5,
+      fetchImpl: async (url, init) => {
+        if (new URL(url).pathname === '/api/uploads/request') seen.push(JSON.parse(init.body))
+        return base(url, init)
+      },
+      uploadPassword: 'empfang',
+      runId: 'thumb',
+    })
+    expect(seen.length).toBeGreaterThan(0)
+    for (const body of seen) {
+      expect(body.files[0].thumbSize).toBeGreaterThan(0)
+    }
+  })
+})

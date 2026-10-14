@@ -10,6 +10,7 @@ import { saveDeleteToken } from '@/lib/gallery-delete-tokens'
 import {
   IMAGE_CONTENT_TYPE_EXTENSIONS,
   MAX_ORIGINAL_BYTES,
+  MAX_THUMB_BYTES,
   resolveImageContentType,
   UPLOADS_PAUSED_MESSAGE,
 } from '@/lib/gallery-upload-limits'
@@ -86,9 +87,19 @@ function toSelectedFile(file: File): SelectedFile {
   return { file, contentType, status: 'pending', invalid: false }
 }
 
-async function createThumbnailOrPlaceholder(file: File): Promise<{ blob: Blob; isPlaceholder: boolean }> {
+interface PreviewImage {
+  blob: Blob
+  isPlaceholder: boolean
+}
+
+async function createThumbnailOrPlaceholder(file: File): Promise<PreviewImage> {
   try {
-    return { blob: await createThumbnailBlob(file), isPlaceholder: false }
+    const blob = await createThumbnailBlob(file)
+    // Die Größe wird im Ticket fest signiert und der Server lehnt mehr als
+    // MAX_THUMB_BYTES ab: ein ungewöhnlich großes Bild bekommt die neutrale
+    // Fläche, das Original wird trotzdem hochgeladen.
+    if (blob.size > MAX_THUMB_BYTES) return { blob: await createPlaceholderThumbnailBlob(), isPlaceholder: true }
+    return { blob, isPlaceholder: false }
   } catch {
     // Nicht dekodierbar (z. B. HEIC außerhalb von Safari): das Original
     // wird trotzdem hochgeladen, die Galerie zeigt eine neutrale Fläche.
@@ -107,6 +118,7 @@ interface UploadControl {
 async function uploadAndRegister(
   selected: SelectedFile,
   ticket: UploadTicket,
+  preview: PreviewImage,
   uploaderName: string,
   control: UploadControl
 ): Promise<UploadResult> {
@@ -125,10 +137,15 @@ async function uploadAndRegister(
   let completeTimedOut = false
 
   try {
-    const { blob, isPlaceholder } = await createThumbnailOrPlaceholder(selected.file)
-    control.onPreview(blob, isPlaceholder)
+    // Die Vorschau gibt es schon (ihre Größe steht im Ticket).
+    control.onPreview(preview.blob, preview.isPlaceholder)
     const [thumbResponse, originalResponse] = await Promise.all([
-      fetch(ticket.thumbPutUrl, { method: 'PUT', body: blob, headers: { 'Content-Type': 'image/jpeg' }, signal }),
+      fetch(ticket.thumbPutUrl, {
+        method: 'PUT',
+        body: preview.blob,
+        headers: { 'Content-Type': 'image/jpeg' },
+        signal,
+      }),
       fetch(ticket.originalPutUrl, {
         method: 'PUT',
         body: selected.file,
@@ -249,6 +266,7 @@ export default function GalleryUploadForm({
 
   const requestTickets = async (
     files: SelectedFile[],
+    previews: PreviewImage[],
     signal: AbortSignal
   ): Promise<{ tickets: UploadTicket[] } | { error: string }> => {
     const response = await fetch('/api/uploads/request', {
@@ -258,7 +276,12 @@ export default function GalleryUploadForm({
       body: JSON.stringify({
         ...(needsPassword ? { password } : {}),
         category,
-        files: files.map(({ file, contentType }) => ({ filename: file.name, size: file.size, contentType })),
+        files: files.map(({ file, contentType }, i) => ({
+          filename: file.name,
+          size: file.size,
+          contentType,
+          thumbSize: previews[i].blob.size,
+        })),
       }),
     })
     if (!response.ok) {
@@ -290,11 +313,12 @@ export default function GalleryUploadForm({
     index: number,
     selected: SelectedFile,
     ticket: UploadTicket,
+    preview: PreviewImage,
     signal: AbortSignal,
     timeoutMs: number
   ) => {
     updateFile(index, { status: 'uploading', message: undefined })
-    const result = await uploadAndRegister(selected, ticket, name.trim(), {
+    const result = await uploadAndRegister(selected, ticket, preview, name.trim(), {
       signal,
       timeoutMs,
       onPreview: (blob, isPlaceholder) => {
@@ -367,8 +391,16 @@ export default function GalleryUploadForm({
       for (let start = 0; start < queue.length; start += FILES_PER_GROUP) {
         if (controller.signal.aborted) break
         const group = queue.slice(start, start + FILES_PER_GROUP)
+        // Vorschauen zuerst: ihre Größe geht in die Ticket-Anfrage und wird
+        // fest signiert. Das Ticket (15 Minuten) läuft so erst nach der
+        // Verkleinerung los.
+        const previews = await Promise.all(
+          group.map(({ selected }) => createThumbnailOrPlaceholder(selected.file))
+        )
+        if (controller.signal.aborted) break
         const ticketsResult = await requestTickets(
           group.map(({ selected }) => selected),
+          previews,
           controller.signal
         )
         if ('error' in ticketsResult) {
@@ -379,7 +411,7 @@ export default function GalleryUploadForm({
         const timeoutMs = uploadTimeoutMs(group.reduce((sum, { selected }) => sum + selected.file.size, 0))
         await Promise.all(
           group.map(({ selected, index }, i) =>
-            uploadOneFile(index, selected, ticketsResult.tickets[i], controller.signal, timeoutMs)
+            uploadOneFile(index, selected, ticketsResult.tickets[i], previews[i], controller.signal, timeoutMs)
           )
         )
       }
