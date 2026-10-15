@@ -170,7 +170,8 @@ Danach `npm run dev` neu starten. `data/fake-r2/` ist ignoriert.
 
 - **Hero:** Foto im Bogenrahmen. Das Bild liegt unter `public/hero/paar.jpg`;
   zum Tauschen die Datei ersetzen (hochkant, am besten ab 900 x 1100 px, unter
-  200 KB).
+  200 KB). Das Paar gehört in die **Mitte** des Bildes: der Rahmen zeigt die Mitte
+  (oben bevorzugt), ein Paar am Rand säße schief im Bogen.
 - **Zustände:** vor dem 17.10. Countdown mit großen Tagen und Kalender-Knopf;
   am 17.10. "Heute ist es so weit" mit Fotos hochladen, Ablauf und Gästebuch;
   ab 18.10., 5 Uhr morgens (die Feier geht über Mitternacht), "Wir sind verheiratet!" mit Danke. Die Grenzen sind feste Zeitpunkte

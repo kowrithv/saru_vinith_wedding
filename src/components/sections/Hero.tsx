@@ -49,8 +49,8 @@ export default function Hero() {
             <img
               src={heroPhoto}
               alt="Saruga und Vinith"
-              width={450}
-              height={800}
+              width={650}
+              height={1200}
               fetchPriority="high"
               className="h-full w-full object-cover object-[50%_32%]"
             />
