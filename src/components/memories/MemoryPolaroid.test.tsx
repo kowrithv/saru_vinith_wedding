@@ -78,6 +78,24 @@ describe('MemoryPolaroid', () => {
     expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:polaroid')
   })
 
+  it('offers the finished polaroid through the share menu on a phone', async () => {
+    vi.mocked(createPolaroidBlob).mockResolvedValue(new Blob(['png'], { type: 'image/png' }))
+    const share = vi.fn(async () => {})
+    vi.stubGlobal('navigator', { canShare: () => true, share })
+    vi.stubGlobal('matchMedia', (query: string) => ({ matches: query.includes('coarse'), media: query }))
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+    render(<MemoryPolaroid guestName="Lena Müller" photo={photo} />)
+
+    await userEvent.click(screen.getByRole('button', { name: /als polaroid speichern/i }))
+
+    await waitFor(() => expect(share).toHaveBeenCalledTimes(1))
+    const [data] = share.mock.calls[0] as unknown as [{ files: File[]; title: string }]
+    expect(data.files[0].name).toBe('polaroid-saruga-vinith-lena-muller.png')
+    expect(data.title).toBe('Polaroid von Lena Müller')
+    expect(click).not.toHaveBeenCalled()
+    vi.unstubAllGlobals()
+  })
+
   it('names the downloaded file after the guest', async () => {
     vi.mocked(createPolaroidBlob).mockResolvedValue(new Blob(['png']))
     let downloadName = ''

@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Download } from 'lucide-react'
 import FloralSpray from '@/components/ui/FloralSpray'
 import { POLAROID_WITH_FLOWERS, createPolaroidBlob, polaroidFileName } from '@/lib/polaroid-image'
+import { savePolaroidFile } from '@/lib/polaroid-save'
 import { polaroidCaption } from '@/lib/event-info'
 import { couple } from '@/lib/site-content'
 
@@ -32,14 +33,8 @@ export default function MemoryPolaroid({ guestName, photo }: MemoryPolaroidProps
         date: polaroidCaption.date,
         withFlowers: POLAROID_WITH_FLOWERS,
       })
-      // Ein <a download> mit Blob-Adresse (dieselbe Herkunft) wird auch von
-      // iPhone-Safari und Android-Chrome als Speichern behandelt.
-      const url = URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = polaroidFileName(guestName)
-      link.click()
-      URL.revokeObjectURL(url)
+      // Am Handy über das Teilen-Menü (landet in den Fotos), sonst als Download.
+      await savePolaroidFile(blob, polaroidFileName(guestName), `Polaroid von ${guestName}`)
     } catch {
       setError('Das Polaroid konnte nicht erstellt werden. Bitte versuch es erneut.')
     } finally {
