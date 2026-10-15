@@ -14,8 +14,9 @@ und Videos sind zurückgestellt; das Rate-Limit zählt je Gerät statt je Adress
 1. **Rate Limit:** erledigt (je Gerät, richtiges Kennwort nie abgewiesen). Offen nur,
    falls ihr andere Zahlen wollt (Gästebuch/Erinnerungen 20 je 15 Minuten, Fotos 300
    je Stunde, falsche Kennwörter 20 je 15 Minuten).
-2. **Dienstleister:** auf `/info` erwähnt. Offen: die Rollen von Optimeye, MP Designs
-   und Bubble BAS (`src/lib/vendors.ts`).
+2. **Dienstleister:** auf `/info` erwähnt, mit Rollen (Optimeye: Fotografie, MP Designs:
+   Dekoration, Bubble BAS: Bubble Tea; Optimeye war noch eine Vermutung). Änderungen in
+   `src/lib/vendors.ts`.
 3. **Zurückgestellt:** „Wer von uns?" (eigene Seite, DJ-Zugriff) und Videos.
 
 ### B. Brautpaar und Vinith: liefern

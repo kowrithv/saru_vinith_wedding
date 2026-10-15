@@ -21,6 +21,17 @@ describe('vendors', () => {
     })
   })
 
+  it('names the role of every provider', () => {
+    expect(Object.fromEntries(vendors.map((vendor) => [vendor.name, vendor.role]))).toEqual({
+      Optimeye: 'Fotografie',
+      'MP Designs': 'Dekoration',
+      Nandys: 'Catering',
+      'DJ Tastic': 'DJ',
+      'Bubble BAS': 'Bubble Tea',
+      'Begegnungsstätte Niederkrüchten': 'Location',
+    })
+  })
+
   it('points to the Instagram profiles and the website of the venue', () => {
     expect(vendors[0].href).toBe('https://www.instagram.com/optimeye')
     expect(vendors[3].href).toBe('https://www.instagram.com/djtastic_de')

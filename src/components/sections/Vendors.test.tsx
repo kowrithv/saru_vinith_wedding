@@ -30,6 +30,9 @@ describe('Vendors', () => {
 
   it('names the role where it is known', () => {
     render(<Vendors vendors={vendors} />)
+    expect(screen.getByText('Fotografie')).toBeInTheDocument()
+    expect(screen.getByText('Dekoration')).toBeInTheDocument()
+    expect(screen.getByText('Bubble Tea')).toBeInTheDocument()
     expect(screen.getByText('Catering')).toBeInTheDocument()
     expect(screen.getByText('DJ')).toBeInTheDocument()
     expect(screen.getByText('Location')).toBeInTheDocument()
