@@ -248,9 +248,12 @@ export default function WhoKnowsUsGame() {
           </div>
         )}
 
+        {/* Sichtbar bestätigt der Haken auf dem Foto, dazu kommt "Weiter". Ein Satz
+            nach jeder der 14 Fragen wäre zu viel; wann es Ergebnisse gibt, steht
+            oben auf der Seite und am Ende. Nur für Screenreader wird angesagt. */}
         {hasVoted && (
-          <p className="mt-5 text-sm text-center text-gray-600" role="status">
-            Deine Stimme ist gespeichert. Die Ergebnisse gibt es nach der Auflösung.
+          <p className="sr-only" role="status">
+            Deine Stimme ist gespeichert.
           </p>
         )}
 

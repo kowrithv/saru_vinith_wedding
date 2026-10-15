@@ -88,6 +88,17 @@ describe('WhoKnowsUsGame', () => {
     })
   })
 
+  it('confirms a vote with the check mark only, without a sentence after every question', async () => {
+    stubApi()
+    render(<WhoKnowsUsGame />)
+    await userEvent.click(await screen.findByRole('button', { name: whoGameOptions[0] }))
+
+    const status = await screen.findByRole('status')
+    expect(status).toHaveClass('sr-only')
+    expect(screen.queryByText(/ergebnisse gibt es nach der auflösung/i)).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Weiter' })).toBeInTheDocument()
+  })
+
   it('marks the chosen photo and lets the others step back', async () => {
     stubApi()
     render(<WhoKnowsUsGame />)
