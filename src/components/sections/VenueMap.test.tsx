@@ -56,6 +56,14 @@ describe('VenueMap', () => {
     })
   })
 
+  // Werden die Kacheln von OpenStreetMap blockiert (Veranstaltungs-WLAN), bleibt
+  // die Fläche nicht grau: dahinter liegt eine feste Karte der Umgebung.
+  it('has a static picture of the area behind the live map', () => {
+    const { container } = render(<VenueMap {...props} />)
+    const mapArea = container.querySelector('.h-64') as HTMLElement
+    expect(mapArea.style.backgroundImage).toContain('/info/karte.jpg')
+  })
+
   // Das geöffnete Infofenster verdeckte Kartenausschnitt und Zoom-Knöpfe, und
   // der Name steht ohnehin direkt unter der Karte.
   it('does not open the marker popup by itself', async () => {

@@ -33,3 +33,11 @@ describe('home preview photos', () => {
     expect(width).toBeLessThanOrEqual(240)
   })
 })
+
+describe('static map', () => {
+  it('exists and stays small', () => {
+    const file = path.join(publicDir, 'info/karte.jpg')
+    expect(existsSync(file), 'info/karte.jpg fehlt').toBe(true)
+    expect(statSync(file).size).toBeLessThanOrEqual(200 * 1024)
+  })
+})

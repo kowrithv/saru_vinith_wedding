@@ -68,7 +68,13 @@ export default function VenueMap({ lat, lng, label, address, parking }: VenueMap
     // isolate: Leaflet vergibt intern z-index bis 1000 - ohne eigenen
     // Stapelkontext läge die Karte über der fixen Navigation.
     <div className="isolate overflow-hidden rounded-2xl border border-champagne-dark bg-champagne-light shadow-sm">
-      <div ref={containerRef} className="h-64 w-full md:h-80" />
+      {/* Hinter den Kacheln liegt eine feste Karte (Ausschnitt um den Ort): blockiert
+          das Netz die OpenStreetMap-Kacheln, bleibt die Fläche nicht grau. */}
+      <div
+        ref={containerRef}
+        className="h-64 w-full bg-champagne md:h-80"
+        style={{ backgroundImage: 'url(/info/karte.jpg)', backgroundSize: 'cover', backgroundPosition: 'center' }}
+      />
       <div className="flex flex-col gap-4 p-5 sm:p-6">
         <div>
           <h3 className="font-display text-2xl font-semibold leading-tight text-dark-blue md:text-3xl">{label}</h3>
