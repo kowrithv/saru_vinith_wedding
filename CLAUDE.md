@@ -57,7 +57,16 @@ einer Route meldet `tsc` ggf. veraltete Dateien in `.next/types` – dann
   Cookie setzt). Client: `useGuestAccess` (`/api/access`, QR-Link `#k=` einlösen)
   und `GuestPasswordField`. Kennwort-Vergleich ohne Groß-/Kleinschreibung
   (`guest-password.ts`), der Admin bleibt exakt.
-- Tailwind v4, Farb-Tokens `dark-blue`, `champagne(-light/-dark)`, `gold`.
+- Tailwind v4, Farb-Tokens `dark-blue`, `champagne(-light/-dark)`, `gold`,
+  `bordeaux`, `rose-sand`; Schriften `font-serif` (Playfair), `font-display`
+  (Cormorant), `font-script` (Great Vibes, nur Namen/Unterschriften). Ornament:
+  `Lotus`, `FloralSpray`, `Card variant="ornate"` (Eckmarken), `EmptyState`.
+- Tageszustände: `event-phase.ts` (`before | today | after`, feste Zeitpunkte mit
+  MESZ-Offset, nie die Gerätezeit-Zone). Countdown, Hero-Knöpfe und
+  `ProgramTimeline` ("Als Nächstes") hängen daran; im Test eine feste Systemzeit
+  setzen. Kalender: `calendar.ts` (iCalendar im Browser).
+- Polaroid: `MemoryPolaroid` (Anzeige) und `polaroid-image.ts` (PNG per Canvas,
+  Schriften über die CSS-Variablen `--font-cormorant`/`--font-great-vibes`).
 
 ## Fallstricke (aus früheren Reviews)
 

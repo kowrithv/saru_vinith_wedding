@@ -47,6 +47,18 @@ Nicht geplant: ein vom Server verteiltes Memory-Spiel (bewusst clientseitig).
 - **Neustart-Schleife:** läuft der Prozess schneller ab, als SMTP fertig
   wird, kommt gar keine Mail — nur ein externer Uptime-Monitor fängt das.
 
+## Gestaltung (Stand 15.10., umgesetzt; offen sind eure Inhalte)
+
+- **Hero-Foto:** `public/hero/paar.jpg` ist vorläufig ein Memory-Foto (450 x 800 px);
+  ein größeres Original ersetzt die Datei.
+- **Geschichte:** Fotos je Meilenstein fehlen noch (`photo` in
+  `src/lib/story-content.ts`); ohne Foto bleibt die Karte Text.
+- **„Gut zu wissen":** Texte fehlen (`goodToKnow` in `src/lib/event-info.ts`).
+- **Programm:** die drei „TBA"-Uhrzeiten (zeigt die Seite jetzt als „Uhrzeit folgt").
+- **„Wer von uns?":** statt Porträts stehen Buchstaben-Marken (S, V); echte Fotos
+  wären eine kleine Ergänzung.
+- **Lokal:** `rm -rf .next`, wenn der Build `exactly one entry` meldet.
+
 ## Memory-Rekord (umgesetzt, Entscheidung 13.10.)
 
 - Das Spiel bleibt clientseitig; wir vertrauen auf Fairness. Ein gefälschter

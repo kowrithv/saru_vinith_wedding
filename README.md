@@ -129,6 +129,25 @@ Cloudflare-Dashboard, nicht im Code).
 
 Details: `docs/superpowers/specs/2026-10-12-gallery-design.md`.
 
+### Gestaltung und Tageszustände
+
+- **Hero:** Foto im Bogenrahmen. Das Bild liegt unter `public/hero/paar.jpg`;
+  zum Tauschen die Datei ersetzen (hochkant, am besten ab 900 x 1100 px, unter
+  200 KB).
+- **Zustände:** vor dem 17.10. Countdown mit großen Tagen und Kalender-Knopf;
+  am 17.10. "Heute ist es so weit" mit Fotos hochladen, Ablauf und Gästebuch;
+  ab 18.10. "Wir sind verheiratet!" mit Danke. Die Grenzen sind feste Zeitpunkte
+  (MESZ), nicht die Zeit des Geräts (`src/lib/event-phase.ts`).
+- **Ablauf:** `receptionSchedule` in `src/lib/event-info.ts`; "TBA" wird als
+  "Uhrzeit folgt" gezeigt, "Als Nächstes" erscheint am Tag für den nächsten Punkt
+  mit Uhrzeit.
+- **Gut zu wissen:** `goodToKnow` in `src/lib/event-info.ts`; solange die Liste
+  leer ist, erscheint der Abschnitt nicht.
+- **Geschichte:** optional ein Foto je Meilenstein (`photo` in
+  `src/lib/story-content.ts`, Pfad unter `public/`).
+- **Icon und Link-Vorschau:** `src/app/icon.svg`, `apple-icon.png`,
+  `opengraph-image.png` (Bilder fest eingecheckt).
+
 ### Fotos zu Erinnerungen
 
 Eine Erinnerung kann **ein Foto** tragen. Es ist ein normales Galerie-Foto
@@ -138,7 +157,9 @@ der Erinnerung. Der Browser lädt es per Ticket nach R2 und schickt dann
 Transaktion an. Die Foto-URLs liefert `GET /api/memories` nur an entsperrte
 Browser (der Text ist weiter offen). Ein Admin-Löschen entfernt Eintrag und Foto
 (R2, Zeile, Cache); das Foto in der Galerie zu löschen lässt den Text stehen.
-Notaus: Schalter „Erinnerungs-Fotos" (plus „Foto-Upload"). Entwurf:
+Auf der Seite erscheint das Foto als **Polaroid** (Bordeaux-Banner mit den Namen
+des Brautpaars, Unterschrift des Gastes, Blüten); „Als Polaroid speichern" erzeugt
+das Bild als PNG zum Teilen. Notaus: Schalter „Erinnerungs-Fotos" (plus „Foto-Upload"). Entwurf:
 `docs/superpowers/specs/2026-10-14-memory-photos-design.md`.
 
 ### Gäste-Zugang (Kennwort und QR-Code)
