@@ -147,7 +147,7 @@ export default function Countdown() {
               <span className="h-px w-12 bg-gold/50" />
             </div>
             <p className="mt-4 text-sm text-champagne-light/90">
-              {receptionEvent.displayDate} um {receptionEvent.time} (deutscher Zeit)
+              {receptionEvent.displayDate} um {receptionEvent.time}
             </p>
             <button
               type="button"

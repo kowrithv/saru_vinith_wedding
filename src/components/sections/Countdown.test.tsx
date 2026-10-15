@@ -71,12 +71,13 @@ describe('Countdown', () => {
     expect(vi.getTimerCount()).toBe(0)
   })
 
-  it('labels the start time as German time for guests abroad', () => {
+  it('names date and start time without a note about the time zone', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-10-15T08:00:00Z'))
     render(<Countdown />)
 
-    expect(screen.getByText(/16:30 Uhr \(deutscher Zeit\)/)).toBeInTheDocument()
+    expect(screen.getByText('17. Oktober 2026 um 16:30 Uhr')).toBeInTheDocument()
+    expect(screen.queryByText(/deutscher zeit/i)).not.toBeInTheDocument()
   })
 
   it('fits a 320 px phone: the small digits wrap instead of overflowing', () => {
