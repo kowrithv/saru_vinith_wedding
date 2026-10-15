@@ -214,7 +214,7 @@ describe('GuestbookPage', () => {
     await waitFor(() => expect(container.firstChild).toHaveClass('pt-24'))
   })
 
-  it('shows each entry as a letter card: the message first, the name as a signature, the initial as a seal', async () => {
+  it('shows each entry as a letter card: the message first, the name as a signature, no avatar', async () => {
     mockFetchRoutes({
       '/api/access': { body: { unlocked: true } },
       '/api/guestbook': {
@@ -228,6 +228,7 @@ describe('GuestbookPage', () => {
     const message = await screen.findByText('Wir freuen uns so für euch!')
     expect(message).toHaveClass('font-display', 'italic')
     expect(screen.getByText('Anna Schmidt')).toHaveClass('font-script')
-    expect(screen.getByText('AS')).toBeInTheDocument()
+    // Der Name steht schon als Unterschrift da: keine Initialen-Marke daneben.
+    expect(screen.queryByText('AS')).not.toBeInTheDocument()
   })
 })

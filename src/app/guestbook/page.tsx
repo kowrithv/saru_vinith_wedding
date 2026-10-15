@@ -19,15 +19,6 @@ interface GuestbookEntry {
   createdAt: string
 }
 
-function initialsOf(name: string): string {
-  return name
-    .split(' ')
-    .map((part) => part[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2)
-}
-
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('de-DE', { day: '2-digit', month: 'short', year: 'numeric' })
 }
@@ -184,17 +175,9 @@ export default function GuestbookPage() {
             {entries.map((entry) => (
               <Card key={entry.id} variant="ornate" className="relative overflow-hidden">
                 <p className="font-display text-xl italic leading-snug text-dark-blue md:text-2xl">{entry.message}</p>
-                <div className="mt-4 flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="truncate font-script text-3xl leading-none text-dark-blue">{entry.name}</p>
-                    <p className="mt-1 text-xs uppercase tracking-wider text-gray-600">{formatDate(entry.createdAt)}</p>
-                  </div>
-                  <span
-                    aria-hidden="true"
-                    className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-bordeaux font-display text-xl font-semibold text-white shadow-md ring-2 ring-white/30"
-                  >
-                    {initialsOf(entry.name)}
-                  </span>
+                <div className="mt-4">
+                  <p className="truncate font-script text-3xl leading-none text-dark-blue">{entry.name}</p>
+                  <p className="mt-1 text-xs uppercase tracking-wider text-gray-600">{formatDate(entry.createdAt)}</p>
                 </div>
               </Card>
             ))}
