@@ -2,8 +2,7 @@
 
 import { useState } from 'react'
 import { Download } from 'lucide-react'
-import FloralSpray from '@/components/ui/FloralSpray'
-import { POLAROID_WITH_FLOWERS, createPolaroidBlob, polaroidFileName } from '@/lib/polaroid-image'
+import { createPolaroidBlob, polaroidFileName } from '@/lib/polaroid-image'
 import { savePolaroidFile } from '@/lib/polaroid-save'
 import { polaroidCaption } from '@/lib/event-info'
 import { couple } from '@/lib/site-content'
@@ -31,7 +30,6 @@ export default function MemoryPolaroid({ guestName, photo }: MemoryPolaroidProps
         coupleName: couple.combinedName,
         occasion: polaroidCaption.occasion,
         date: polaroidCaption.date,
-        withFlowers: POLAROID_WITH_FLOWERS,
       })
       // Am Handy über das Teilen-Menü (landet in den Fotos), sonst als Download.
       await savePolaroidFile(blob, polaroidFileName(guestName), `Polaroid von ${guestName}`)
@@ -45,13 +43,6 @@ export default function MemoryPolaroid({ guestName, photo }: MemoryPolaroidProps
   return (
     <div className="mt-4">
       <figure className="relative mx-auto max-w-[17rem] rounded-2xl bg-[#f7f5f0] px-[6%] pb-[5%] pt-[7%] text-center shadow-[0_8px_22px_rgba(30,58,95,0.18)] ring-1 ring-black/5 -rotate-1 motion-reduce:rotate-0">
-        {POLAROID_WITH_FLOWERS && (
-          <div data-testid="polaroid-flowers" aria-hidden="true">
-            <FloralSpray className="absolute -left-3 -top-3 h-16 w-16 text-bordeaux" />
-            <FloralSpray className="absolute -bottom-3 -right-3 h-16 w-16 rotate-180 text-bordeaux" />
-          </div>
-        )}
-
         <a href={photo.originalUrl} target="_blank" rel="noopener noreferrer" className="block overflow-hidden">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img

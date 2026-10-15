@@ -9,14 +9,12 @@ markiert.
 ### Eure Punkte
 
 **1. Erinnerungen: Polaroid mit Datum und Anlass, Blumendeko (Beispiel von Vinith)**
-- **Umgesetzt nach dem Beispiel** (`polariod-example.jpg`): hochkant auf cremeweißem
-  Papier mit runden Ecken, Foto, darunter „STANDESAMTLICHE HOCHZEIT", „Saruga & Vinith"
-  in Schreibschrift, „17.10.2026" und Linie–Herz–Linie; der Gast steht in einer kleinen
-  Zeile („Erinnerung von Lena"). Auf der Seite und im gespeicherten PNG gleich.
-- Vorschau-Bilder: `Downloads/hochzeit-vorschau/` (A: wie das Beispiel, B: mit Blüten).
-- **(?) Blumen:** Das Beispiel hat keine, deshalb sind sie aus. Mit Blüten: eine Zeile
-  (`POLAROID_WITH_FLOWERS` in `polaroid-image.ts`); mit Vinith' eigener Zeichnung
-  bräuchte ich sie als SVG oder PNG mit transparentem Hintergrund.
+- **Erledigt, ohne Blumen** (entschieden am 15.10.): hochkant auf cremeweißem Papier mit
+  runden Ecken, Foto, darunter „STANDESAMTLICHE HOCHZEIT", „Saruga & Vinith" in
+  Schreibschrift, „17.10.2026" und Linie–Herz–Linie; der Gast steht in einer kleinen
+  Zeile („Erinnerung von Lena"). Auf der Seite und im gespeicherten PNG gleich; am Handy
+  über das Teilen-Menü (in die Fotos), am Computer als Download.
+- Ungeprüft: das Teilen-Menü auf einem echten iPhone und Android.
 
 **2. „Wer von uns?": eigene Seite, vorab abstimmen, Auflösung später, DJ-Zugriff**
 - Heute: Umschalter im Quiz (`/quiz`), die Balken erscheinen sofort nach der Stimme.

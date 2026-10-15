@@ -7,22 +7,12 @@
 
 export const POLAROID_SIZE = { width: 1000, height: 1500 } as const
 
-/**
- * Blüten in zwei Ecken: das Beispiel hat keine, deshalb aus. Auf `true` setzen
- * (und `FloralSpray` in `MemoryPolaroid` bleibt dann sichtbar), falls die
- * Brautleute sie doch wollen.
- */
-export const POLAROID_WITH_FLOWERS = false
-
 export const POLAROID_COLORS = {
   paper: '#f7f5f0',
   edge: '#e2ded3',
   ink: '#1c1c1c',
   text: '#3a3a3a',
   quiet: '#6b6b6b',
-  bordeaux: '#7a2432',
-  gold: '#c9a84c',
-  leaf: '#7a9a7e',
 } as const
 
 const PAPER_RADIUS = 30
@@ -47,7 +37,6 @@ export interface PolaroidContext {
   beginPath(): void
   moveTo(x: number, y: number): void
   bezierCurveTo(c1x: number, c1y: number, c2x: number, c2y: number, x: number, y: number): void
-  ellipse(x: number, y: number, rx: number, ry: number, rotation: number, start: number, end: number): void
   arc(x: number, y: number, r: number, start: number, end: number): void
   closePath(): void
   fill(): void
@@ -203,36 +192,6 @@ function drawHeart(ctx: PolaroidContext, cx: number, cy: number, size: number, c
   ctx.stroke()
 }
 
-function drawFlower(ctx: PolaroidContext, x: number, y: number, radius: number) {
-  ctx.fillStyle = POLAROID_COLORS.bordeaux
-  for (let i = 0; i < 5; i++) {
-    const angle = (Math.PI * 2 * i) / 5 - Math.PI / 2
-    ctx.beginPath()
-    ctx.arc(x + Math.cos(angle) * radius, y + Math.sin(angle) * radius, radius * 0.75, 0, Math.PI * 2)
-    ctx.fill()
-  }
-  ctx.fillStyle = POLAROID_COLORS.gold
-  ctx.beginPath()
-  ctx.arc(x, y, radius * 0.55, 0, Math.PI * 2)
-  ctx.fill()
-}
-
-function drawLeaf(ctx: PolaroidContext, x: number, y: number, angle: number, length: number) {
-  ctx.fillStyle = POLAROID_COLORS.leaf
-  ctx.beginPath()
-  ctx.ellipse(x, y, length, length * 0.38, angle, 0, Math.PI * 2)
-  ctx.fill()
-}
-
-/** Kleiner Zweig mit zwei Blüten und zwei Blättern; `flip` spiegelt ihn für die untere Ecke. */
-function drawSpray(ctx: PolaroidContext, x: number, y: number, flip: 1 | -1) {
-  const k = 1.7
-  drawLeaf(ctx, x + 40 * k * flip, y + 14 * k * flip, 0.5 * flip, 30 * k)
-  drawLeaf(ctx, x + 12 * k * flip, y + 42 * k * flip, 1.1 * flip, 30 * k)
-  drawFlower(ctx, x + 16 * k * flip, y + 16 * k * flip, 12 * k)
-  drawFlower(ctx, x + 50 * k * flip, y + 36 * k * flip, 9 * k)
-}
-
 interface DrawOptions {
   photo: CanvasImageSource & { width: number; height: number }
   guestName: string
@@ -242,12 +201,11 @@ interface DrawOptions {
   /** z. B. "17.10.2026". */
   date: string
   fonts: PolaroidFonts
-  withFlowers?: boolean
 }
 
 export function drawPolaroid(
   ctx: PolaroidContext,
-  { photo, guestName, coupleName, occasion, date, fonts, withFlowers = false }: DrawOptions
+  { photo, guestName, coupleName, occasion, date, fonts }: DrawOptions
 ): void {
   const { width, height } = POLAROID_SIZE
 
@@ -312,10 +270,6 @@ export function drawPolaroid(
     maxWidth: 780,
   })
 
-  if (withFlowers) {
-    drawSpray(ctx, 10, 10, 1)
-    drawSpray(ctx, width - 10, height - 10, -1)
-  }
 }
 
 function cssFontFamily(variable: string, fallback: string): string {
@@ -329,12 +283,11 @@ export interface PolaroidRequest {
   coupleName: string
   occasion: string
   date: string
-  withFlowers?: boolean
 }
 
 /** Rendert das Polaroid für das Foto unter `photoUrl` als PNG. */
 export async function createPolaroidBlob(request: PolaroidRequest): Promise<Blob> {
-  const { photoUrl, guestName, coupleName, occasion, date, withFlowers = false } = request
+  const { photoUrl, guestName, coupleName, occasion, date } = request
   const fonts: PolaroidFonts = {
     display: cssFontFamily('--font-cormorant', 'Georgia, serif'),
     serif: cssFontFamily('--font-playfair', 'Georgia, serif'),
@@ -368,7 +321,6 @@ export async function createPolaroidBlob(request: PolaroidRequest): Promise<Blob
     occasion,
     date,
     fonts,
-    withFlowers,
   })
   bitmap.close()
 

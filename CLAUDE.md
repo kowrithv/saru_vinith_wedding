@@ -60,7 +60,7 @@ einer Route meldet `tsc` ggf. veraltete Dateien in `.next/types` – dann
 - Tailwind v4, Farb-Tokens `dark-blue`, `champagne(-light/-dark)`, `gold`,
   `bordeaux`, `rose-sand`; Schriften `font-serif` (Playfair), `font-display`
   (Cormorant), `font-script` (Great Vibes, nur Namen/Unterschriften). Ornament:
-  `Lotus`, `FloralSpray`, `Card variant="ornate"` (Eckmarken), `EmptyState`.
+  `Lotus`, `Card variant="ornate"` (Eckmarken), `EmptyState`.
 - Upload-Kategorien: Gäste wählen nur `Standesamt`/`Party` (`uploadCategoriesFor`
   in `gallery-categories.ts`); `/api/uploads/request` lehnt `Kennenlernen`/`Verlobung`
   für Gäste ab, `Erinnerungen` kommt nur aus dem Erinnerungs-Formular.

@@ -46,7 +46,7 @@ describe('MemoryPolaroid', () => {
   it('has no bordeaux banner and no flowers, like the example', () => {
     const { container } = render(<MemoryPolaroid guestName="Lena" photo={photo} />)
     expect(container.querySelector('.bg-bordeaux')).toBeNull()
-    expect(screen.queryByTestId('polaroid-flowers')).not.toBeInTheDocument()
+    expect(container.querySelector('figure svg:not([data-testid="polaroid-heart"])')).toBeNull()
   })
 
   it('names the guest in a small line', () => {
@@ -73,7 +73,6 @@ describe('MemoryPolaroid', () => {
       coupleName: 'Saruga & Vinith',
       occasion: 'Standesamtliche Hochzeit',
       date: '17.10.2026',
-      withFlowers: false,
     })
     expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:polaroid')
   })

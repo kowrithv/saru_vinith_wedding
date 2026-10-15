@@ -153,18 +153,13 @@ describe('drawPolaroid', () => {
     expect(calls.length).toBeGreaterThan(0)
   })
 
-  it('has no bordeaux banner and no flowers by default', () => {
+  it('has no bordeaux banner and no flowers, like the example', () => {
     const { ctx, calls } = recordingContext()
     drawPolaroid(ctx, base)
 
     expect(calls.find((c) => c.fn === 'fillRect' && c.fill === '#7a2432')).toBeUndefined()
+    // Blätter wurden als Ellipsen gezeichnet
     expect(calls.filter((c) => c.fn === 'ellipse')).toHaveLength(0)
-  })
-
-  it('can bring the corner flowers back', () => {
-    const { ctx, calls } = recordingContext()
-    drawPolaroid(ctx, { ...base, withFlowers: true })
-    expect(calls.filter((c) => c.fn === 'ellipse').length).toBeGreaterThan(0)
   })
 
   it('draws the photo once, inside the paper, as a portrait', () => {

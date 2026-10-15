@@ -179,9 +179,11 @@ der Erinnerung. Der Browser lädt es per Ticket nach R2 und schickt dann
 Transaktion an. Die Foto-URLs liefert `GET /api/memories` nur an entsperrte
 Browser (der Text ist weiter offen). Ein Admin-Löschen entfernt Eintrag und Foto
 (R2, Zeile, Cache); das Foto in der Galerie zu löschen lässt den Text stehen.
-Auf der Seite erscheint das Foto als **Polaroid** (Bordeaux-Banner mit den Namen
-des Brautpaars, Unterschrift des Gastes, Blüten); „Als Polaroid speichern" erzeugt
-das Bild als PNG zum Teilen. Notaus: Schalter „Erinnerungs-Fotos" (plus „Foto-Upload"). Entwurf:
+Auf der Seite erscheint das Foto als **Polaroid** nach dem Beispiel von Vinith
+(Foto, Anlass „Standesamtliche Hochzeit", Namen des Brautpaars, Datum, Zierlinie mit
+Herz, darunter der Gast; Aufschrift in `polaroidCaption`, `event-info.ts`).
+„Als Polaroid speichern" erzeugt das Bild als PNG: am Handy über das Teilen-Menü
+(in die Fotos), am Computer als Download. Notaus: Schalter „Erinnerungs-Fotos" (plus „Foto-Upload"). Entwurf:
 `docs/superpowers/specs/2026-10-14-memory-photos-design.md`.
 
 ### Gäste-Zugang (Kennwort und QR-Code)
