@@ -55,4 +55,40 @@ describe('getClientKey', () => {
       expect(getClientKey(requestWithHeaders({ 'cf-connecting-ip': '203.0.113.5' }))).toBe('203.0.113.5')
     })
   })
+
+  // Ein Heimanschluss hat ein ganzes /64-Netz (2^64 Adressen): je Adresse zu
+  // zählen, ließe die Grenzen unbegrenzt umgehen.
+  describe('IPv6 addresses', () => {
+    const key = (address: string) => getClientKey(requestWithHeaders({ 'x-forwarded-for': address }))
+
+    it('counts all addresses of one /64 network as one client', () => {
+      expect(key('2001:db8:1:2:3:4:5:6')).toBe(key('2001:db8:1:2:ffff:ffff:ffff:ffff'))
+      expect(key('2001:db8:1:2::9')).toBe(key('2001:db8:1:2:aaaa::1'))
+    })
+
+    it('tells different /64 networks apart', () => {
+      expect(key('2001:db8:1:2::1')).not.toBe(key('2001:db8:1:3::1'))
+    })
+
+    it('ignores letter case and leading zeros', () => {
+      expect(key('2001:DB8:0001:0002::1')).toBe(key('2001:db8:1:2::1'))
+    })
+
+    it('treats an IPv4 address in IPv6 notation like the IPv4 address', () => {
+      expect(key('::ffff:198.51.100.9')).toBe('198.51.100.9')
+    })
+
+    it('leaves IPv4 addresses as they are', () => {
+      expect(key('198.51.100.9')).toBe('198.51.100.9')
+    })
+
+    it('drops a zone id and the brackets with a port', () => {
+      expect(key('fe80::1%eth0')).toBe(key('fe80::2'))
+      expect(key('[2001:db8:1:2::1]:51234')).toBe(key('2001:db8:1:2::7'))
+    })
+
+    it('keeps an unparseable value as it is instead of failing', () => {
+      expect(key('unbekannt')).toBe('unbekannt')
+    })
+  })
 })
