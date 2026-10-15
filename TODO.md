@@ -25,20 +25,11 @@ Grenzen").
 - [ ] **Absicherung für den Tag selbst** (`docs/ops/hochzeitstag-runbook.md` §7): Uptime-Monitor
       (z. B. UptimeRobot), Kopie der Sicherung außer Haus (Ziel und Anbieter offen), Cron für
       `scripts/ops/restart-if-unhealthy.sh`, Billing-Alarm bei Cloudflare, optional SMTP
-
-## Bei Claude
-
-- [ ] Desktop-Breite von Geschichte, Info, Galerie, Gästebuch und Erinnerungen sowie die
-      Listen im Admin (Gästebuch, Erinnerungen, Galerie, Memory-Ergebnisse) im Browser
-      ansehen; am besten vor `rc.4`, damit Funde noch in denselben Tag kommen
+- [ ] **Vorschau-Speicher:** jede Galerie-Kachel hält das 800-px-Thumbnail (ca. 2 MB Bitmap),
+      bei 20 Fotos ca. 40 MB. Nur angehen, falls der Gerätetest Probleme zeigt
 
 ## Nach der Hochzeit
 
-- [ ] Alte Quiz-Stimmen: `~/who-votes-alt.json` auf dem Server enthält Namen. Mit
-      `scripts/import-old-votes.mjs` übernehmen (nur solange „Abstimmen" aktiv ist) oder
-      löschen
-- [ ] `www.vsjourney.de` hat keinen DNS-Eintrag und keinen Caddy-Block: A-Eintrag `www` auf die
-      Server-IP (derzeit `93.177.65.2`), dann `redir https://vsjourney.de{uri} permanent`
 - [ ] CI: `ubuntu-latest` zeigt ab dem 19.10.2026 auf Ubuntu 26; auf `ubuntu-24.04` festsetzen
       und die Aktionen anheben (`actions/checkout` läuft noch auf Node 20)
 - [ ] Originale exportieren (Runbook §6)
@@ -51,7 +42,3 @@ Grenzen").
 - [ ] **Videos:** werden nicht angenommen (nur JPEG, PNG, WebP, HEIC, HEIF bis 20 MB); am
       Auswahlfeld steht „Nur Fotos, keine Videos." Empfehlung: dabei bleiben, bis der Tag
       vorbei ist (größere Grenzen, andere Vorschau, mehr R2-Kosten)
-- [ ] **Vorschau-Speicher:** jede Galerie-Kachel hält das 800-px-Thumbnail (ca. 2 MB Bitmap),
-      bei 20 Fotos ca. 40 MB. Nur angehen, falls der Gerätetest Probleme zeigt
-- [ ] **Roter Punkt für neue Fotos** (aus dem Gestaltungsentwurf): bräuchte „zuletzt gesehen" je
-      Gerät
