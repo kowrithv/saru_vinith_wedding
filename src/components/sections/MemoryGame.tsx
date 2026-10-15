@@ -7,6 +7,7 @@ import Lotus from '@/components/ui/Lotus'
 import Button from '@/components/ui/Button'
 import { memoryImages, MEMORY_PAIRS_COUNT } from '@/lib/memory-content'
 import { formatTime } from '@/lib/format-time'
+import { preloadImages } from '@/lib/preload-images'
 
 const STORAGE_KEY = 'memory-spiel-best'
 
@@ -104,6 +105,12 @@ export default function MemoryGame() {
     const interval = setInterval(() => setSeconds((s) => s + 1), 1000)
     return () => clearInterval(interval)
   }, [isWon, hasStarted])
+
+  // Alle Bilder des Spiels sofort holen, auch die der nächsten Mischung: eine
+  // leere Karte beim Umdrehen wäre am Handy im Veranstaltungs-WLAN sichtbar.
+  useEffect(() => {
+    preloadImages(memoryImages)
+  }, [])
 
   // Gemeinsamen Rekord laden. Fehler (offline, Server down) sind bewusst
   // egal: das Spiel funktioniert auch ohne die Rekordanzeige.

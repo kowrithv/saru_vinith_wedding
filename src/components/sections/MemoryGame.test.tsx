@@ -3,7 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import MemoryGame from './MemoryGame'
-import { MEMORY_PAIRS_COUNT } from '@/lib/memory-content'
+import { MEMORY_PAIRS_COUNT, memoryImages } from '@/lib/memory-content'
+import { preloadImages } from '@/lib/preload-images'
 
 // Zwei Paare (vier Karten) statt der echten acht reichen, um
 // Auflösung/Gewinnlogik zu testen, ohne ein komplettes Spiel
@@ -13,6 +14,8 @@ vi.mock('@/lib/memory-content', () => ({
   memoryImages: ['/test/a.jpg', '/test/b.jpg'],
   MEMORY_PAIRS_COUNT: 2,
 }))
+
+vi.mock('@/lib/preload-images', () => ({ preloadImages: vi.fn() }))
 
 function findMatchingPairIndices(cards: HTMLElement[]): [number, number] {
   const bySrc = new Map<string, number[]>()
@@ -468,5 +471,13 @@ describe('MemoryGame', () => {
     const finish = screen.getByRole('status')
     expect(finish).toHaveTextContent('Geschafft!')
     expect(finish.querySelector('svg.text-gold')).not.toBeNull()
+  })
+
+  // Alle Bilder werden sofort geholt, nicht nur die der ersten Mischung: nach
+  // "Neues Spiel" sind andere dabei, und eine leere Karte beim Umdrehen wäre
+  // am Handy im Veranstaltungs-WLAN gut sichtbar.
+  it('preloads all images of the game, including those not dealt yet', () => {
+    render(<MemoryGame />)
+    expect(preloadImages).toHaveBeenCalledWith(memoryImages)
   })
 })
