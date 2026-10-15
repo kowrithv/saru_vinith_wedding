@@ -1,5 +1,11 @@
 name: CI
 
+# Der Runner ist festgesetzt (ubuntu-24.04): `ubuntu-latest` zeigt ab dem 19.10.2026 auf
+# Ubuntu 26, und ein Image-Build am Hochzeitstag soll nicht auf einem neuen System laufen.
+# `checkout` und `setup-node` laufen mit Node 24 (v4 war für Node 20 gebaut). Die
+# docker/*-Aktionen bleiben, wie sie sind: sie laufen nur bei einem Tag und lassen sich vorher
+# nicht ausprobieren.
+
 on:
   push:
     branches-ignore:
@@ -20,12 +26,12 @@ jobs:
   # übersprungen. Branch-Pushes, PRs und manuelle Läufe sind nicht betroffen.
   guard:
     name: Tag nur auf main
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       allowed: ${{ steps.check.outputs.allowed }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -45,13 +51,13 @@ jobs:
     name: Lint, Typecheck, Test & Build
     needs: guard
     if: needs.guard.outputs.allowed == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '24'
           cache: npm
@@ -94,7 +100,7 @@ jobs:
     # liegt, stellt der guard-Job sicher (build wird sonst übersprungen und
     # damit auch dieser Job).
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       packages: write
@@ -103,7 +109,7 @@ jobs:
       IMAGE_NAME: ${{ github.repository }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3

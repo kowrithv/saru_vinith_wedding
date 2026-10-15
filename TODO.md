@@ -11,12 +11,6 @@ Grenzen").
       Actions-Lauf alle Jobs grün. Auf dem Server `IMAGE_TAG=1.0.0-rc.4` in der `.env`,
       `docker-compose pull`, `docker-compose up -d`, `ps` (healthy), dann
       `node scripts/smoke.mjs https://vsjourney.de`
-- [ ] **Testdaten löschen** (Admin): „Wer von uns?" → „Alle Stimmen löschen" (das Test-Handy
-      muss danach ohne Löschen der Browserdaten wieder bei Frage 1 beginnen); Gästebuch,
-      Erinnerungen und Fotos über die Lösch-Knöpfe; Memory-Spiel „Rekord zurücksetzen"
-- [ ] **„Wer von uns?" auf „Abstimmen" lassen** und den **Link für den DJ** kopieren und ihm
-      schicken (Admin der echten Seite, Abschnitt „Wer von uns?"; er soll ihn vorher einmal
-      öffnen). Am Abend: „Beendet", dann „Freigegeben"
 - [ ] **Gerätetest** auf iPhone und Android (`docs/ops/geraetetest-checkliste.md`), noch offen:
       QR-Code mit der Kamera, „Wer von uns?" mit Ändern und „Zurück", HEIC-Foto vom iPhone;
       Bucket-CORS ohne `localhost` prüfen
@@ -30,8 +24,9 @@ Grenzen").
 
 ## Nach der Hochzeit
 
-- [ ] CI: `ubuntu-latest` zeigt ab dem 19.10.2026 auf Ubuntu 26; auf `ubuntu-24.04` festsetzen
-      und die Aktionen anheben (`actions/checkout` läuft noch auf Node 20)
+- [ ] CI nach der Hochzeit: die `docker/*`-Aktionen (setup-buildx v3, login v3, metadata v5,
+      build-push v6) auf die neuesten Versionen heben; sie laufen nur bei einem Tag und ließen
+      sich vorher nicht ausprobieren
 - [ ] Originale exportieren (Runbook §6)
 - [ ] **Verwaiste R2-Objekte** aufräumen (abgebrochene Uploads, Erinnerung nach dem Foto-Upload
       nicht abgesendet): es gibt keinen Aufräum-Job; per Skript mit Abgleich zur Datenbank oder
