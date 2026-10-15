@@ -7,6 +7,9 @@ Feature complete. Zurückgestellt: Videos.
 
 ## Brautpaar
 
+- [ ] Nach dem Umstieg: den Link für den DJ im Admin der **echten** Seite („Wer von uns?")
+      kopieren und ihm schicken (das Wort hängt am `ADMIN_SECRET` des Servers und weicht von
+      der Demo ab). Am Abend: „Beendet", dann „Freigegeben"
 - [ ] Videos bleiben zurückgestellt (Empfehlung: erst nach der Feier)
 
 ## Claude
@@ -17,14 +20,21 @@ Feature complete. Zurückgestellt: Videos.
 
 ## Betreiber, vor dem Tag
 
-- [ ] `develop` pushen, `develop:main`, Tag `v1.0.0-rc.1` (README „Deployment"). Caddy ist
-      v2.8.4 und damit neu genug; nur in der Caddyfile darf kein `trusted_proxies` stehen
+- [ ] R2 laut `docs/ops/heute-abend.md` Schritt 1–3 (Bucket, Foto-Domain, Purge-Token,
+      Budget-Alarm), falls noch nicht geschehen
+- [ ] Die letzten Commits pushen (`develop` ist bis „Let guests change their Wer von uns
+      votes" gepusht, danach kamen die drei Schritte der Abstimmung), dann `develop:main`
+      und Tag `v1.0.0-rc.1` (README „Deployment"). Caddy ist v2.8.4 und damit neu genug;
+      nur in der Caddyfile darf kein `trusted_proxies` stehen
 - [ ] `.env.production`: `GUEST_PASSWORD=love` setzen, `UPLOAD_PASSWORD_EMPFANG` entfernen,
       `R2_ENDPOINT` **nicht** setzen; **neues `ADMIN_PASSWORD`** (das alte steht in der
       Git-Historie; ein Wechsel beendet alle Admin-Sitzungen); Bucket-CORS ohne `localhost`
 - [ ] Caddy: Größe der Anfragen begrenzen (ein riesiger Body kann den Container-Speicher
       sprengen), z. B. `request_body { max_size 64KB }` im Block für `/api/*` (Uploads
       laufen direkt zu R2)
+- [ ] Server auf die neue Seite umstellen (README „Umstieg von der alten Seite",
+      `docs/ops/heute-abend.md` Schritt 5), danach die alten Quiz-Stimmen übernehmen
+      (Schritt 8, mit `--password=<Gäste-Kennwort>`)
 - [ ] Gerätetest auf iPhone und Android (`docs/ops/geraetetest-checkliste.md`), danach
       Smoke-Test gegen die echte Domain (der Lasttest schreibt Stimmen und läuft nur lokal)
 - [ ] Tag `v1.0.0` und Freeze

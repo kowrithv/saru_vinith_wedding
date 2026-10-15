@@ -2,7 +2,7 @@
 // Seiteneffekte auf Daten: nur Lesezugriffe, ein Upload-Ticket mit falschem
 // Kennwort (wird abgewiesen) und - nur mit Passwort - Admin-Login/-Logout.
 
-const PAGES = ['/story', '/info', '/gallery', '/quiz', '/wer-von-uns', '/memory-spiel', '/memories', '/guestbook', '/admin']
+const PAGES = ['/story', '/info', '/gallery', '/quiz', '/wer-von-uns', '/dj', '/memory-spiel', '/memories', '/guestbook', '/admin']
 const SLOW_MS = 3000
 
 function pass() {

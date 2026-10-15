@@ -17,6 +17,7 @@ function fakeServer(overrides = {}) {
     'GET /gallery': () => ({ status: 200, body: html }),
     'GET /quiz': () => ({ status: 200, body: html }),
     'GET /wer-von-uns': () => ({ status: 200, body: html }),
+    'GET /dj': () => ({ status: 200, body: html }),
     'GET /memory-spiel': () => ({ status: 200, body: html }),
     'GET /memories': () => ({ status: 200, body: html }),
     'GET /guestbook': () => ({ status: 200, body: html }),
