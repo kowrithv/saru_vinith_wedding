@@ -417,8 +417,19 @@ zweites System ist noch offen (`TODO.md`).
 der alten Seite (`data/who-votes.json`) in die neue:
 `node scripts/import-old-votes.mjs <datei> <https://vsjourney.de> [--apply --password=<Gäste-Kennwort>]`
 (ohne `--apply` nur ein Probelauf; wiederholbar, legt nichts doppelt an; die
-Abstimm-Route verlangt das Gäste-Kennwort). Es läuft
-auf dem Rechner mit dem Repo-Checkout, nicht auf dem Server.
+Abstimm-Route verlangt das Gäste-Kennwort, statt `--password` geht auch die
+Umgebungsvariable `GUEST_PASSWORD`). Es läuft auf dem Rechner mit dem Repo-Checkout
+(Node ab Version 20), nicht auf dem Server. Die Datei mit den Stimmen der alten Seite
+enthält die **Namen** der Abstimmenden: nicht weitergeben und nach dem Import auf dem
+Server und lokal löschen. Namen werden nicht mit übernommen.
+
+- Ist „Wer von uns?" im Admin auf „Beendet" oder „Freigegeben", meldet das Skript
+  „abgewiesen (HTTP 423)": kurz auf „Abstimmen" stellen, importieren, zurückstellen.
+- Bei „zu viele Anfragen" (429) wartet das Skript und versucht es erneut. Exit-Code 1
+  heißt: etwas wurde abgewiesen, ist fehlgeschlagen oder war unbrauchbar (die Hinweise
+  stehen darüber).
+- Danach `/dj` öffnen, das Wort aus dem Admin eintippen und die Zähler prüfen: Gäste
+  sehen sie bis zur Auflösung nicht.
 
 `scripts/compress-memory-images.mjs` verkleinert die Bilder für das
 Memory-Spiel nach `public/memory-spiel/`. Es braucht `sharp`, das nicht in
