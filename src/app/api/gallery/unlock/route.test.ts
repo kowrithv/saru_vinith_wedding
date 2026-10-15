@@ -48,6 +48,22 @@ describe('POST /api/gallery/unlock', () => {
     expect(response.headers.get('set-cookie')).toContain(`${GALLERY_COOKIE_NAME}=`)
   })
 
+  // Das gedruckte Kennwort ist ein einfaches Wort, das Gäste am Handy tippen:
+  // Auto-Großschreibung am Wortanfang und Leerzeichen dürfen nichts ausmachen.
+  it.each(['love', 'Love', 'LOVE', ' love ', 'lOvE'])('accepts "%s" for the configured word "love"', async (typed) => {
+    process.env.GUEST_PASSWORD = 'love'
+    getDb()
+    const response = await POST(unlockRequest(typed))
+    expect(response.status).toBe(200)
+  })
+
+  it('accepts the lower case word when the server was configured with capitals', async () => {
+    process.env.GUEST_PASSWORD = 'Love'
+    getDb()
+    const response = await POST(unlockRequest('love'))
+    expect(response.status).toBe(200)
+  })
+
   it('rejects the wrong password without setting a cookie', async () => {
     getDb()
     const response = await POST(unlockRequest('falsch'))
@@ -55,13 +71,40 @@ describe('POST /api/gallery/unlock', () => {
     expect(response.headers.get('set-cookie')).toBeNull()
   })
 
-  it('rejects the 6th attempt within 15 minutes', async () => {
+  // Mit dem einfachen Wort auf dem Flyer sind Tippfehler und Neugier häufiger,
+  // und viele Gäste teilen sich die IP des Veranstaltungs-WLANs: 20 Fehlversuche
+  // je Adresse und 15 Minuten. Ein Skript bremst das auf 80 je Stunde.
+  it('lets 20 wrong attempts through as "wrong password" and rejects the 21st', async () => {
     getDb()
-    for (let i = 0; i < 5; i++) {
-      await POST(unlockRequest('falsch'))
+    const statuses: number[] = []
+    for (let i = 0; i < 21; i++) {
+      const response = await POST(unlockRequest('falsch', '10.0.0.20'))
+      statuses.push(response.status)
     }
-    const response = await POST(unlockRequest('falsch'))
+    expect(statuses.slice(0, 20).every((status) => status === 401)).toBe(true)
+    expect(statuses[20]).toBe(429)
+  })
+
+  it('limits per address: another address is not affected by a locked one', async () => {
+    getDb()
+    for (let i = 0; i < 21; i++) {
+      await POST(unlockRequest('falsch', '10.0.0.21'))
+    }
+    const locked = await POST(unlockRequest('empfang-secret', '10.0.0.21'))
+    const other = await POST(unlockRequest('empfang-secret', '10.0.0.22'))
+    expect(locked.status).toBe(429)
+    expect(other.status).toBe(200)
+  })
+
+  it('tells the guest how long to wait', async () => {
+    getDb()
+    for (let i = 0; i < 21; i++) {
+      await POST(unlockRequest('falsch', '10.0.0.23'))
+    }
+    const response = await POST(unlockRequest('falsch', '10.0.0.23'))
     expect(response.status).toBe(429)
+    expect(Number(response.headers.get('retry-after'))).toBeGreaterThan(0)
+    expect((await response.json()).error).toMatch(/minute/i)
   })
 
   // Viele Gäste teilen sich die IP des Veranstaltungs-WLANs: erfolgreiche

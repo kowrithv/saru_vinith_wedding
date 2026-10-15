@@ -190,8 +190,10 @@ Galerie, Gästebuch, Erinnerungen und Foto-Upload teilen sich **ein** Kennwort
 (`GUEST_PASSWORD`). Es gilt ohne Rücksicht auf Groß-/Kleinschreibung
 und Leerzeichen am Rand und soll kurz und merkbar sein, aber **nicht aus der
 Seite erratbar**: keine Namen, kein Datum, kein Ort (stehen alle auf der Seite).
-Falsche Versuche sind je Adresse begrenzt, ein kurzes Wort hält also Gelegenheits-
-Raten ab, keinen gezielten Angriff. Die Galerie öffnet sich
+Falsche Versuche sind je Adresse begrenzt (20 je 15 Minuten beim Entsperren, dazu
+je Gästebuch, Erinnerungen und Upload ein eigenes Kontingent; im Speicher, ein
+Neustart setzt sie zurück). Ein einfaches Wort hält also Gelegenheits-Raten ab,
+keinen gezielten Angriff. Die Galerie öffnet sich
 erst danach (Standard „Kennwort"); Gästebuch und Erinnerungen bleiben lesbar,
 Einträge brauchen das Kennwort.
 

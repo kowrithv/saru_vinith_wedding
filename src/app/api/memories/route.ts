@@ -21,7 +21,7 @@ const entrySchema = z.object({
 })
 
 const memoriesLimiter = new RateLimiter({
-  // Deutlich höher als der Login-Limiter (5/15 Min): mehrere Gäste
+  // Deutlich höher als der Admin-Login-Limiter (5/15 Min): mehrere Gäste
   // teilen sich am Empfang oft dieselbe IP (Venue-WLAN, Mobilfunk-NAT) -
   // ein niedriges Limit würde eine ganze Tischrunde nach wenigen echten
   // Einträgen aussperren.

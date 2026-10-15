@@ -8,13 +8,21 @@ import { getClientKey } from '@/lib/client-ip'
 
 const bodySchema = z.object({ password: z.string().min(1).max(200) })
 
-const unlockLimiter = new RateLimiter({ maxAttempts: 5, windowMs: 15 * 60 * 1000 })
+// Das Kennwort ist ein einfaches Wort auf dem Flyer: Tippfehler sind häufig, und
+// viele Gäste teilen sich die IP des Veranstaltungs-WLANs - bei 5 Versuchen
+// könnten ein paar Fehlversuche alle anderen für 15 Minuten aussperren. 20
+// bremst ein Skript trotzdem auf 80 Versuche je Stunde und Adresse.
+const unlockLimiter = new RateLimiter({ maxAttempts: 20, windowMs: 15 * 60 * 1000 })
 
 export async function POST(request: Request): Promise<Response> {
   const clientKey = getClientKey(request)
   const limit = unlockLimiter.check(clientKey)
   if (!limit.allowed) {
-    return NextResponse.json({ error: 'Zu viele Versuche. Bitte später erneut versuchen.' }, { status: 429 })
+    const minutes = Math.max(1, Math.ceil(limit.retryAfterMs / 60_000))
+    return NextResponse.json(
+      { error: `Zu viele Versuche. Bitte in etwa ${minutes} ${minutes === 1 ? 'Minute' : 'Minuten'} erneut versuchen.` },
+      { status: 429, headers: { 'Retry-After': String(Math.ceil(limit.retryAfterMs / 1000)) } }
+    )
   }
 
   const body = await request.json().catch(() => null)
