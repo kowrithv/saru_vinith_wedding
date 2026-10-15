@@ -1,5 +1,154 @@
 # TODO
 
+## Offene Punkte – gemeinsame Liste (Stand Do 15.10. abends)
+
+Zuerst eure Liste (RHA) mit meinen Anmerkungen, danach unter „Sachen von
+Claude" alles, was ich sonst gefunden habe. Entscheidungen sind mit **(?)**
+markiert.
+
+### Eure Punkte
+
+**1. Erinnerungen: Polaroid mit Datum und Anlass, Blumendeko (Beispiel von Vinith)**
+- Das Beispiel (`polariod-example.jpg`, 853 × 1280) zeigt: hochkant (2:3), cremeweißes
+  Papier mit leichter Struktur und runden Ecken, Foto im Format ca. 4:5, darunter
+  eine kleine Zeile in gesperrten Versalen **„STANDESAMTLICHE HOCHZEIT"**, die Namen
+  **„Saruga & Vinith"** in Schreibschrift, das Datum **„17.10.2026"** gesperrt und
+  eine Linie–Herz–Linie. **Keine Blumen, kein Bordeaux-Band.**
+- Heute: quadratisches Foto, Bordeaux-Band mit „Saruga & Vinith" in Cormorant,
+  Blüten in zwei Ecken, darunter der Name des Gasts; weder Datum noch Anlass
+  (`MemoryPolaroid.tsx` für die Anzeige, `polaroid-image.ts` für das PNG).
+- **(?) Blumen:** ihr wolltet Bordeaux und Blumen, das Beispiel hat beides nicht.
+  Entweder dem Beispiel folgen (ruhig, weiß/schwarz) oder dessen Aufbau mit einer
+  Blumenzeichnung kombinieren; dann bräuchte ich die Blumen als Datei (SVG oder
+  PNG mit transparentem Hintergrund) von Vinith.
+- **(?) Gastname:** im Beispiel gibt es keinen Platz dafür; Vorschlag: eine kleine
+  Zeile „Erinnerung von Lena" unter dem Datum.
+- Umsetzung (nach eurer Entscheidung, ca. eine Stunde): Zeilen Anlass, Namen, Datum
+  und Zierlinie in Anzeige und PNG, Papier-Look, hochkant. Der Anlass steht dann
+  als Konstante in `event-info.ts` („Standesamtliche Hochzeit").
+
+**2. „Wer von uns?": eigene Seite, vorab abstimmen, Auflösung später, DJ-Zugriff**
+- Heute: Umschalter im Quiz (`/quiz`), die Balken erscheinen sofort nach der Stimme.
+- Umbau: Seite `/wer-von-uns` mit eigener Navigation und Kachel; alle Fragen auf einmal;
+  **ohne Ergebnis** für Gäste; die Ergebnisse sieht nur der Admin und ein **Schalter
+  „Ergebnis freigeben"** schaltet sie für alle frei (in der Konfiguration wie die
+  Schreib-Sperren). Smoke-Skript und Navigation müssen die Seite kennen.
+- **(?) DJ-Zugriff:** der DJ soll die Ergebnisse vorab sehen, aber nicht den
+  Admin-Zugang bekommen. Vorschlag: ein eigener Lese-Link mit langem Zufallsschlüssel
+  nur für die Ergebnisse (kein Schreiben, kein Löschen), den ihr dem DJ schickt.
+- Offen: ob eine Person mehrfach abstimmen darf (heute je Gerät, nicht erzwingbar)
+  und die Porträtfotos (S/V) statt der Buchstaben-Marken.
+
+**3. Passwort → QR-Code → Vinith (Flyer)**
+- Kennwort **love** (ohne Groß-/Kleinschreibung). QR-Dateien in
+  `/home/hartings/hochzeit-qr/` (SVG und PNG, schwarz und dunkelblau, Text für Vinith).
+- Offen bei euch: Dateien an Vinith schicken; `GUEST_PASSWORD=love` in
+  `.env.production` setzen und `up -d --force-recreate web`; mit dem Handy gegen die
+  echte Domain scannen; Probedruck prüfen. Der Code zeigt auf `vsjourney.de`.
+
+**4. Startseite: Bild austauschen**
+- `public/hero/paar.jpg` ist ein Platzhalter (ein Memory-Foto, 450 × 800, identisch
+  mit `memory-1.jpg`). Gebraucht: Hochformat ab 900 × 1100 px, unter 200 KB, Gesichter
+  im oberen Drittel (der Rahmen ist oben rund). Datei ersetzen, nichts sonst.
+
+**5. „Unsere Fotos" auf der Startseite: vier kleine Bilder**
+- Heute vier Farbflächen (`PREVIEW_SWATCHES` in `FeatureGrid.tsx`). Gebraucht: vier
+  quadratische Bilder, 120 × 120 px, je ca. 5–10 KB, in `public/home/`. Nicht aus der
+  Galerie nehmen: sie ist kennwortgeschützt, die Startseite ist öffentlich.
+
+**6. Deployment**
+- Reihenfolge: `develop` pushen → `develop:main` → Tag `v1.0.0-rc.1`; Server:
+  `.env.production` (Pflicht-Variablen, `GUEST_PASSWORD`, R2, `R2_JURISDICTION`),
+  `IMAGE_TAG`, Caddy; danach Gerätetest, Smoke- und Lasttest gegen die Domain,
+  Bucket-CORS ohne `localhost`, endgültiges `v1.0.0`.
+- Seit dem letzten Gerätetest hat sich viel geändert (Gestaltung, Upload-Kategorien,
+  Kennwort/Limit, `R2_ENDPOINT`): **neuen rc bauen und die Checkliste noch einmal
+  durchgehen**, bevor `v1.0.0` getaggt wird.
+- `R2_ENDPOINT` darf in der Produktion nicht gesetzt sein; `.env.local` und
+  `.env.production` brauchen `GUEST_PASSWORD` statt `UPLOAD_PASSWORD_EMPFANG`.
+
+**7. Prüfen mit Videos**
+- Stand: **Videos werden nicht angenommen.** Das Formular zeigt nur Fotos
+  (`accept="image/*"`), der Server nimmt nur JPEG, PNG, WebP, HEIC und HEIF bis
+  20 MB; es gibt keinen Hinweis „nur Fotos". Ein Gast mit einem Video bekommt eine
+  Fehlermeldung ohne Erklärung.
+- **(?)** Bewusst nur Fotos (dann ein Satz im Formular und auf dem Flyer) oder kurze
+  Videos zulassen (größere Grenzen, andere Vorschau, mehr R2-Kosten, Abspielen in der
+  Großansicht). Empfehlung: nur Fotos, bis der Tag vorbei ist.
+- Falls „mit Videos prüfen" etwas anderes meint (Bildschirmvideos der Abläufe?),
+  bitte kurz sagen.
+
+**8. Memory: Bilder verkleinern**
+- 10 JPEGs, 53–98 KB, zusammen 748 KB, bis 800 px. Gezeigt werden sie in Karten von
+  höchstens ca. 170 px: 400 × 400 px quadratisch genügt (≈ 20 KB je Bild, gesamt ca.
+  200 KB). `scripts/compress-memory-images.mjs` (braucht `sharp`) erledigt das; besser
+  wären Originale von euch als die vorhandenen, schon komprimierten Dateien.
+
+**9. Dienstleister**
+- **(?)** Unklar, was gemeint ist: eine Seite oder Zeile „Dienstleister" (Fotograf,
+  DJ, Location, Caterer mit Link oder Namen), Zugang für sie (DJ-Ergebnisse, Kennwort,
+  Upload) oder Absprachen? Bitte kurz beschreiben.
+
+**10. Rate Limit besprechen**
+- So ist es: Entsperren 20 Fehlversuche je Adresse und 15 Minuten (vorher 5); Gästebuch
+  und Erinnerungen je 30 Anfragen in 15 Minuten, Upload zählt nur Fehlversuche; alles im
+  Speicher des Servers (ein Neustart setzt zurück), Schlüssel ist die Adresse aus
+  `X-Forwarded-For`.
+- Folgen: ein erratbares Wort schützt nicht gegen gezieltes Raten (die Grenzen bremsen
+  nur Automaten); verteilt auf Entsperren, Gästebuch, Erinnerungen und Upload sind es
+  zusammen deutlich mehr als 20 Versuche je Adresse.
+- **(?) Missbrauch mit gültigem Kennwort:** wer „love" kennt, kann unbegrenzt Fotos
+  hochladen (Speicher- und Übertragungskosten in R2); es gibt nur den Notaus
+  „Foto-Upload sperren" im Admin und einen Billing-Alarm (siehe unten). Vorschlag: eine
+  Obergrenze je Adresse und Stunde (z. B. 200 Fotos).
+- **(?)** Gemeinsame Adresse des Veranstaltungs-WLANs: 30 Gästebuch-Einträge in 15
+  Minuten könnten bei 100 Gästen knapp werden; Zahlen anpassen oder nicht.
+- Kleinigkeit: wird ein QR-Scan durch die Sperre abgewiesen, steht dort „QR-Code nicht
+  mehr gültig" (irreführend; sollte „bitte kurz warten" sagen).
+
+### Sachen von Claude
+
+**Noch nicht gesehen oder getestet (ehrlich: nur Tests und HTML, kein Browser)**
+- Alle Gestaltungsänderungen dieser Runde (Kacheln, Anfahrt, Großansicht, Filter,
+  Quiz-Ergebnis, Memory-Band, Story-Karten) wurden nicht in einem echten Browser
+  angesehen, nur per Test und Server-HTML geprüft.
+- **Echter R2-Upload aus dem Browser** (CORS-PUT, Jurisdiktion `eu`): nur gegen den
+  Ersatz-Server geprüft, nie gegen Cloudflare.
+- **Polaroid herunterladen** auf iPhone und Android (Canvas, Schriften, Speichern).
+- **HEIC vom iPhone** bei Browsern ohne HEIC-Dekodierung (die Vorschau entsteht im
+  Browser): ungeprüft.
+- Das **unabhängige Code-Review** über die Commits seit dem letzten Review ist nicht
+  gelaufen.
+- Die **Tageszustände** (vorher / heute / danach) sind getestet, aber nicht zur
+  echten Uhrzeit am 17.10. beobachtet.
+- `docs/ops/geraetetest-checkliste.md` ist mit den neuen Abläufen (QR-Scan,
+  Standesamt/Party, Foto zur Erinnerung) noch nicht durchgespielt.
+
+**Entscheidungen offen (?)**
+- **Countdown:** `/?countdown=gross` oder `/?countdown=kacheln`; danach den Umschalter
+  entfernen (`use-countdown-variant.ts`, `TileCountdown`/`VariantSwitcher`).
+- **Programm bestätigen:** die zwei „Einzug"-Zeilen (17:15 mit Tortenanschneiden, ca.
+  18:30 traditionell) und „ca. 20:00 – 21:00 Uhr" für das Abendessen.
+- **Kategorien:** Gäste wählen jetzt *Standesamt* oder *Party*, der Admin zusätzlich
+  *Kennenlernen* und *Verlobung*. Passt zum Beispiel („Standesamtliche Hochzeit"),
+  bitte bestätigen; ebenso, dass der Admin die beiden Story-Kategorien behält.
+
+**Inhalte, die noch fehlen**
+- Hero-Foto (Punkt 4), vier Fotos auf der Kachel (Punkt 5), Fotos je Meilenstein in
+  der Geschichte (`photo` in `story-content.ts`), „Gut zu wissen"-Texte
+  (`goodToKnow` in `event-info.ts`), Porträts für „Wer von uns?".
+- Aus den Vorschlägen nicht umgesetzt: der rote Punkt für neue Fotos (C9).
+
+**Betrieb und Aufräumen**
+- SMTP-Zugang für Alarm-Mails; Ziel für die Off-Box-Kopie und Uptime-Monitor
+  (`hochzeitstag-runbook.md` §7); Billing-Alarm in Cloudflare als Kostenobergrenze.
+- Export der Originale (Runbook §6) und **verwaiste R2-Objekte** nach der Hochzeit.
+- Das Passwort schützt die Galerie-Seite und ihre Liste, **nicht die Datei-Adressen**
+  auf der Foto-Domain (zufällige UUID-Pfade, nicht erratbar, aber wer eine Adresse
+  hat, sieht das Foto).
+- Eigene Fotos löschen geht nur auf dem Gerät des Uploads (Token im Browser); sonst
+  über den Admin.
+
 ## Einplanung (Stand Do 15.10.2026)
 
 | Wann | Wer | Was |
@@ -16,17 +165,6 @@
 | ab So 18.10. | Entwicklung | Export der Originale aus R2 (Runbook §6); **verwaiste R2-Objekte** aufräumen (Skript, Abgleich mit der Datenbank) |
 
 Nicht geplant: ein vom Server verteiltes Memory-Spiel (bewusst clientseitig).
-
-## Vom Brautpaar noch zu entscheiden (Stand Do 15.10.)
-
-- **Countdown:** `/?countdown=gross` (Tage groß, jetzt Standard) oder
-  `/?countdown=kacheln` (frühere vier weiße Kacheln) ansehen und eine wählen;
-  danach den Umschalter (`use-countdown-variant.ts`, `TileCountdown`/`VariantSwitcher`
-  in `Countdown.tsx`) entfernen.
-- **„Wer von uns?":** eigenes Feedback steht noch aus (bleibt vorerst im Quiz;
-  Porträtfotos wären die Ergänzung aus dem Vorschlag C14).
-- **Galerie:** der rote Punkt für neue Fotos aus dem Vorschlag C9 ist nicht
-  umgesetzt (bräuchte „zuletzt gesehen" je Gerät).
 
 ## Inhalte vor dem Freeze (von euch)
 
