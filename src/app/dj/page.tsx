@@ -9,9 +9,21 @@ import { clearResultsKey, rememberResultsKey, subscribeResultsKey, takeResultsKe
 
 const POLL_MS = 5000
 
+type Phase = 'voting' | 'closed' | 'released'
+
 interface Snapshot {
-  released: boolean
+  phase: Phase
   questions: TallyMap | null
+}
+
+const PHASE_TEXT: Record<Phase, string> = {
+  voting: 'Zwischenstand. Für die Gäste noch verborgen, es wird weiter abgestimmt.',
+  closed: 'Die Abstimmung ist beendet. Die Ergebnisse sind für die Gäste noch verborgen.',
+  released: 'Für die Gäste freigegeben. Die Abstimmung ist beendet.',
+}
+
+function toPhase(value: unknown): Phase {
+  return value === 'closed' || value === 'released' ? value : 'voting'
 }
 
 function CodeForm({ notice }: { notice: string | null }) {
@@ -93,7 +105,7 @@ export default function WhoResultsPage() {
             return
           }
           if (!res.ok) throw new Error('Laden fehlgeschlagen')
-          const data = (await res.json()) as { released?: boolean; questions?: TallyMap | null }
+          const data = (await res.json()) as { phase?: unknown; questions?: TallyMap | null }
           if (!active) return
           if (!data.questions) {
             // Der Server kennt das Wort nicht: verwerfen, sonst zählt jede Abfrage als Fehlversuch.
@@ -102,7 +114,7 @@ export default function WhoResultsPage() {
             setNotice('Dieses Wort gilt nicht. Bitte noch einmal eingeben.')
             return
           }
-          setSnapshot({ released: data.released === true, questions: data.questions })
+          setSnapshot({ phase: toPhase(data.phase), questions: data.questions })
           setNotice(null)
           setUnreachable(false)
         })
@@ -128,9 +140,7 @@ export default function WhoResultsPage() {
     content = (
       <>
         <p className="mb-5 text-center text-sm text-gray-600" role="status">
-          {snapshot.released
-            ? 'Für die Gäste freigegeben. Die Abstimmung ist beendet.'
-            : 'Zwischenstand. Für die Gäste noch verborgen, es wird weiter abgestimmt.'}
+          {PHASE_TEXT[snapshot.phase]}
           {unreachable && ' Keine Verbindung, der Stand ist nicht aktuell.'}
         </p>
         <WhoResults tally={snapshot.questions} />

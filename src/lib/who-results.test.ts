@@ -3,12 +3,16 @@ import { getDb } from './db'
 import { ADMIN_COOKIE_NAME, adminCookieSecret, getOrCreateAdminSecret, signCookieValue } from './admin-auth'
 import {
   RESULTS_KEY_HEADER,
+  WHO_PHASES,
   areResultsReleased,
   canSeeResults,
+  getWhoPhase,
   resultsAccess,
   resultsKey,
   setResultsReleased,
+  setWhoPhase,
 } from './who-results'
+import { isFeatureLocked, setFeatureLocked } from './app-config'
 import { RESULTS_WORDS } from './who-results-words'
 
 function requestWith(headers: Record<string, string> = {}): Request {
@@ -50,6 +54,42 @@ describe('who-results', () => {
       expect(areResultsReleased(db)).toBe(true)
       setResultsReleased(db, false)
       expect(areResultsReleased(db)).toBe(false)
+    })
+  })
+
+  describe('phase', () => {
+    it('starts with voting', () => {
+      expect(getWhoPhase(getDb())).toBe('voting')
+    })
+
+    it('goes voting -> closed -> released and back', () => {
+      const db = getDb()
+      setWhoPhase(db, 'closed')
+      expect(getWhoPhase(db)).toBe('closed')
+      expect(isFeatureLocked(db, 'who_votes')).toBe(true)
+      expect(areResultsReleased(db)).toBe(false)
+
+      setWhoPhase(db, 'released')
+      expect(getWhoPhase(db)).toBe('released')
+      expect(areResultsReleased(db)).toBe(true)
+
+      setWhoPhase(db, 'closed')
+      expect(getWhoPhase(db)).toBe('closed')
+      expect(areResultsReleased(db)).toBe(false)
+
+      setWhoPhase(db, 'voting')
+      expect(getWhoPhase(db)).toBe('voting')
+      expect(isFeatureLocked(db, 'who_votes')).toBe(false)
+    })
+
+    it('treats the old write lock for the vote as the closed phase', () => {
+      const db = getDb()
+      setFeatureLocked(db, 'who_votes', true)
+      expect(getWhoPhase(db)).toBe('closed')
+    })
+
+    it('lists the phases in their order', () => {
+      expect(WHO_PHASES).toEqual(['voting', 'closed', 'released'])
     })
   })
 

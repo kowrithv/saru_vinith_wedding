@@ -51,6 +51,10 @@ const FEATURE_LABELS: Record<keyof Locks, string> = {
   memory_photos: 'Erinnerungs-Fotos',
 }
 
+// Die Sperre der Abstimmung ist der Schritt "Beendet" im Abschnitt "Wer von uns?"
+// (drei Schritte statt eines Schalters): hier gäbe es sie doppelt.
+const LOCK_SWITCHES = (Object.keys(FEATURE_LABELS) as (keyof Locks)[]).filter((feature) => feature !== 'who_votes')
+
 interface MemoryResultRow {
   id: number
   moves: number
@@ -317,7 +321,7 @@ export default function AdminDashboard({ initialLocks, initialGalleryMode }: Adm
 
         <Card padding="lg" className="mb-8">
           <div className="space-y-5">
-            {(Object.keys(FEATURE_LABELS) as (keyof Locks)[]).map((feature) => {
+            {LOCK_SWITCHES.map((feature) => {
               const isLocked = locks[feature]
               return (
                 <div key={feature} className="flex items-center justify-between gap-4">

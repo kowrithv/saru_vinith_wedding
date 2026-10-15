@@ -123,8 +123,8 @@ Fotos laufen **nie durch den App-Server**:
    löscht jedes Foto.
 
 Der Admin kann im Dashboard die Galerie zwischen **Kennwort** (Standard) und
-**Öffentlich** umschalten sowie Gästebuch, Erinnerungen, die
-„Wer von uns?“-Abstimmung, den **Foto-Upload** und die **Erinnerungs-Fotos**
+**Öffentlich** umschalten sowie Gästebuch, Erinnerungen, den
+**Foto-Upload** und die **Erinnerungs-Fotos**
 einzeln sperren (der Admin lädt auch bei gesperrtem Upload weiter hoch). Die Bucket-CORS-Regel muss
 `PUT, GET, HEAD`, die Header `content-type, content-length` und die
 Produktions-Domain sowie `http://localhost:3000` erlauben (Einstellung im
@@ -133,8 +133,11 @@ Cloudflare-Dashboard, nicht im Code).
 **„Wer von uns?“** (`/wer-von-uns`): Gäste stimmen vorab mit dem Gäste-Kennwort
 ab (eine Stimme je Frage und Gerät, bis zur Auflösung änderbar; höchstens 60
 Stimmen je Gerät in 15 Minuten) und sehen keine Zwischenstände: `GET /api/who-votes` liefert `questions: null`.
-Im Admin-Bereich gibt das Brautpaar die **Auflösung** frei; dann zeigt die Seite
-die Verteilung, und die Abstimmung ist beendet (423). Der DJ tippt `vsjourney.de/dj`
+Im Admin-Bereich steht die Abstimmung in drei Schritten: **Abstimmen** → **Beendet**
+(keine Stimmen mehr, 423; die Seite sagt es, die Ergebnisse bleiben verborgen) →
+**Freigegeben** (die Seite zeigt die Verteilung). Man kann in beide Richtungen
+zurück; „Beendet" ist dieselbe Sperre wie `who_votes` in der Schnittstelle
+(`phase` in `GET /api/who-votes`). Der DJ sieht die Ergebnisse in jedem Schritt und tippt `vsjourney.de/dj`
 und ein **Wort** (z. B. `kirsche`; Adresse und Wort stehen im Admin, dazu ein
 Link zum Kopieren mit `#k=<Wort>` im Fragment). Das Wort wird aus `ADMIN_SECRET` aus
 einer Liste leicht tippbarer Wörter gewählt (`who-results-words.ts`), zeigt nur die

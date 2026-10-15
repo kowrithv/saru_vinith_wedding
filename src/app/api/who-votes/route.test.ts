@@ -4,7 +4,7 @@ import { whoQuestions, whoGameOptions } from '@/lib/who-game-content'
 import { getDb } from '@/lib/db'
 import { setFeatureLocked } from '@/lib/app-config'
 import { castVote } from '@/lib/who-votes'
-import { RESULTS_KEY_HEADER, resultsKey, setResultsReleased } from '@/lib/who-results'
+import { RESULTS_KEY_HEADER, resultsKey, setResultsReleased, setWhoPhase } from '@/lib/who-results'
 import { ADMIN_COOKIE_NAME, adminCookieSecret, getOrCreateAdminSecret, signCookieValue } from '@/lib/admin-auth'
 
 function getRequest(headers: Record<string, string> = {}): Request {
@@ -38,7 +38,28 @@ describe('GET /api/who-votes', () => {
     expect(response.status).toBe(200)
     expect(response.headers.get('cache-control')).toMatch(/no-store/)
     const body = await response.json()
-    expect(body).toEqual({ released: false, questions: null })
+    expect(body).toEqual({ phase: 'voting', released: false, questions: null })
+  })
+
+  it('keeps the results hidden while the voting is closed but not released', async () => {
+    castVote(getDb(), '1', 'voter-a', whoGameOptions[0])
+    setWhoPhase(getDb(), 'closed')
+
+    const body = await (await GET(getRequest())).json()
+
+    expect(body).toEqual({ phase: 'closed', released: false, questions: null })
+  })
+
+  it('shows the DJ the live counts in every phase', async () => {
+    castVote(getDb(), '1', 'voter-a', whoGameOptions[0])
+    for (const phase of ['voting', 'closed', 'released'] as const) {
+      setWhoPhase(getDb(), phase)
+
+      const body = await (await GET(getRequest({ [RESULTS_KEY_HEADER]: resultsKey(getDb()) }))).json()
+
+      expect(body.phase).toBe(phase)
+      expect(body.questions['1'][whoGameOptions[0]]).toBe(1)
+    }
   })
 
   it('returns a zero-initialized tally for every question once released', async () => {

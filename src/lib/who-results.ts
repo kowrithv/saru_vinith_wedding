@@ -1,7 +1,7 @@
 import { createHmac, timingSafeEqual } from 'node:crypto'
 import type Database from 'better-sqlite3'
 import { getOrCreateAdminSecret, isAdminRequest } from './admin-auth'
-import { getConfigValue, setConfigValue } from './app-config'
+import { getConfigValue, isFeatureLocked, setConfigValue, setFeatureLocked } from './app-config'
 import { getClientKey } from './client-ip'
 import { RateLimiter } from './rate-limit'
 import { normalizeResultsCode } from './who-results-code'
@@ -21,6 +21,31 @@ export function areResultsReleased(db: Database.Database): boolean {
 
 export function setResultsReleased(db: Database.Database, released: boolean): void {
   setConfigValue(db, RELEASED_CONFIG_KEY, released ? 'true' : 'false')
+}
+
+/**
+ * Die drei Zustände der Abstimmung:
+ * - `voting`: die Gäste stimmen ab, die Ergebnisse sind verborgen,
+ * - `closed`: die Abstimmung ist beendet, die Ergebnisse sind weiter verborgen,
+ * - `released`: die Ergebnisse sind für die Gäste freigegeben.
+ * Der DJ sieht die Ergebnisse in jedem Zustand.
+ */
+export type WhoPhase = 'voting' | 'closed' | 'released'
+
+export const WHO_PHASES: readonly WhoPhase[] = ['voting', 'closed', 'released']
+
+// "Beendet" ist die bestehende Schreib-Sperre für die Abstimmung: so bleibt
+// eine Sperre über die alte Schnittstelle dasselbe wie der Zustand "beendet".
+export function getWhoPhase(db: Database.Database): WhoPhase {
+  if (areResultsReleased(db)) return 'released'
+  return isFeatureLocked(db, 'who_votes') ? 'closed' : 'voting'
+}
+
+export function setWhoPhase(db: Database.Database, phase: WhoPhase): void {
+  db.transaction(() => {
+    setFeatureLocked(db, 'who_votes', phase !== 'voting')
+    setResultsReleased(db, phase === 'released')
+  })()
 }
 
 /**

@@ -4,7 +4,7 @@ import { whoGameOptions } from '@/lib/who-game-content'
 import { setFeatureLocked } from '@/lib/app-config'
 import { getDb } from '@/lib/db'
 import { getTally } from '@/lib/who-votes'
-import { setResultsReleased } from '@/lib/who-results'
+import { setResultsReleased, setWhoPhase } from '@/lib/who-results'
 import { GALLERY_COOKIE_NAME, createGallerySessionCookieValue } from '@/lib/gallery-auth'
 
 // Abgestimmt wird mit dem Gäste-Kennwort (oder einer Sitzung daraus).
@@ -103,11 +103,23 @@ describe('POST /api/who-votes/vote', () => {
     expect(response.status).toBe(400)
   })
 
-  it('rejects a vote with 423 while who_votes is locked', async () => {
-    setFeatureLocked(getDb(), 'who_votes', true)
+  it('rejects a vote with 423 once the voting is closed', async () => {
+    setWhoPhase(getDb(), 'closed')
 
     const response = await POST(vote('1', 'voter-a', whoGameOptions[0]))
+
     expect(response.status).toBe(423)
+    expect((await response.json()).error).toBe('Die Abstimmung ist beendet.')
+    expect(getTally(getDb())['1'][whoGameOptions[0]]).toBe(0)
+  })
+
+  it('takes votes again when the admin moves the voting back to open', async () => {
+    setWhoPhase(getDb(), 'closed')
+    setWhoPhase(getDb(), 'voting')
+
+    const response = await POST(vote('1', 'voter-a', whoGameOptions[0]))
+
+    expect(response.status).toBe(200)
   })
 
   it('rejects a vote with 423 once the results are released', async () => {

@@ -28,8 +28,7 @@ In diesem Ordner liegen auch `.env` (Compose: `IMAGE_TAG`) und `.env.production`
 | **Erinnerungs-Fotos** | Erinnerungen nur noch mit Text; das Fotofeld verschwindet, Galerie und Foto-Upload bleiben | Anhängen von Fotos macht Probleme oder wird missbraucht |
 | **Gästebuch** | Keine neuen Einträge | Spam oder Beleidigungen |
 | **Erinnerungen** | Keine neuen Einträge | dito |
-| **Wer-von-uns-Abstimmung** | Keine neuen Stimmen | Auffälliges Abstimmverhalten |
-| **Wer von uns? – Auflösung** | Gäste sehen die Ergebnisse, die Abstimmung ist beendet; zurücknehmen verbirgt sie wieder | Zum Zeitpunkt der Auflösung auf der Feier. Die DJ-Seite (`/dj`, Wort steht im Admin) zeigt die Ergebnisse auch vorher |
+| **Wer von uns?** (drei Schritte) | **Beendet**: keine neuen Stimmen, Ergebnisse weiter verborgen. **Freigegeben**: Gäste sehen die Ergebnisse. Zurück auf **Abstimmen** öffnet wieder | Beendet bei auffälligem Abstimmverhalten oder vor der Feier; Freigegeben zum Zeitpunkt der Auflösung. Die DJ-Seite (`/dj`, Link und Wort stehen im Admin) zeigt die Ergebnisse in jedem Schritt |
 | **Galerie-Sichtbarkeit** | **Kennwort** (Standard): Fotos nur mit QR-Code/Kennwort; **Öffentlich**: jeder mit dem Link sieht die Fotos | auf Kennwort lassen; ist der Link an Fremde gelangt: zusätzlich das Kennwort wechseln (§3) |
 | **Gemeldete Ergebnisse** (Memory) | einzelne Ergebnisse entfernen, der Rekord fällt auf das nächstbeste zurück | unmöglicher Wert (z. B. 8 Züge · 00:04) |
 | **Memory-Rekord zurücksetzen** | alle gemeldeten Ergebnisse werden gelöscht | nach Testspielen vor der Feier |

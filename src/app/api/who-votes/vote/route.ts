@@ -2,8 +2,7 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getDb } from '@/lib/db'
 import { castVote } from '@/lib/who-votes'
-import { isFeatureLocked } from '@/lib/app-config'
-import { areResultsReleased } from '@/lib/who-results'
+import { getWhoPhase } from '@/lib/who-results'
 import { setGallerySessionCookie } from '@/lib/gallery-auth'
 import { GuestRateLimiter, gateGuest } from '@/lib/guest-limits'
 
@@ -23,15 +22,9 @@ const voteLimiter = new GuestRateLimiter({ perDevice: 60, perAddress: 1500, wind
 export async function POST(request: Request): Promise<Response> {
   const db = getDb()
 
-  if (isFeatureLocked(db, 'who_votes')) {
-    return NextResponse.json(
-      { error: 'Abstimmen ist derzeit vorübergehend gesperrt.' },
-      { status: 423 }
-    )
-  }
-  // Mit der Auflösung ist die Abstimmung beendet: die gezeigten Ergebnisse
-  // sollen sich nicht mehr ändern.
-  if (areResultsReleased(db)) {
+  // Beendet (vom Admin) und freigegeben sind beide "keine Stimmen mehr": die
+  // Ergebnisse sollen sich nicht mehr ändern.
+  if (getWhoPhase(db) !== 'voting') {
     return NextResponse.json({ error: 'Die Abstimmung ist beendet.' }, { status: 423 })
   }
 

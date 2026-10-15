@@ -5,20 +5,25 @@ import WhoResultsAdmin from './WhoResultsAdmin'
 
 const KEY = 'kirsche'
 
-function stubFetch(
-  initial: { released: boolean } = { released: false },
-  post: { status: number; body: unknown } | null = null
-) {
+type Phase = 'voting' | 'closed' | 'released'
+
+function stubFetch(initial: Phase = 'voting', post: { status: number; body: unknown } | null = null) {
   const fn = vi.fn(async (_url: string, init?: RequestInit) => {
     if (init?.method === 'POST') {
-      const requested = JSON.parse(String(init.body)) as { released: boolean }
-      const { status, body } = post ?? { status: 200, body: { released: requested.released, key: KEY } }
+      const requested = JSON.parse(String(init.body)) as { phase: Phase }
+      const { status, body } = post ?? { status: 200, body: { phase: requested.phase, key: KEY } }
       return { ok: status < 400, status, json: async () => body }
     }
-    return { ok: true, status: 200, json: async () => ({ released: initial.released, key: KEY }) }
+    return { ok: true, status: 200, json: async () => ({ phase: initial, key: KEY }) }
   })
   vi.stubGlobal('fetch', fn)
   return fn
+}
+
+function posted(fn: ReturnType<typeof stubFetch>) {
+  return fn.mock.calls
+    .filter(([, init]) => init?.method === 'POST')
+    .map(([, init]) => JSON.parse(String(init?.body)) as { phase: Phase })
 }
 
 describe('WhoResultsAdmin', () => {
@@ -31,85 +36,133 @@ describe('WhoResultsAdmin', () => {
     vi.restoreAllMocks()
   })
 
-  it('shows the state and the link for the DJ', async () => {
-    stubFetch()
-    render(<WhoResultsAdmin />)
+  describe('the three steps', () => {
+    it('shows Abstimmen, Beendet and Freigegeben with the current one pressed', async () => {
+      stubFetch('closed')
+      render(<WhoResultsAdmin />)
 
-    expect(await screen.findByText(/verborgen/i)).toBeInTheDocument()
-    expect(screen.getByRole('switch', { name: /auflösung für gäste freigeben/i })).not.toBeChecked()
-    expect(screen.getByTestId('dj-word')).toHaveTextContent(KEY)
-    expect(screen.getByTestId('dj-address')).toHaveTextContent(`${window.location.host}/dj`)
+      expect(await screen.findByRole('button', { name: 'Beendet', pressed: true })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Abstimmen', pressed: false })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Freigegeben', pressed: false })).toBeInTheDocument()
+    })
+
+    it('says in words what each step means', async () => {
+      stubFetch('voting')
+      render(<WhoResultsAdmin />)
+      expect(await screen.findByText(/die gäste stimmen ab/i)).toBeInTheDocument()
+
+      await userEvent.click(screen.getByRole('button', { name: 'Beendet' }))
+      expect(await screen.findByText(/abstimmung ist beendet.*noch verborgen/i)).toBeInTheDocument()
+    })
+
+    it('closes the voting without a confirmation', async () => {
+      const fn = stubFetch('voting')
+      render(<WhoResultsAdmin />)
+      await userEvent.click(await screen.findByRole('button', { name: 'Beendet' }))
+
+      await screen.findByRole('button', { name: 'Beendet', pressed: true })
+      expect(window.confirm).not.toHaveBeenCalled()
+      expect(posted(fn)).toEqual([{ phase: 'closed' }])
+    })
+
+    it('releases only after a confirmation', async () => {
+      const fn = stubFetch('closed')
+      render(<WhoResultsAdmin />)
+      await userEvent.click(await screen.findByRole('button', { name: 'Freigegeben' }))
+
+      await screen.findByRole('button', { name: 'Freigegeben', pressed: true })
+      expect(window.confirm).toHaveBeenCalledTimes(1)
+      expect(posted(fn)).toEqual([{ phase: 'released' }])
+    })
+
+    it('does nothing when the release is not confirmed', async () => {
+      vi.spyOn(window, 'confirm').mockReturnValue(false)
+      const fn = stubFetch('closed')
+      render(<WhoResultsAdmin />)
+      await userEvent.click(await screen.findByRole('button', { name: 'Freigegeben' }))
+
+      expect(posted(fn)).toEqual([])
+      expect(screen.getByRole('button', { name: 'Beendet', pressed: true })).toBeInTheDocument()
+    })
+
+    it('can go back from released to voting', async () => {
+      const fn = stubFetch('released')
+      render(<WhoResultsAdmin />)
+      await userEvent.click(await screen.findByRole('button', { name: 'Abstimmen' }))
+
+      await screen.findByRole('button', { name: 'Abstimmen', pressed: true })
+      expect(posted(fn)).toEqual([{ phase: 'voting' }])
+    })
+
+    it('sends nothing when the current step is pressed again', async () => {
+      const fn = stubFetch('voting')
+      render(<WhoResultsAdmin />)
+      await userEvent.click(await screen.findByRole('button', { name: 'Abstimmen' }))
+
+      expect(posted(fn)).toEqual([])
+    })
+
+    it('says so when switching failed and keeps the old step', async () => {
+      stubFetch('voting', { status: 500, body: {} })
+      render(<WhoResultsAdmin />)
+      await userEvent.click(await screen.findByRole('button', { name: 'Beendet' }))
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(/umschalten fehlgeschlagen/i)
+      expect(screen.getByRole('button', { name: 'Abstimmen', pressed: true })).toBeInTheDocument()
+    })
   })
 
-  it('anchors the switch knob to the left edge so it can slide', async () => {
-    stubFetch()
-    render(<WhoResultsAdmin />)
+  describe('link for the DJ', () => {
+    it('shows the whole link in a field', async () => {
+      stubFetch()
+      render(<WhoResultsAdmin />)
 
-    const knob = (await screen.findByRole('switch')).firstElementChild
-    expect(knob).toHaveClass('left-0')
-  })
+      const field = (await screen.findByLabelText('Link')) as HTMLInputElement
+      expect(field.value).toBe(`${window.location.origin}/dj#k=${KEY}`)
+      expect(field).toHaveAttribute('readonly')
+    })
 
-  it('shows the address without protocol, short enough to type', async () => {
-    stubFetch()
-    render(<WhoResultsAdmin />)
+    it('shows the link in every step', async () => {
+      for (const phase of ['voting', 'closed', 'released'] as const) {
+        stubFetch(phase)
+        const { unmount } = render(<WhoResultsAdmin />)
+        expect(await screen.findByLabelText('Link')).toBeInTheDocument()
+        unmount()
+      }
+    })
 
-    const address = await screen.findByTestId('dj-address')
-    expect(address.textContent).not.toMatch(/^https?:/)
-    expect(address.textContent).toMatch(/\/dj$/)
-    expect(screen.getByTestId('dj-word').textContent).toBe(KEY)
-  })
+    it('also shows address and word for typing', async () => {
+      stubFetch()
+      render(<WhoResultsAdmin />)
 
-  it('releases the results after a confirmation', async () => {
-    const fetchMock = stubFetch()
-    render(<WhoResultsAdmin />)
-    await userEvent.click(await screen.findByRole('switch'))
+      const address = await screen.findByTestId('dj-address')
+      expect(address.textContent).not.toMatch(/^https?:/)
+      expect(address.textContent).toMatch(/\/dj$/)
+      expect(screen.getByTestId('dj-word').textContent).toBe(KEY)
+    })
 
-    await screen.findByText(/für gäste freigegeben/i)
-    expect(window.confirm).toHaveBeenCalledTimes(1)
-    expect(screen.getByRole('switch')).toBeChecked()
-    const post = fetchMock.mock.calls.find(([, init]) => init?.method === 'POST')
-    expect(JSON.parse(String(post?.[1]?.body))).toEqual({ released: true })
-  })
+    it('copies the link', async () => {
+      stubFetch()
+      const writeText = vi.fn().mockResolvedValue(undefined)
+      Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
+      render(<WhoResultsAdmin />)
+      await userEvent.click(await screen.findByRole('button', { name: /link kopieren/i }))
 
-  it('does nothing when the confirmation is declined', async () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(false)
-    const fetchMock = stubFetch()
-    render(<WhoResultsAdmin />)
-    await userEvent.click(await screen.findByRole('switch'))
+      await waitFor(() => expect(writeText).toHaveBeenCalledWith(`${window.location.origin}/dj#k=${KEY}`))
+      expect(await screen.findByText('Link kopiert.')).toBeInTheDocument()
+    })
 
-    expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'POST')).toBe(false)
-    expect(screen.getByRole('switch')).not.toBeChecked()
-  })
+    it('tells how to continue when the clipboard is not available', async () => {
+      stubFetch()
+      Object.defineProperty(navigator, 'clipboard', {
+        value: { writeText: vi.fn().mockRejectedValue(new Error('denied')) },
+        configurable: true,
+      })
+      render(<WhoResultsAdmin />)
+      await userEvent.click(await screen.findByRole('button', { name: /link kopieren/i }))
 
-  it('hides the results again without a confirmation', async () => {
-    stubFetch({ released: true })
-    render(<WhoResultsAdmin />)
-    await screen.findByText(/für gäste freigegeben/i)
-
-    await userEvent.click(screen.getByRole('switch'))
-
-    await screen.findByText(/verborgen/i)
-    expect(window.confirm).not.toHaveBeenCalled()
-  })
-
-  it('says so when switching failed and keeps the old state', async () => {
-    stubFetch({ released: false }, { status: 500, body: {} })
-    render(<WhoResultsAdmin />)
-    await userEvent.click(await screen.findByRole('switch'))
-
-    expect(await screen.findByRole('alert')).toHaveTextContent(/umschalten fehlgeschlagen/i)
-    expect(screen.getByRole('switch')).not.toBeChecked()
-  })
-
-  it('copies the link', async () => {
-    stubFetch()
-    const writeText = vi.fn().mockResolvedValue(undefined)
-    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
-    render(<WhoResultsAdmin />)
-    await userEvent.click(await screen.findByRole('button', { name: /link kopieren/i }))
-
-    await waitFor(() => expect(writeText).toHaveBeenCalledWith(expect.stringContaining(`/dj#k=${KEY}`)))
-    expect(await screen.findByText('Link kopiert.')).toBeInTheDocument()
+      expect(await screen.findByText(/kopieren hat nicht geklappt/i)).toBeInTheDocument()
+    })
   })
 
   it('reports when the state cannot be loaded', async () => {

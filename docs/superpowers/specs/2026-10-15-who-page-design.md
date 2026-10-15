@@ -21,10 +21,12 @@ Buchstaben-Marken (S, V) werden Fotos; abgestimmt wird über Bilder statt Namen.
   Ein Wort ist kein starkes Geheimnis; es hält Gäste vom Vorab-Blick ab. Deshalb: falsche
   Wörter werden je Adresse gebremst (20 in 15 Minuten, dann 429), das richtige wird nie
   abgewiesen.
-- **Auflösung:** Schalter `who_results_released` in `app_config` (Admin-Bereich). Mit der
-  Freigabe ist die Abstimmung beendet: `POST /api/who-votes/vote` antwortet 423, die Seite
-  zeigt die Ergebnisse. Der bestehende Schalter `who_votes` (Abstimmung sperren) bleibt
-  unabhängig.
+- **Drei Schritte:** Abstimmen → Beendet → Freigegeben (`who-results.ts`: `getWhoPhase`,
+  `setWhoPhase`). Beendet ist die bestehende Sperre `who_votes`, Freigegeben das
+  zusätzliche `who_results_released`. Beendet und Freigegeben: `POST /api/who-votes/vote`
+  antwortet 423 „Die Abstimmung ist beendet.". Die Gäste-Seite zeigt bei Beendet nur
+  Dank und Hinweis auf die Feier, erst bei Freigegeben die Ergebnisse. Der DJ sieht die
+  Ergebnisse in jedem Schritt. Im Admin gibt es dafür keinen eigenen Sperr-Schalter mehr.
 - **Kennwort:** abstimmen braucht das Gäste-Kennwort bzw. die Sitzung (`gateGuest`, wie
   Gästebuch). Limit je Gerät 60 Stimmen / 15 Minuten, je Adresse 1500 (erste Stimme ohne
   Sitzung, gemeinsames WLAN; das Einlese-Skript für die alten Stimmen kommt von einer
@@ -37,12 +39,12 @@ Buchstaben-Marken (S, V) werden Fotos; abgestimmt wird über Bilder statt Namen.
 
 ## API
 
-- `GET /api/who-votes` → `{ released: boolean, questions: TallyMap | null }`. `questions`
+- `GET /api/who-votes` → `{ phase, released: boolean, questions: TallyMap | null }`. `questions`
   nur bei Freigabe, mit gültigem `x-results-key` oder als Admin; sonst `null`.
 - `POST /api/who-votes/vote` Body `{ questionId, voterId, option, password? }` →
   `{ alreadyVoted, changed }` (kein Zwischenstand). 423 bei Sperre oder Freigabe, 401/429 wie
   Gästebuch.
-- `GET|POST /api/admin/who-results` (nur Admin) → `{ released, key }`; POST `{ released }`.
+- `GET|POST /api/admin/who-results` (nur Admin) → `{ phase, key }`; POST `{ phase }`.
 
 ## Seiten
 
@@ -56,8 +58,9 @@ Buchstaben-Marken (S, V) werden Fotos; abgestimmt wird über Bilder statt Namen.
 
 ## Admin
 
-Abschnitt „Wer von uns?": Schalter „Auflösung für Gäste freigeben" (mit Hinweis, dass die
-Abstimmung damit endet), Adresse und Wort für den DJ, Link zum Kopieren.
+Abschnitt „Wer von uns?": drei Schritte „Abstimmen", „Beendet", „Freigegeben" (die
+Freigabe mit Rückfrage), dazu der ganze Link für den DJ zum Kopieren sowie Adresse und
+Wort zum Abtippen.
 
 ## Folgen
 

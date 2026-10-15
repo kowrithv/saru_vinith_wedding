@@ -106,8 +106,9 @@ Datei waren unbrauchbar (die Hinweise stehen darüber).
   und versucht es erneut.
 - Danach `/dj` öffnen, das Wort aus dem Admin (Abschnitt „Wer von uns?") eintippen
   und prüfen, dass die Zähler stimmen: Gäste sehen sie bis zur Auflösung nicht.
-- Ist die Auflösung schon freigegeben, meldet das Skript „abgewiesen (HTTP 423)":
-  im Admin die Freigabe zurücknehmen.
+- Ist die Abstimmung schon „Beendet" oder „Freigegeben", meldet das Skript
+  „abgewiesen (HTTP 423)": im Admin kurz auf „Abstimmen" stellen, importieren, wieder
+  zurück.
 
 ## Gerätetest (Schritt 7)
 

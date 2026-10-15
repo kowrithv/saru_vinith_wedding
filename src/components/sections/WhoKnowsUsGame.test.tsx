@@ -9,7 +9,7 @@ vi.mock('@/lib/device-id', () => ({
 }))
 
 interface ApiOptions {
-  released?: boolean
+  phase?: 'voting' | 'closed' | 'released'
   questions?: Record<string, Record<string, number>> | null
   unlocked?: boolean
   voteResponse?: { status: number; body: unknown }
@@ -21,12 +21,12 @@ function tallyWith(counts: Record<string, number>) {
   )
 }
 
-function stubApi({ released = false, questions = null, unlocked = true, voteResponse }: ApiOptions = {}) {
+function stubApi({ phase = 'voting', questions = null, unlocked = true, voteResponse }: ApiOptions = {}) {
   const calls: { url: string; init?: RequestInit }[] = []
   const fn = vi.fn(async (url: string, init?: RequestInit) => {
     calls.push({ url, init })
     if (url === '/api/who-votes') {
-      return { ok: true, status: 200, json: async () => ({ released, questions }) }
+      return { ok: true, status: 200, json: async () => ({ phase, released: phase === 'released', questions }) }
     }
     if (url === '/api/access') {
       return { ok: true, status: 200, json: async () => ({ unlocked }) }
@@ -170,7 +170,7 @@ describe('WhoKnowsUsGame', () => {
     it('keeps the old answer when the change is not confirmed', async () => {
       let call = 0
       const fn = vi.fn(async (url: string) => {
-        if (url === '/api/who-votes') return { ok: true, status: 200, json: async () => ({ released: false, questions: null }) }
+        if (url === '/api/who-votes') return { ok: true, status: 200, json: async () => ({ phase: 'voting', released: false, questions: null }) }
         if (url === '/api/access') return { ok: true, status: 200, json: async () => ({ unlocked: true }) }
         call += 1
         return call === 1
@@ -289,11 +289,11 @@ describe('WhoKnowsUsGame', () => {
   })
 
   it('does not record a vote the server did not confirm', async () => {
-    stubApi({ voteResponse: { status: 423, body: { error: 'Abstimmen ist derzeit vorübergehend gesperrt.' } } })
+    stubApi({ voteResponse: { status: 423, body: { error: 'Die Abstimmung ist beendet.' } } })
     render(<WhoKnowsUsGame />)
     await userEvent.click(await screen.findByRole('button', { name: whoGameOptions[0] }))
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('vorübergehend gesperrt')
+    expect(await screen.findByRole('alert')).toHaveTextContent('Die Abstimmung ist beendet.')
     expect(screen.getByRole('button', { name: whoGameOptions[0] })).toBeEnabled()
     expect(window.localStorage.getItem('who-game-votes')).toBeNull()
   })
@@ -355,11 +355,24 @@ describe('WhoKnowsUsGame', () => {
     })
   })
 
+  describe('when the voting is closed but not released', () => {
+    it('says the voting is over and shows neither photos nor results', async () => {
+      stubApi({ phase: 'closed' })
+      const { container } = render(<WhoKnowsUsGame />)
+
+      expect(await screen.findByText('Die Abstimmung ist beendet')).toBeInTheDocument()
+      expect(screen.getByText(/auflösung gibt es bei der feier/i)).toBeInTheDocument()
+      expect(container.querySelectorAll('button img')).toHaveLength(0)
+      expect(screen.queryByText(/\d+ %/)).not.toBeInTheDocument()
+      expect(screen.queryByText('Die Auflösung')).not.toBeInTheDocument()
+    })
+  })
+
   describe('after the release', () => {
     it('shows the results of all questions and marks the own vote', async () => {
       window.localStorage.setItem('who-game-votes', JSON.stringify({ [whoQuestions[0].id]: whoGameOptions[1] }))
       stubApi({
-        released: true,
+        phase: 'released',
         questions: tallyWith({ [whoGameOptions[0]]: 3, [whoGameOptions[1]]: 1 }),
       })
       render(<WhoKnowsUsGame />)

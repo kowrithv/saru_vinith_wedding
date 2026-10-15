@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { GET, POST } from './route'
 import { getDb } from '@/lib/db'
 import { ADMIN_COOKIE_NAME, adminCookieSecret, getOrCreateAdminSecret, signCookieValue } from '@/lib/admin-auth'
-import { areResultsReleased, resultsKey } from '@/lib/who-results'
+import { getWhoPhase, resultsKey } from '@/lib/who-results'
 
 function adminHeaders(): Record<string, string> {
   const cookie = signCookieValue(Date.now() + 60_000, adminCookieSecret(getOrCreateAdminSecret(getDb())))
@@ -43,33 +43,32 @@ describe('/api/admin/who-results', () => {
     expect((await GET(request('GET'))).status).toBe(401)
   })
 
-  it('GET returns the state and the short code for the DJ', async () => {
+  it('GET returns the phase and the word for the DJ', async () => {
     const response = await GET(request('GET', adminHeaders()))
 
     expect(response.status).toBe(200)
-    expect(await response.json()).toEqual({ released: false, key: resultsKey(getDb()) })
+    expect(await response.json()).toEqual({ phase: 'voting', key: resultsKey(getDb()) })
   })
 
   it('POST requires an admin session and changes nothing without one', async () => {
-    const response = await POST(request('POST', {}, { released: true }))
+    const response = await POST(request('POST', {}, { phase: 'released' }))
 
     expect(response.status).toBe(401)
-    expect(areResultsReleased(getDb())).toBe(false)
+    expect(getWhoPhase(getDb())).toBe('voting')
   })
 
-  it('POST releases and hides the results', async () => {
-    const released = await POST(request('POST', adminHeaders(), { released: true }))
-    expect(released.status).toBe(200)
-    expect((await released.json()).released).toBe(true)
-    expect(areResultsReleased(getDb())).toBe(true)
-
-    const hidden = await POST(request('POST', adminHeaders(), { released: false }))
-    expect((await hidden.json()).released).toBe(false)
-    expect(areResultsReleased(getDb())).toBe(false)
+  it('POST moves through voting, closed and released', async () => {
+    for (const phase of ['closed', 'released', 'closed', 'voting'] as const) {
+      const response = await POST(request('POST', adminHeaders(), { phase }))
+      expect(response.status).toBe(200)
+      expect((await response.json()).phase).toBe(phase)
+      expect(getWhoPhase(getDb())).toBe(phase)
+    }
   })
 
-  it('POST rejects a malformed body', async () => {
-    const response = await POST(request('POST', adminHeaders(), { released: 'yes' }))
-    expect(response.status).toBe(400)
+  it('POST rejects an unknown phase and the old boolean form', async () => {
+    expect((await POST(request('POST', adminHeaders(), { phase: 'finished' }))).status).toBe(400)
+    expect((await POST(request('POST', adminHeaders(), { released: true }))).status).toBe(400)
+    expect(getWhoPhase(getDb())).toBe('voting')
   })
 })

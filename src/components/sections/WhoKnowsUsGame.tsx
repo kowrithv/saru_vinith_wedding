@@ -70,13 +70,20 @@ function PhotoOption({ option, chosen, decided, disabled, onVote }: PhotoOptionP
   )
 }
 
+type WhoPhase = 'voting' | 'closed' | 'released'
+
 interface WhoState {
-  released: boolean
+  phase: WhoPhase
   questions: TallyMap | null
 }
 
-// Vorab abstimmen, ohne die Ergebnisse zu sehen. Nach der Auflösung, die das
-// Brautpaar im Admin-Bereich freigibt, zeigt dieselbe Seite die Verteilung.
+function isPhase(value: unknown): value is WhoPhase {
+  return value === 'voting' || value === 'closed' || value === 'released'
+}
+
+// Vorab abstimmen, ohne die Ergebnisse zu sehen. Das Brautpaar beendet die
+// Abstimmung im Admin-Bereich und gibt die Auflösung später frei; dann zeigt
+// dieselbe Seite die Verteilung.
 export default function WhoKnowsUsGame() {
   const [state, setState] = useState<WhoState | null>(null)
   const { votes, remember } = useWhoVotes()
@@ -93,9 +100,9 @@ export default function WhoKnowsUsGame() {
   usePolling(() => {
     fetch('/api/who-votes', { cache: 'no-store' })
       .then((res) => (res.ok ? res.json() : null))
-      .then((data: { released?: boolean; questions?: TallyMap | null } | null) => {
-        if (data && typeof data.released === 'boolean') {
-          setState({ released: data.released, questions: data.questions ?? null })
+      .then((data: { phase?: unknown; questions?: TallyMap | null } | null) => {
+        if (data && isPhase(data.phase)) {
+          setState({ phase: data.phase, questions: data.questions ?? null })
         }
       })
       .catch(() => {})
@@ -110,7 +117,19 @@ export default function WhoKnowsUsGame() {
     )
   }
 
-  if (state.released) {
+  if (state.phase === 'closed') {
+    return (
+      <div className="card-ornate rounded-3xl p-8 md:p-12 text-center">
+        <Lotus size={44} className="text-gold mx-auto mb-4" />
+        <h3 className="font-display text-3xl font-semibold text-dark-blue mb-2">Die Abstimmung ist beendet</h3>
+        <p className="text-gray-500 text-sm">
+          Danke fürs Mitmachen! Die Auflösung gibt es bei der Feier. Schaut dann einfach wieder hier vorbei.
+        </p>
+      </div>
+    )
+  }
+
+  if (state.phase === 'released') {
     return (
       <div>
         <div className="card-ornate rounded-3xl p-6 text-center mb-5">

@@ -59,8 +59,8 @@ einer Route meldet `tsc` ggf. veraltete Dateien in `.next/types` – dann
   (`guest-password.ts`), der Admin bleibt exakt.
 - „Wer von uns?" (`/wer-von-uns`): Abstimmen mit Gäste-Kennwort (`gateGuest`, Limit je
   Gerät in `guest-limits.ts`); Zähler bleiben verborgen, bis der Admin freigibt
-  (`who-results.ts`, Schalter `who_results_released`; Freigabe beendet die
-  Abstimmung). DJ-Seite `/dj`: ein Wort aus `who-results-words.ts`, gewählt per HMAC aus dem
+  (`who-results.ts`: Abstimmen → Beendet → Freigegeben; Beendet ist die Sperre
+  `who_votes`, Freigegeben zusätzlich `who_results_released`; der DJ sieht immer). DJ-Seite `/dj`: ein Wort aus `who-results-words.ts`, gewählt per HMAC aus dem
   Admin-Schlüssel (kein starkes Geheimnis; falsche Wörter je Adresse gebremst, das
   richtige nie abgewiesen), Header `x-results-key`, Link mit `#k=<Wort>`. Abstimmung über Fotos statt Namen: `public/who/*.jpg`,
   `whoPortraits` in `site-images.ts`.

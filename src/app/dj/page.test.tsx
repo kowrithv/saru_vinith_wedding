@@ -43,7 +43,7 @@ describe('DJ results page', () => {
     })
 
     it('sends the typed word as a header and shows the live counts', async () => {
-      const fetchMock = vi.fn(async () => respond(200, { released: false, questions: tally() }))
+      const fetchMock = vi.fn(async () => respond(200, { phase: 'voting', released: false, questions: tally() }))
       vi.stubGlobal('fetch', fetchMock)
       render(<ResultsPage />)
 
@@ -69,7 +69,7 @@ describe('DJ results page', () => {
     })
 
     it('goes back to the form with a note when the server does not know the word', async () => {
-      vi.stubGlobal('fetch', vi.fn(async () => respond(200, { released: false, questions: null })))
+      vi.stubGlobal('fetch', vi.fn(async () => respond(200, { phase: 'voting', released: false, questions: null })))
       render(<ResultsPage />)
 
       await userEvent.type(await screen.findByLabelText('Wort'), 'zebra')
@@ -98,7 +98,7 @@ describe('DJ results page', () => {
   describe('with the word from the link', () => {
     it('shows the live counts before the release and does not ask for a word', async () => {
       window.history.replaceState(null, '', `/dj#k=${KEY}`)
-      vi.stubGlobal('fetch', vi.fn(async () => respond(200, { released: false, questions: tally() })))
+      vi.stubGlobal('fetch', vi.fn(async () => respond(200, { phase: 'voting', released: false, questions: tally() })))
 
       render(<ResultsPage />)
 
@@ -107,9 +107,19 @@ describe('DJ results page', () => {
       expect(window.location.hash).toBe('')
     })
 
+    it('tells when the voting is closed and the results are not yet released', async () => {
+      window.history.replaceState(null, '', `/dj#k=${KEY}`)
+      vi.stubGlobal('fetch', vi.fn(async () => respond(200, { phase: 'closed', released: false, questions: tally() })))
+
+      render(<ResultsPage />)
+
+      expect(await screen.findByText(/abstimmung ist beendet.*noch verborgen/i)).toBeInTheDocument()
+      expect(screen.getByText(whoQuestions[0].question)).toBeInTheDocument()
+    })
+
     it('tells when the results are released for the guests', async () => {
       window.history.replaceState(null, '', `/dj#k=${KEY}`)
-      vi.stubGlobal('fetch', vi.fn(async () => respond(200, { released: true, questions: tally() })))
+      vi.stubGlobal('fetch', vi.fn(async () => respond(200, { phase: 'released', released: true, questions: tally() })))
 
       render(<ResultsPage />)
 
@@ -118,7 +128,7 @@ describe('DJ results page', () => {
 
     it('remembers the word for the next visit', async () => {
       window.history.replaceState(null, '', `/dj#k=${KEY}`)
-      vi.stubGlobal('fetch', vi.fn(async () => respond(200, { released: false, questions: tally() })))
+      vi.stubGlobal('fetch', vi.fn(async () => respond(200, { phase: 'voting', released: false, questions: tally() })))
 
       render(<ResultsPage />)
       await screen.findByText(whoQuestions[0].question)

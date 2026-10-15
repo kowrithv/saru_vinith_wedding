@@ -65,7 +65,7 @@ function mockFetchSequence(
     }
     // Der Abschnitt "Wer von uns?" lädt seinen Stand selbst (eigene Tests).
     if (url === '/api/admin/who-results') {
-      return Promise.resolve({ ok: true, status: 200, json: async () => ({ released: false, key: 'k'.repeat(64) }) })
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({ phase: 'voting', key: 'kirsche' }) })
     }
     return fn(url, init)
   }
@@ -112,14 +112,23 @@ describe('AdminDashboard', () => {
     expect(screen.getByText(/Schöne Erinnerung an euch\./)).toBeInTheDocument()
   })
 
-  it('shows three independent switches, all unlocked by default', async () => {
+  it('shows the independent switches, all unlocked by default', async () => {
     const fetchMock = mockFetchSequence([{ body: { entries: [] } }, { body: { entries: [] } }, noGalleryPhotos])
     render(<AdminDashboard initialLocks={noLocks} initialGalleryMode="public" />)
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3))
 
     expect(screen.getByRole('switch', { name: /gästebuch/i })).toHaveAttribute('aria-checked', 'false')
     expect(screen.getByRole('switch', { name: /erinnerungen/i })).toHaveAttribute('aria-checked', 'false')
-    expect(screen.getByRole('switch', { name: /wer-von-uns/i })).toHaveAttribute('aria-checked', 'false')
+    expect(screen.getByRole('switch', { name: /foto-upload/i })).toHaveAttribute('aria-checked', 'false')
+  })
+
+  it('has no separate switch for the vote: it is the Beendet step of Wer von uns', async () => {
+    const fetchMock = mockFetchSequence([{ body: { entries: [] } }, { body: { entries: [] } }, noGalleryPhotos])
+    render(<AdminDashboard initialLocks={noLocks} initialGalleryMode="public" />)
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3))
+
+    expect(screen.queryByRole('switch', { name: /wer-von-uns/i })).not.toBeInTheDocument()
+    expect(await screen.findByRole('group', { name: /stand der abstimmung/i })).toBeInTheDocument()
   })
 
   it('anchors every switch knob to the left edge so it sits and slides inside the switch', async () => {
@@ -128,7 +137,7 @@ describe('AdminDashboard', () => {
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3))
 
     const switches = screen.getAllByRole('switch')
-    expect(switches.length).toBeGreaterThanOrEqual(5)
+    expect(switches.length).toBeGreaterThanOrEqual(4)
     for (const toggle of switches) {
       expect(toggle.firstElementChild).toHaveClass('left-0')
     }
@@ -218,7 +227,7 @@ describe('AdminDashboard', () => {
 
     expect(screen.getByRole('switch', { name: /gästebuch/i })).toBeDisabled()
     expect(screen.getByRole('switch', { name: /erinnerungen/i })).toBeDisabled()
-    expect(screen.getByRole('switch', { name: /wer-von-uns/i })).toBeEnabled()
+    expect(screen.getByRole('switch', { name: /foto-upload/i })).toBeEnabled()
   })
 
   it('toggling one feature does not change the display of the other two', async () => {
@@ -237,7 +246,7 @@ describe('AdminDashboard', () => {
       expect(screen.getByRole('switch', { name: /gästebuch/i })).toHaveAttribute('aria-checked', 'true')
     )
     expect(screen.getByRole('switch', { name: /erinnerungen/i })).toHaveAttribute('aria-checked', 'false')
-    expect(screen.getByRole('switch', { name: /wer-von-uns/i })).toHaveAttribute('aria-checked', 'false')
+    expect(screen.getByRole('switch', { name: /foto-upload/i })).toHaveAttribute('aria-checked', 'false')
     expect(fetchMock).toHaveBeenCalledWith(
       '/api/admin/write-lock',
       expect.objectContaining({ method: 'POST', body: JSON.stringify({ feature: 'guestbook', locked: true }) })
@@ -324,7 +333,7 @@ describe('AdminDashboard', () => {
     )
     expect(screen.getByRole('switch', { name: /gästebuch/i })).toHaveAttribute('aria-checked', 'false')
     expect(screen.getByRole('switch', { name: /erinnerungen/i })).toHaveAttribute('aria-checked', 'false')
-    expect(screen.getByRole('switch', { name: /wer-von-uns/i })).toHaveAttribute('aria-checked', 'false')
+    expect(screen.getByRole('switch', { name: /foto-upload/i })).toHaveAttribute('aria-checked', 'false')
     expect(fetchMock).toHaveBeenCalledWith(
       '/api/admin/gallery-mode',
       expect.objectContaining({ method: 'POST', body: JSON.stringify({ mode: 'password' }) })
