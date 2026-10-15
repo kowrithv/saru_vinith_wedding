@@ -22,11 +22,8 @@ Feature complete. Zurückgestellt: Videos.
 
 - [ ] R2 laut `docs/ops/heute-abend.md` Schritt 1–3 (Bucket, Foto-Domain, Purge-Token,
       Budget-Alarm), falls noch nicht geschehen
-- [ ] Der Image-Build von `v1.0.0-rc.1` ist gescheitert (`npm ci` im Docker-Build wollte
-      `better-sqlite3` kompilieren; behoben mit `--ignore-scripts` im `Dockerfile`). Ein Tag
-      lässt sich nicht erneut verwenden: `develop` pushen, nach `main` mergen und
-      **`v1.0.0-rc.2`** auf den Kopf von `main` setzen. Im Actions-Lauf muss der Job „Build
-      and push Docker image" grün sein und unter „Extract metadata" `1.0.0-rc.2` stehen.
+- [x] Image gebaut: `v1.0.0-rc.2` auf `main` (`6c3c3b2`), Package `1.0.0-rc.2` ist da. (`rc.1`
+      scheiterte an `npm ci`/`better-sqlite3` im Docker-Build, behoben mit `--ignore-scripts`.)
       Caddy ist v2.8.4 und damit neu genug; nur in der Caddyfile darf kein
       `trusted_proxies` stehen
 - [ ] `.env.production`: `GUEST_PASSWORD=love` setzen, `UPLOAD_PASSWORD_EMPFANG` entfernen,
@@ -36,7 +33,7 @@ Feature complete. Zurückgestellt: Videos.
       sprengen), z. B. `request_body { max_size 64KB }` im Block für `/api/*` (Uploads
       laufen direkt zu R2)
 - [ ] Server auf die neue Seite umstellen (README „Umstieg von der alten Seite",
-      `docs/ops/heute-abend.md` Schritt 5), danach die alten Quiz-Stimmen übernehmen
+      `docs/ops/heute-abend.md` Schritt 5, mit `IMAGE_TAG=1.0.0-rc.2`), danach die alten Quiz-Stimmen übernehmen
       (Schritt 8, mit `--password=<Gäste-Kennwort>`)
 - [ ] Gerätetest auf iPhone und Android (`docs/ops/geraetetest-checkliste.md`), danach
       Smoke-Test gegen die echte Domain (der Lasttest schreibt Stimmen und läuft nur lokal)

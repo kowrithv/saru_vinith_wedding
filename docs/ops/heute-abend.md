@@ -8,7 +8,7 @@ den verlinkten Checklisten; diese Seite hält nur Reihenfolge und Abhängigkeite
 | 1 | **Foto-Domain festlegen.** Variante A: Subdomain einer Domain, die schon bei Cloudflare liegt – dann ist hier nichts zu tun. Variante B (`fotos.vsjourney.de`): DNS-Bestand sichern, Zone zu Cloudflare, Nameserver bei netcup umstellen | `cloudflare-r2-setup.md` „Welche Foto-Domain?", bei B §1–3 | – |
 | 2 | R2-Bucket, Foto-Domain verbinden, Purge-Token (Zone-ID der **Foto-Domain**), Werte für `.env.production` | `cloudflare-r2-setup.md` §4–7 | Schritt 1 (Zone aktiv, im selben Konto wie der Bucket) |
 | 3 | Kosten-Wächter (Budget-Alarm) | `cloudflare-r2-setup.md` §9 | Schritt 2 |
-| 4 | **Image bauen lassen:** `develop` nach `main`, Vorab-Tag **`v1.0.0-rc.1`** pushen (Image `1.0.0-rc.1`) | `README.md` „Deployment" | Entscheidung, dass der Stand reif ist |
+| 4 | **Image bauen lassen:** `develop` nach `main`, Vorab-Tag pushen. Erledigt mit **`v1.0.0-rc.2`** (Image `1.0.0-rc.2`; `rc.1` hat kein Image, dort scheiterte der Build) | `README.md` „Deployment" | Entscheidung, dass der Stand reif ist |
 | 5 | **Server umstellen** (siehe unten) | `README.md` „Umstieg von der alten Seite" | Schritt 2 und 4 |
 | 6 | Smoke-Test gegen die echte Domain | `node scripts/smoke.mjs https://vsjourney.de` | Schritt 5 |
 | 7 | **Gerätetest** am echten Handy | `geraetetest-checkliste.md` | Schritt 2, 5 und 6 |
@@ -48,7 +48,7 @@ stoppen.
 2. **Neue Seite vorbereiten, während die alte noch läuft:** Neue
    `docker-compose.yml` in einen **anderen** Ordner legen (z. B.
    `~/hochzeit`), daneben `.env.production` und eine `.env` mit
-   `IMAGE_TAG=1.0.0-rc.1`; `chmod 600 .env.production`. Dann
+   `IMAGE_TAG=1.0.0-rc.2`; `chmod 600 .env.production`. Dann
    `docker compose -f docker-compose.yml config --quiet` – muss ohne Ausgabe
    durchlaufen (braucht das Image nicht). **Nicht** ohne `--quiet`: die
    Ausgabe kann die Werte aus `.env.production` enthalten.
