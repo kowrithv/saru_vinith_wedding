@@ -112,13 +112,10 @@ markiert.
   Standesamt/Party, Foto zur Erinnerung) noch nicht durchgespielt.
 
 **Entscheidungen offen (?)**
-- **Countdown / Tageszustände:** Die Zustände „am Tag selbst" und „danach" lassen
-  sich jetzt vorab ansehen: `/?zeit=heute`, `/?zeit=feier`, `/?zeit=danach`
-  (ganze Seite, mit Band zum Beenden). Offen: eure Rückmeldung dazu. Der Vergleichsmodus
-  für die Zeit davor (`?countdown=gross|kacheln|ringe|ruhig`) war ein Missverständnis
-  und kann weg, sobald ihr das bestätigt (`use-countdown-variant.ts`,
-  `countdown-text.ts`, in `Countdown.tsx` `TileCountdown`, `RingCountdown`,
-  `QuietCountdown`, `VariantSwitcher`).
+- **Tageszustände:** „am Tag selbst" und „danach" lassen sich vorab ansehen:
+  `/?zeit=heute`, `/?zeit=feier`, `/?zeit=danach` (ganze Seite, mit Band zum
+  Beenden). Der Vergleichsmodus für die Zeit davor ist entfernt. Offen: eure
+  Rückmeldung zu den drei Zuständen.
 - **Programm bestätigen:** die zwei „Einzug"-Zeilen (17:15 mit Tortenanschneiden, ca.
   18:30 traditionell) und „ca. 20:00 – 21:00 Uhr" für das Abendessen.
 - **Kategorien:** Gäste wählen jetzt *Standesamt* oder *Party*, der Admin zusätzlich

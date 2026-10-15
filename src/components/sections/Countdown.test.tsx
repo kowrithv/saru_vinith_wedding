@@ -192,10 +192,8 @@ describe('Countdown', () => {
     expect(container.querySelector('section#countdown')).not.toBeNull()
   })
 
-  // Zum Vergleichen: ?countdown=kacheln zeigt die frühere Version (vier gleich
-  // große weiße Kacheln), ?countdown=gross die jetzige. Ohne Angabe sieht
-  // niemand einen Umschalter.
-  describe('versions', () => {
+  // Die Zustände vom 17.10. und danach lassen sich vorab ansehen (?zeit=…).
+  describe('preview of the day states', () => {
     afterEach(() => {
       window.history.replaceState({}, '', '/')
       window.sessionStorage.clear()
@@ -207,78 +205,6 @@ describe('Countdown', () => {
       window.history.replaceState({}, '', `/${search}`)
     }
 
-    it('shows the big days and no switcher by default', () => {
-      atBeforeTheWedding('')
-      render(<Countdown />)
-      expect(screen.getByText(/bis zu unserem empfang/i)).toBeInTheDocument()
-      expect(screen.queryByRole('link', { name: /kacheln/i })).not.toBeInTheDocument()
-    })
-
-    it('shows four equal white tiles with ?countdown=kacheln', () => {
-      atBeforeTheWedding('?countdown=kacheln')
-      render(<Countdown />)
-
-      const tiles = screen.getAllByTestId('countdown-tile')
-      expect(tiles).toHaveLength(4)
-      expect(tiles[0]).toHaveTextContent('02')
-      expect(tiles[0]).toHaveTextContent('Tage')
-      expect(tiles[3]).toHaveTextContent('Sekunden')
-      expect(tiles[0]).toHaveClass('bg-white')
-      expect(screen.queryByText(/bis zu unserem empfang/i)).not.toBeInTheDocument()
-    })
-
-    it('keeps the calendar button and the German time note in the tile version', () => {
-      atBeforeTheWedding('?countdown=kacheln')
-      render(<Countdown />)
-      expect(screen.getByRole('button', { name: /kalender/i })).toBeInTheDocument()
-      expect(screen.getByText(/deutscher zeit/i)).toBeInTheDocument()
-    })
-
-    it('offers links to switch between the versions while one is requested', () => {
-      atBeforeTheWedding('?countdown=gross')
-      render(<Countdown />)
-      expect(screen.getByRole('link', { name: /kacheln/i })).toHaveAttribute('href', '/?countdown=kacheln#countdown')
-      expect(screen.getByRole('link', { name: /große tage/i })).toHaveAttribute('href', '/?countdown=gross#countdown')
-    })
-
-    it('shows four rings in the navy section with ?countdown=ringe', () => {
-      atBeforeTheWedding('?countdown=ringe')
-      const { container } = render(<Countdown />)
-
-      const rings = screen.getAllByTestId('countdown-ring')
-      expect(rings).toHaveLength(4)
-      expect(rings[0]).toHaveTextContent('02')
-      expect(rings[0]).toHaveTextContent('Tage')
-      expect(rings[3]).toHaveTextContent('Sekunden')
-      rings.forEach((ring) => expect(ring.querySelector('svg')).toHaveAttribute('aria-hidden', 'true'))
-      expect(container.querySelector('section#countdown')).toHaveClass('bg-dark-blue')
-      expect(screen.getByRole('button', { name: /in meinen kalender/i })).toBeInTheDocument()
-    })
-
-    it('shows one calm sentence on champagne with ?countdown=ruhig', () => {
-      atBeforeTheWedding('?countdown=ruhig')
-      const { container } = render(<Countdown />)
-
-      expect(screen.getByText('Noch 2 Tage, 6 Stunden und 30 Minuten')).toBeInTheDocument()
-      expect(screen.getByText(/bis zu unserem empfang/i)).toBeInTheDocument()
-      expect(container.querySelector('section#countdown')).toHaveClass('bg-champagne-light')
-      expect(screen.getByRole('button', { name: /kalender/i })).toBeInTheDocument()
-    })
-
-    it('lists all four versions in the switcher', () => {
-      atBeforeTheWedding('?countdown=ruhig')
-      render(<Countdown />)
-      for (const [name, version] of [
-        [/große tage/i, 'gross'],
-        [/kacheln/i, 'kacheln'],
-        [/ringe/i, 'ringe'],
-        [/ruhig/i, 'ruhig'],
-      ] as const) {
-        expect(screen.getByRole('link', { name })).toHaveAttribute('href', `/?countdown=${version}#countdown`)
-      }
-    })
-
-    // Die Zustände vom 17.10. und danach lassen sich vorab ansehen (?zeit=…).
     it('shows the day itself with ?zeit=heute, although the real day is still ahead', () => {
       atBeforeTheWedding('?zeit=heute')
       render(<Countdown />)
@@ -302,18 +228,10 @@ describe('Countdown', () => {
       expect(screen.getByRole('link', { name: /erinnerung teilen/i })).toHaveAttribute('href', '/memories')
     })
 
-    it('falls back to the big days for an unknown value', () => {
-      atBeforeTheWedding('?countdown=quatsch')
+    it('shows the normal countdown for an unknown value', () => {
+      atBeforeTheWedding('?zeit=gestern')
       render(<Countdown />)
       expect(screen.getByText(/bis zu unserem empfang/i)).toBeInTheDocument()
-    })
-
-    it('does not change the wedding day or the thank-you state', () => {
-      atBeforeTheWedding('?countdown=kacheln')
-      vi.setSystemTime(new Date('2026-10-17T09:00:00Z'))
-      render(<Countdown />)
-      expect(screen.getByRole('heading', { name: /heute ist es so weit/i })).toBeInTheDocument()
-      expect(screen.queryByTestId('countdown-tile')).not.toBeInTheDocument()
     })
   })
 })
