@@ -1,168 +1,94 @@
 # TODO
 
-## Offene Punkte – gemeinsame Liste (Stand Do 15.10. abends)
+## Was zu tun ist (Stand Do 15.10. abends)
 
-Zuerst eure Liste (RHA) mit meinen Anmerkungen, danach unter „Sachen von
-Claude" alles, was ich sonst gefunden habe. Entscheidungen sind mit **(?)**
-markiert.
+Alles Offene an einer Stelle, nach Zuständigkeit geordnet. **(?)** = braucht eine
+Antwort. Erledigtes steht unten kurz zum Abhaken.
 
-### Eure Punkte
+### A. Brautpaar: entscheiden
 
-**1. Erinnerungen: Polaroid mit Datum und Anlass, Blumendeko (Beispiel von Vinith)**
-- **Erledigt, ohne Blumen** (entschieden am 15.10.): hochkant auf cremeweißem Papier mit
-  runden Ecken, Foto, darunter „STANDESAMTLICHE HOCHZEIT", „Saruga & Vinith" in
-  Schreibschrift, „17.10.2026" und Linie–Herz–Linie; der Gast steht in einer kleinen
-  Zeile („Erinnerung von Lena"). Auf der Seite und im gespeicherten PNG gleich; am Handy
-  über das Teilen-Menü (in die Fotos), am Computer als Download.
-- Ungeprüft: das Teilen-Menü auf einem echten iPhone und Android.
+1. **Programm bestätigen (?)**: die beiden „Einzug"-Zeilen (17:15 Einzug/Tortenanschneiden,
+   ca. 18:30 traditioneller Einzug) und „ca. 20:00 – 21:00 Uhr" für das Abendessen.
+2. **Tageszustände ansehen (?)**: `/?zeit=heute`, `/?zeit=feier`, `/?zeit=danach`;
+   Rückmeldung, was dort anders sein soll.
+3. **Kategorien bestätigen (?)**: Gäste wählen *Standesamt* oder *Party*; der Admin
+   zusätzlich *Kennenlernen* und *Verlobung*.
+4. **„Wer von uns?" (?)**: eigene Seite, vorab abstimmen ohne Ergebnis, Auflösung später
+   durch den Admin freigegeben. Offen: DJ-Zugriff auf die Ergebnisse (Vorschlag: eigener
+   Lese-Link nur für die Ergebnisse) und ob mehrfaches Abstimmen erlaubt ist.
+5. **Videos (?)**: nur Fotos (Empfehlung) oder Videos zulassen. Heute nur Fotos mit
+   Hinweis am Auswahlfeld.
+6. **Rate Limit (?)**: Obergrenze für Foto-Uploads je Adresse und Stunde (Vorschlag
+   200); Grenze fürs Gästebuch (heute 30 je 15 Minuten) beibehalten oder anheben.
+7. **Dienstleister (?)**: unklar, was gemeint ist (Seite mit Namen und Links, Zugang für
+   sie, Absprachen). Bitte kurz beschreiben.
 
-**2. „Wer von uns?": eigene Seite, vorab abstimmen, Auflösung später, DJ-Zugriff**
-- Heute: Umschalter im Quiz (`/quiz`), die Balken erscheinen sofort nach der Stimme.
-- Umbau: Seite `/wer-von-uns` mit eigener Navigation und Kachel; alle Fragen auf einmal;
-  **ohne Ergebnis** für Gäste; die Ergebnisse sieht nur der Admin und ein **Schalter
-  „Ergebnis freigeben"** schaltet sie für alle frei (in der Konfiguration wie die
-  Schreib-Sperren). Smoke-Skript und Navigation müssen die Seite kennen.
-- **(?) DJ-Zugriff:** der DJ soll die Ergebnisse vorab sehen, aber nicht den
-  Admin-Zugang bekommen. Vorschlag: ein eigener Lese-Link mit langem Zufallsschlüssel
-  nur für die Ergebnisse (kein Schreiben, kein Löschen), den ihr dem DJ schickt.
-- Offen: ob eine Person mehrfach abstimmen darf (heute je Gerät, nicht erzwingbar)
-  und die Porträtfotos (S/V) statt der Buchstaben-Marken.
+### B. Brautpaar und Vinith: liefern
 
-**3. Passwort → QR-Code → Vinith (Flyer)**
-- Kennwort **love** (ohne Groß-/Kleinschreibung). QR-Dateien in
-  `/home/hartings/hochzeit-qr/` (SVG und PNG, schwarz und dunkelblau, Text für Vinith).
-- Offen bei euch: Dateien an Vinith schicken; `GUEST_PASSWORD=love` in
-  `.env.production` setzen und `up -d --force-recreate web`; mit dem Handy gegen die
-  echte Domain scannen; Probedruck prüfen. Der Code zeigt auf `vsjourney.de`.
+1. **Hero-Foto**: Hochformat ab 900 × 1100 px, unter 200 KB, Gesichter im oberen
+   Drittel; ersetzt `public/hero/paar.jpg` (heute ein Platzhalter).
+2. **Vier kleine Fotos** für die Kachel „Unsere Fotos": quadratisch, 120 × 120 px,
+   nicht aus der Galerie (öffentliche Startseite).
+3. **Flyer (Vinith)**: QR-Dateien und Text liegen in `Downloads/hochzeit-qr`; Kennwort
+   `love`.
+4. Optional: Fotos je Meilenstein der Geschichte, Texte für „Gut zu wissen"
+   (Kleidung, Kinder, Geschenke), Porträts für „Wer von uns?".
 
-**4. Startseite: Bild austauschen**
-- `public/hero/paar.jpg` ist ein Platzhalter (ein Memory-Foto, 450 × 800, identisch
-  mit `memory-1.jpg`). Gebraucht: Hochformat ab 900 × 1100 px, unter 200 KB, Gesichter
-  im oberen Drittel (der Rahmen ist oben rund). Datei ersetzen, nichts sonst.
+### C. Betreiber: Server und Test (vor dem Freeze)
 
-**5. „Unsere Fotos" auf der Startseite: vier kleine Bilder**
-- Heute vier Farbflächen (`PREVIEW_SWATCHES` in `FeatureGrid.tsx`). Gebraucht: vier
-  quadratische Bilder, 120 × 120 px, je ca. 5–10 KB, in `public/home/`. Nicht aus der
-  Galerie nehmen: sie ist kennwortgeschützt, die Startseite ist öffentlich.
+1. Pushen: `develop`, dann `develop:main`, Tag `v1.0.0-rc.1`.
+2. `.env.production` prüfen: `GUEST_PASSWORD=love`; `UPLOAD_PASSWORD_EMPFANG` raus
+   (auch aus `.env.local`); `R2_*` und `R2_JURISDICTION`; **`R2_ENDPOINT` darf nicht
+   gesetzt sein**; dann `up -d --force-recreate web`.
+3. Bucket-CORS: Produktionsdomain; `localhost` nach den Tests entfernen.
+4. **Gerätetest** nach `docs/ops/geraetetest-checkliste.md` auf iPhone und Android:
+   QR-Scan, Foto-Upload (auch HEIC), Erinnerung mit Foto, Polaroid speichern (Teilen-Menü),
+   Memory-Spiel, Zustände mit `?zeit=…`.
+5. Smoke- und Lasttest gegen die echte Domain.
+6. Betrieb: SMTP-Zugang (`SMTP_*`, `ALERT_EMAIL_TO`), Ziel für die Off-Box-Kopie,
+   Uptime-Monitor auf `/api/health`, Billing-Alarm in Cloudflare.
+7. Caddy-Version prüfen (`caddy version` ≥ 2.5, sonst lässt sich der Rate-Limiter per
+   Header umgehen); bestätigen, dass Foto-Domain und DNS (`docs/ops/cloudflare-r2-setup.md`)
+   erledigt sind.
+8. Tag `v1.0.0` (`IMAGE_TAG=1.0.0`) und **Freeze**.
+9. Samstag: `docs/ops/hochzeitstag-runbook.md`.
 
-**6. Deployment**
-- Reihenfolge: `develop` pushen → `develop:main` → Tag `v1.0.0-rc.1`; Server:
-  `.env.production` (Pflicht-Variablen, `GUEST_PASSWORD`, R2, `R2_JURISDICTION`),
-  `IMAGE_TAG`, Caddy; danach Gerätetest, Smoke- und Lasttest gegen die Domain,
-  Bucket-CORS ohne `localhost`, endgültiges `v1.0.0`.
-- Seit dem letzten Gerätetest hat sich viel geändert (Gestaltung, Upload-Kategorien,
-  Kennwort/Limit, `R2_ENDPOINT`): **neuen rc bauen und die Checkliste noch einmal
-  durchgehen**, bevor `v1.0.0` getaggt wird.
-- `R2_ENDPOINT` darf in der Produktion nicht gesetzt sein; `.env.local` und
-  `.env.production` brauchen `GUEST_PASSWORD` statt `UPLOAD_PASSWORD_EMPFANG`.
+### D. Claude
 
-**7. Prüfen mit Videos**
-- Stand: Videos werden nicht angenommen (nur JPEG, PNG, WebP, HEIC und HEIF bis 20 MB).
-  **Neu:** Im Upload-Formular und bei den Erinnerungen steht jetzt „Nur Fotos, keine
-  Videos." direkt am Auswahlfeld.
-- **(?)** Falls Videos erlaubt sein sollen (größere Grenzen, andere Vorschau, mehr
-  R2-Kosten): Empfehlung bleibt nur Fotos, bis der Tag vorbei ist.
-- Falls „mit Videos prüfen" etwas anderes meint (Bildschirmvideos der Abläufe?),
-  bitte kurz sagen.
+Sobald die Antworten da sind:
+- „Wer von uns?" umbauen (A.4), Hero- und Kachelfotos einbauen und verkleinern (B.1, B.2),
+  Upload-Obergrenze (A.6), Programm/Kategorien/Zustände anpassen (A.1–A.3).
+- Funde aus dem Gerätetest beheben.
 
-**8. Memory: Bilder verkleinern**
-- **Erledigt:** zehn Bilder 400 × 400 px, zusammen ca. 300 KB statt 748 KB (Gesichter
-  bleiben im Ausschnitt). Mit Originalen von euch ließe es sich noch einmal sauberer
-  machen (`scripts/compress-memory-images.mjs`).
+Ohne Antwort möglich:
+- Das **unabhängige Code-Review** der letzten Commits (steht aus).
+- Geräte-Checkliste um die neuen Abläufe ergänzen (QR-Scan, Standesamt/Party, Foto zur
+  Erinnerung, Polaroid teilen, `?zeit=…`).
 
-**9. Dienstleister**
-- **(?)** Unklar, was gemeint ist: eine Seite oder Zeile „Dienstleister" (Fotograf,
-  DJ, Location, Caterer mit Link oder Namen), Zugang für sie (DJ-Ergebnisse, Kennwort,
-  Upload) oder Absprachen? Bitte kurz beschreiben.
+### E. Nach der Hochzeit
 
-**10. Rate Limit besprechen**
-- So ist es: Entsperren 20 Fehlversuche je Adresse und 15 Minuten (vorher 5); Gästebuch
-  und Erinnerungen je 30 Anfragen in 15 Minuten, Upload zählt nur Fehlversuche; alles im
-  Speicher des Servers (ein Neustart setzt zurück), Schlüssel ist die Adresse aus
-  `X-Forwarded-For`.
-- Folgen: ein erratbares Wort schützt nicht gegen gezieltes Raten (die Grenzen bremsen
-  nur Automaten); verteilt auf Entsperren, Gästebuch, Erinnerungen und Upload sind es
-  zusammen deutlich mehr als 20 Versuche je Adresse.
-- **(?) Missbrauch mit gültigem Kennwort:** wer „love" kennt, kann unbegrenzt Fotos
-  hochladen (Speicher- und Übertragungskosten in R2); es gibt nur den Notaus
-  „Foto-Upload sperren" im Admin und einen Billing-Alarm (siehe unten). Vorschlag: eine
-  Obergrenze je Adresse und Stunde (z. B. 200 Fotos).
-- **(?)** Gemeinsame Adresse des Veranstaltungs-WLANs: 30 Gästebuch-Einträge in 15
-  Minuten könnten bei 100 Gästen knapp werden; Zahlen anpassen oder nicht.
-- Erledigt: Wird ein QR-Scan durch die Sperre abgewiesen, steht dort nicht mehr „QR-Code
-  nicht mehr gültig", sondern die normale Kennwort-Eingabe (mit dem Hinweis, wie lange
-  zu warten ist).
+- Export der Originale (Runbook §6); verwaiste R2-Objekte aufräumen.
+- Optional: Galerie-Modus oder Kennwort ändern; der Zustand „Wir sind verheiratet!"
+  schaltet sich selbst um.
 
-### Sachen von Claude
+### F. Gut zu wissen (kein Handlungsbedarf)
 
-**Noch nicht gesehen oder getestet (ehrlich: nur Tests und HTML, kein Browser)**
-- Alle Gestaltungsänderungen dieser Runde (Kacheln, Anfahrt, Großansicht, Filter,
-  Quiz-Ergebnis, Memory-Band, Story-Karten) wurden nicht in einem echten Browser
-  angesehen, nur per Test und Server-HTML geprüft.
-- **Echter R2-Upload aus dem Browser** (CORS-PUT, Jurisdiktion `eu`): nur gegen den
-  Ersatz-Server geprüft, nie gegen Cloudflare.
-- **Polaroid herunterladen** auf iPhone und Android (Canvas, Schriften, Speichern).
-- **HEIC vom iPhone** bei Browsern ohne HEIC-Dekodierung (die Vorschau entsteht im
-  Browser): ungeprüft.
-- Das **unabhängige Code-Review** über die Commits seit dem letzten Review ist nicht
-  gelaufen.
-- Die **Tageszustände** (vorher / heute / danach) sind getestet, aber nicht zur
-  echten Uhrzeit am 17.10. beobachtet.
-- `docs/ops/geraetetest-checkliste.md` ist mit den neuen Abläufen (QR-Scan,
-  Standesamt/Party, Foto zur Erinnerung) noch nicht durchgespielt.
+- Alle Gestaltungsänderungen sind per Test und Server-HTML geprüft, nicht in einem
+  echten Browser; der echte R2-Upload nur gegen einen Ersatz-Server; das Teilen-Menü des
+  Polaroids und HEIC auf echten Geräten sind ungeprüft.
+- Das Kennwort schützt die Seite und die Liste, nicht die Datei-Adressen der Fotos
+  (zufällige UUID-Pfade). Eigene Fotos löscht man nur auf dem Gerät des Uploads, sonst
+  der Admin. Die Rate-Limiter leben im Speicher (Neustart setzt zurück).
+- Nicht umgesetzt aus den Vorschlägen: roter Punkt für neue Fotos (C9).
 
-**Entscheidungen offen (?)**
-- **Tageszustände:** „am Tag selbst" und „danach" lassen sich vorab ansehen:
-  `/?zeit=heute`, `/?zeit=feier`, `/?zeit=danach` (ganze Seite, mit Band zum
-  Beenden). Der Vergleichsmodus für die Zeit davor ist entfernt. Offen: eure
-  Rückmeldung zu den drei Zuständen.
-- **Programm bestätigen:** die zwei „Einzug"-Zeilen (17:15 mit Tortenanschneiden, ca.
-  18:30 traditionell) und „ca. 20:00 – 21:00 Uhr" für das Abendessen.
-- **Kategorien:** Gäste wählen jetzt *Standesamt* oder *Party*, der Admin zusätzlich
-  *Kennenlernen* und *Verlobung*. Passt zum Beispiel („Standesamtliche Hochzeit"),
-  bitte bestätigen; ebenso, dass der Admin die beiden Story-Kategorien behält.
+### Erledigt (Stand 15.10.)
 
-**Inhalte, die noch fehlen**
-- Hero-Foto (Punkt 4), vier Fotos auf der Kachel (Punkt 5), Fotos je Meilenstein in
-  der Geschichte (`photo` in `story-content.ts`), „Gut zu wissen"-Texte
-  (`goodToKnow` in `event-info.ts`), Porträts für „Wer von uns?".
-- Aus den Vorschlägen nicht umgesetzt: der rote Punkt für neue Fotos (C9).
-
-**Betrieb und Aufräumen**
-- SMTP-Zugang für Alarm-Mails; Ziel für die Off-Box-Kopie und Uptime-Monitor
-  (`hochzeitstag-runbook.md` §7); Billing-Alarm in Cloudflare als Kostenobergrenze.
-- Export der Originale (Runbook §6) und **verwaiste R2-Objekte** nach der Hochzeit.
-- Das Passwort schützt die Galerie-Seite und ihre Liste, **nicht die Datei-Adressen**
-  auf der Foto-Domain (zufällige UUID-Pfade, nicht erratbar, aber wer eine Adresse
-  hat, sieht das Foto).
-- Eigene Fotos löschen geht nur auf dem Gerät des Uploads (Token im Browser); sonst
-  über den Admin.
-
-## Einplanung (Stand Do 15.10.2026)
-
-| Wann | Wer | Was |
-|---|---|---|
-| Di 13.10. abends | Betreiber | Domain/R2/Server/Gerätetest/Stimmen-Import nach `docs/ops/heute-abend.md` |
-| Do 15.10. | Brautleute | Ablauf des Tages ist eingetragen (Zeiten mit „ca."); bitte bestätigen: die zwei „Einzug"-Zeilen und das „?" nach 21 Uhr |
-| bis Mi 14.10. | Betreiber | SMTP-Zugang in `.env.production`; Ziel für Off-Box-Kopie und Uptime-Monitor (`hochzeitstag-runbook.md` §7) |
-| Mi 14.10. | Betreiber | Gerätetest auswerten; Funde melden |
-| Mi 14.10. (nur falls nötig) | Entwicklung | **Vorschau-Speicher** (nur wenn der Gerätetest bei 20+ Fotos Probleme zeigt) |
-| bis Do 15.10. | Betreiber | **Gäste-Kennwort** ist gewählt (ein einfaches Wort, bewusst nicht „sicher"; QR-Code liegt lokal bei Vinith für den Flyer): `GUEST_PASSWORD` in `.env.production` setzen, `up -d --force-recreate web`, echten Scan prüfen; Gerätetest „Zugang" |
-| Di 13.10. abends bis Do | Betreiber | Vorab-Tags `v1.0.0-rc.1`, `-rc.2` … für Deploys und Tests (`IMAGE_TAG` in der `.env` anpassen) |
-| Do 15.10. bis abends | Betreiber | letzter Smoke- und Lasttest gegen die echte Domain, endgültiger Tag `v1.0.0` (`IMAGE_TAG=1.0.0`), **Freeze** — danach keine Änderungen mehr |
-| Sa 17.10. | Bereitschaft | `docs/ops/hochzeitstag-runbook.md` |
-| ab So 18.10. | Entwicklung | Export der Originale aus R2 (Runbook §6); **verwaiste R2-Objekte** aufräumen (Skript, Abgleich mit der Datenbank) |
-
-Nicht geplant: ein vom Server verteiltes Memory-Spiel (bewusst clientseitig).
-
-## Inhalte vor dem Freeze (von euch)
-
-- **Programm auf `/info`:** eingetragen (Stand 15.10., `receptionSchedule` in
-  `src/lib/event-info.ts`). Offen: bestätigen, ob die beiden „Einzug"-Zeilen so
-  gemeint sind und ob das Abendessen „ca. 20:00 – 21:00 Uhr" heißen soll.
-- **SMTP-Zugang für die Alarm-Mails** (`SMTP_*`, `ALERT_EMAIL_TO` in
-  `.env.production`): kommt vom Betreiber, nicht von den Brautleuten. Ohne ihn
-  laufen Alarme nur ins Log. Werte nie ins Repo oder in ein Issue.
+Hero A, Kacheln, Zeitleiste (Uhrzeit unter dem Titel), Anfahrt-Karte, Galerie-Filter und
+Großansicht, Gästebuch rechts ausgerichtet, Quiz-Ergebnis, Memory-Rekord und -Rücken,
+Story-Karten; Polaroid nach Vinith' Beispiel (ohne Blumen) mit Teilen-Menü; Programm
+eingetragen; Kategorie „Standesamt"; Kennwort `love` ohne Groß-/Kleinschreibung, 20
+Fehlversuche je 15 Minuten, QR-Dateien; Memory-Bilder verkleinert und vorgeladen; Hinweis
+„Nur Fotos, keine Videos"; Vorschau der Zustände; lokaler R2-Ersatz.
 
 ## Gefunden im Galerie-Upload-Review (zurückgestellt, nicht blockierend)
 
