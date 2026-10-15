@@ -32,10 +32,11 @@ export function addGuestbookEntry(
   return toEntry(row)
 }
 
-export function listGuestbookEntries(db: Database.Database): GuestbookEntry[] {
+/** Neueste zuerst; mit `limit` nur die neuesten (Obergrenze für die Antwort). */
+export function listGuestbookEntries(db: Database.Database, limit?: number): GuestbookEntry[] {
   const rows = db
-    .prepare('SELECT id, name, message, created_at FROM guestbook_entries ORDER BY id DESC')
-    .all() as GuestbookRow[]
+    .prepare(`SELECT id, name, message, created_at FROM guestbook_entries ORDER BY id DESC LIMIT ?`)
+    .all(limit ?? -1) as GuestbookRow[]
   return rows.map(toEntry)
 }
 

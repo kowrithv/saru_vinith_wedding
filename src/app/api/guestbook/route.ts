@@ -17,8 +17,12 @@ const entrySchema = z.object({
 // Grenze je Adresse.
 const guestbookLimiter = new GuestRateLimiter({ perDevice: 20, perAddress: 200, windowMs: 15 * 60 * 1000 })
 
+// Sicherheitsgrenze für die Antwort (am Fest ein paar Hundert); die Seite zeigt
+// davon stückweise.
+const MAX_ENTRIES = 1000
+
 export async function GET(): Promise<Response> {
-  const entries = listGuestbookEntries(getDb())
+  const entries = listGuestbookEntries(getDb(), MAX_ENTRIES)
   return NextResponse.json({ entries })
 }
 

@@ -7,6 +7,10 @@ import { isGalleryUnlocked } from '@/lib/gallery-auth'
 import { listGalleryPhotos } from '@/lib/gallery-photos'
 import { toGalleryPhotoView } from '@/lib/gallery-photo-view'
 
+// Sicherheitsgrenze für die Antwort; auf einer Feier mit 200 Gästen kommen
+// einige Tausend Fotos zusammen, die Seite zeigt davon stückweise.
+const MAX_PHOTOS = 10_000
+
 export async function GET(request: Request): Promise<Response> {
   const db = getDb()
   const mode = getGalleryMode(db)
@@ -21,6 +25,6 @@ export async function GET(request: Request): Promise<Response> {
     mode,
     unlocked: true,
     uploadsLocked,
-    photos: listGalleryPhotos(db).map(toGalleryPhotoView),
+    photos: listGalleryPhotos(db, MAX_PHOTOS).map(toGalleryPhotoView),
   })
 }

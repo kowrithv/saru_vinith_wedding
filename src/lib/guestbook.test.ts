@@ -26,6 +26,14 @@ describe('guestbook', () => {
     db.close()
   })
 
+  it('can limit the list to the newest entries', () => {
+    const db = createDb(':memory:')
+    for (let i = 1; i <= 5; i++) addGuestbookEntry(db, `Gast ${i}`, `Nachricht Nummer ${i} im Buch.`)
+
+    expect(listGuestbookEntries(db, 2).map((entry) => entry.name)).toEqual(['Gast 5', 'Gast 4'])
+    db.close()
+  })
+
   it('deletes an entry by id and returns true', () => {
     const db = createDb(':memory:')
     const entry = addGuestbookEntry(db, 'Anna', 'Diese Nachricht wird gelöscht.')

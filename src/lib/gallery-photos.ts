@@ -66,15 +66,16 @@ export function addGalleryPhoto(
   return toPhoto(row)
 }
 
-export function listGalleryPhotos(db: Database.Database): GalleryPhoto[] {
+/** Neueste zuerst; mit `limit` nur die neuesten (Obergrenze für die Antwort). */
+export function listGalleryPhotos(db: Database.Database, limit?: number): GalleryPhoto[] {
   // Sortierung nach `rowid`, nicht `created_at`: `id` ist eine UUID (keine
   // fortlaufende Zahl), zwei schnell aufeinanderfolgende Inserts können
   // denselben Millisekunden-Zeitstempel bekommen. `rowid` ist SQLites
   // interner, garantiert streng aufsteigender Zähler - verhindert
   // Flakiness bei der "neueste zuerst"-Reihenfolge.
   const rows = db
-    .prepare(`SELECT ${SELECT_COLUMNS} FROM gallery_photos ORDER BY rowid DESC`)
-    .all() as GalleryPhotoRow[]
+    .prepare(`SELECT ${SELECT_COLUMNS} FROM gallery_photos ORDER BY rowid DESC LIMIT ?`)
+    .all(limit ?? -1) as GalleryPhotoRow[]
   return rows.map(toPhoto)
 }
 

@@ -88,4 +88,12 @@ describe('memories', () => {
     expect(deleteMemoryEntry(db, 999999)).toBe(false)
     db.close()
   })
+
+  it('can limit the list to the newest entries', () => {
+    const db = createDb(':memory:')
+    for (let i = 1; i <= 5; i++) addMemoryEntry(db, `Gast ${i}`, `Erinnerung Nummer ${i} an den Tag.`, null)
+
+    expect(listMemoryEntries(db, 2).map((entry) => entry.name)).toEqual(['Gast 5', 'Gast 4'])
+    db.close()
+  })
 })

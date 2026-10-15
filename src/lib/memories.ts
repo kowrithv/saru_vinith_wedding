@@ -64,8 +64,9 @@ export function getMemoryEntry(db: Database.Database, id: number): MemoryEntry |
   return row ? toEntry(row) : undefined
 }
 
-export function listMemoryEntries(db: Database.Database): MemoryEntry[] {
-  const rows = db.prepare(`${SELECT_ENTRY} ORDER BY m.id DESC`).all() as MemoryRow[]
+/** Neueste zuerst; mit `limit` nur die neuesten (Obergrenze für die Antwort). */
+export function listMemoryEntries(db: Database.Database, limit?: number): MemoryEntry[] {
+  const rows = db.prepare(`${SELECT_ENTRY} ORDER BY m.id DESC LIMIT ?`).all(limit ?? -1) as MemoryRow[]
   return rows.map(toEntry)
 }
 

@@ -27,11 +27,15 @@ function photosEnabled(db: ReturnType<typeof getDb>): boolean {
   return !isFeatureLocked(db, 'memory_photos') && !isFeatureLocked(db, 'gallery_upload')
 }
 
+// Sicherheitsgrenze für die Antwort (am Fest ein paar Hundert); die Seite zeigt
+// davon stückweise.
+const MAX_ENTRIES = 500
+
 export async function GET(request: Request): Promise<Response> {
   const db = getDb()
   // Fotos nur für entsperrte Browser (wie die Galerie); der Text bleibt offen.
   const showPhoto = hasGuestAccess(request, db)
-  const entries = listMemoryEntries(db).map((entry) => toMemoryEntryView(entry, { showPhoto }))
+  const entries = listMemoryEntries(db, MAX_ENTRIES).map((entry) => toMemoryEntryView(entry, { showPhoto }))
   return NextResponse.json(
     { entries, photosEnabled: photosEnabled(db) },
     { headers: { 'Cache-Control': 'no-store' } }

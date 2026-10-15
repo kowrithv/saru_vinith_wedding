@@ -81,4 +81,21 @@ describe('gallery photos', () => {
     expect(deleteGalleryPhotoRow(db, 'does-not-exist')).toBe(false)
     db.close()
   })
+
+  it('can limit the list to the newest photos', () => {
+    const db = createDb(':memory:')
+    for (let i = 1; i <= 5; i++) {
+      addGalleryPhoto(db, {
+        id: `photo-${i}`,
+        thumbKey: `t${i}`,
+        originalKey: `o${i}`,
+        uploaderName: 'Anna',
+        deleteTokenHash: 'h',
+        category: 'Party',
+        isOfficial: false,
+      })
+    }
+    expect(listGalleryPhotos(db, 2).map((photo) => photo.id)).toEqual(['photo-5', 'photo-4'])
+    db.close()
+  })
 })
