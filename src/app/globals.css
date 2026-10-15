@@ -23,6 +23,17 @@
      dieser Ton erreicht WCAG AA (4,5:1). --color-gold bleibt für Ornamente. */
   --color-gold-text: #86691c;
 
+  /* Bordeaux: Akzent für Linien, Eckmarken, Abzeichen und "Als Nächstes".
+     8,7:1 auf Champagner-hell, auch als Textfarbe lesbar. Rosé-Sand ersetzt
+     Baby-Blau in Verläufen. */
+  --color-bordeaux: #7a2432;
+  --color-bordeaux-light: #9a3a4a;
+  --color-rose-sand: #ecd3c2;
+  --color-rose-sand-light: #fbf1ea;
+
+  --font-display: var(--font-cormorant), Georgia, serif;
+  --font-script: var(--font-great-vibes), cursive;
+
   --animate-fade-up: fade-up 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
 
   @keyframes fade-up {
@@ -34,5 +45,39 @@
       opacity: 1;
       transform: translateY(0);
     }
+  }
+}
+
+@layer components {
+  /* Eckmarken-Karte (Card variant="ornate"): Goldlinie innen, Bordeaux-Ecken. */
+  .card-ornate {
+    position: relative;
+    background-color: var(--color-champagne-light);
+    border: 1px solid color-mix(in srgb, var(--color-champagne-dark) 70%, transparent);
+    outline: 1px solid var(--color-gold);
+    outline-offset: -7px;
+  }
+  .card-ornate::before,
+  .card-ornate::after {
+    content: '';
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--color-bordeaux);
+    pointer-events: none;
+  }
+  .card-ornate::before {
+    top: 4px;
+    left: 4px;
+    border-right: 0;
+    border-bottom: 0;
+    border-top-left-radius: 8px;
+  }
+  .card-ornate::after {
+    right: 4px;
+    bottom: 4px;
+    border-left: 0;
+    border-top: 0;
+    border-bottom-right-radius: 8px;
   }
 }

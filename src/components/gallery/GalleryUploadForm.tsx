@@ -510,7 +510,7 @@ export default function GalleryUploadForm({
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={previewUrl} alt="" className="w-full h-full object-cover" />
                   ) : (
-                    <span data-testid="upload-preview-fallback" className="text-gray-400">
+                    <span data-testid="upload-preview-fallback" className="text-gray-500">
                       <ImageIcon size={16} />
                     </span>
                   )}

@@ -6,6 +6,7 @@ import SectionTitle from '@/components/ui/SectionTitle'
 import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
 import GuestPasswordField from '@/components/ui/GuestPasswordField'
+import EmptyState from '@/components/ui/EmptyState'
 import { textFieldClassName } from '@/lib/form-styles'
 import { MEMORY_PHOTO_CATEGORY } from '@/lib/gallery-categories'
 import { saveDeleteToken } from '@/lib/gallery-delete-tokens'
@@ -220,7 +221,7 @@ export default function MemoriesPage() {
                 maxLength={500}
                 className={cn(textFieldClassName, 'resize-none')}
               />
-              <p className="text-xs text-gray-400 text-right mt-1">{message.length}/500</p>
+              <p className="text-xs text-gray-500 text-right mt-1">{message.length}/500</p>
             </div>
 
             {photosEnabled && (
@@ -267,19 +268,11 @@ export default function MemoriesPage() {
         </Card>
 
         {entries.length === 0 ? (
-          <p className="text-sm text-gray-400 text-center">Noch keine Erinnerungen – teilt eure erste!</p>
+          <EmptyState title="Noch keine Erinnerungen" description="Teilt eure erste." />
         ) : (
           <div className="columns-1 md:columns-2 gap-4">
             {entries.map((entry) => (
-              <Card
-                key={entry.id}
-                variant="champagne"
-                className="relative overflow-hidden mb-4 break-inside-avoid"
-              >
-                <span
-                  className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-dashed border-champagne-dark rounded-tl-lg pointer-events-none"
-                  aria-hidden="true"
-                />
+              <Card key={entry.id} variant="ornate" className="relative overflow-hidden mb-4 break-inside-avoid">
                 <div className="flex items-start gap-3 mb-2 pl-2">
                   <div className="w-9 h-9 bg-white rounded-full flex items-center justify-center flex-shrink-0">
                     <Heart size={16} className="text-dark-blue" />

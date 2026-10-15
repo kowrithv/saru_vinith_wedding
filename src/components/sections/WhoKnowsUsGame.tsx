@@ -123,7 +123,7 @@ export default function WhoKnowsUsGame() {
         transition={{ duration: 0.4 }}
         className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 md:p-8"
       >
-        <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">
+        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
           Frage {currentIndex + 1} von {whoQuestions.length}
         </p>
         <h3 className="font-serif text-lg md:text-xl font-semibold text-dark-blue mb-6">
@@ -160,7 +160,7 @@ export default function WhoKnowsUsGame() {
                       {option}
                       {option === myVote && ' (deine Stimme)'}
                     </span>
-                    <span className="text-gray-400">{count}</span>
+                    <span className="text-gray-500">{count}</span>
                   </div>
                   <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                     <div

@@ -283,9 +283,9 @@ export default function MemoryGame() {
 
       {isWon && (
         <div className="text-center mt-8" role="status">
-          <p className="font-serif text-xl font-semibold text-dark-blue mb-4">Geschafft! 🎉</p>
+          <p className="font-serif text-xl font-semibold text-dark-blue mb-4">Geschafft!</p>
           {isNewGlobalRecord && (
-            <p className="text-gold-text font-medium mb-4">Neuer Rekord aller Gäste! 🏆</p>
+            <p className="text-gold-text font-medium mb-4">Neuer Rekord aller Gäste!</p>
           )}
           <Button onClick={startNewGame}>Neues Spiel</Button>
         </div>

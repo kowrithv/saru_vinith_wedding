@@ -6,6 +6,7 @@ import SectionTitle from '@/components/ui/SectionTitle'
 import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
 import GuestPasswordField from '@/components/ui/GuestPasswordField'
+import EmptyState from '@/components/ui/EmptyState'
 import { textFieldClassName } from '@/lib/form-styles'
 import { useGuestAccess } from '@/lib/use-guest-access'
 import { useGuestName } from '@/lib/use-guest-name'
@@ -154,7 +155,7 @@ export default function GuestbookPage() {
                     maxLength={500}
                     className={cn(textFieldClassName, 'resize-none')}
                   />
-                  <p className="text-xs text-gray-400 text-right mt-1">{message.length}/500</p>
+                  <p className="text-xs text-gray-500 text-right mt-1">{message.length}/500</p>
                 </div>
 
                 {needsPassword && (
@@ -178,7 +179,7 @@ export default function GuestbookPage() {
 
           <div className="lg:col-span-3 space-y-4">
             {entries.length === 0 && (
-              <p className="text-sm text-gray-400">Noch keine Einträge – sei der/die Erste!</p>
+              <EmptyState title="Noch keine Einträge" description="Sei der oder die Erste, die dem Brautpaar schreibt." />
             )}
             {entries.map((entry, index) => (
               <Card key={entry.id} className="relative overflow-hidden">
@@ -188,7 +189,7 @@ export default function GuestbookPage() {
                 >
                   &ldquo;
                 </span>
-                <span className="absolute top-4 right-5 font-serif text-xs text-gray-300">
+                <span className="absolute top-4 right-5 font-serif text-xs text-gray-400">
                   #{index + 1}
                 </span>
                 <div className="flex items-start gap-4 relative">
@@ -198,7 +199,7 @@ export default function GuestbookPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2 mb-2 pr-6">
                       <p className="font-semibold text-dark-blue text-sm truncate">{entry.name}</p>
-                      <p className="text-xs text-gray-400 flex-shrink-0">{formatDate(entry.createdAt)}</p>
+                      <p className="text-xs text-gray-500 flex-shrink-0">{formatDate(entry.createdAt)}</p>
                     </div>
                     <p className="text-sm text-gray-600 leading-relaxed">{entry.message}</p>
                   </div>

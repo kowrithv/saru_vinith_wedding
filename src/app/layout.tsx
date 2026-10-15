@@ -1,10 +1,10 @@
-import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
-import { Playfair_Display, Inter } from 'next/font/google'
+import { Playfair_Display, Inter, Cormorant_Garamond, Great_Vibes } from 'next/font/google'
 import './globals.css'
 import Navigation from '@/components/layout/Navigation'
 import Footer from '@/components/layout/Footer'
 import MotionProvider from '@/components/layout/MotionProvider'
+import { siteMetadata, siteViewport } from '@/lib/site-metadata'
 
 const playfair = Playfair_Display({
   subsets: ['latin'],
@@ -20,11 +20,23 @@ const inter = Inter({
   weight: ['300', '400', '500', '600'],
 })
 
-export const metadata: Metadata = {
-  title: 'Saruga & Vinith',
-  description: 'Alles rund um unsere Hochzeit am 17. Oktober 2026.',
-  robots: { index: false, follow: false },
-}
+// Große Zeilen (Namen, Datum) in Cormorant, Unterschriften in Schreibschrift.
+const cormorant = Cormorant_Garamond({
+  subsets: ['latin'],
+  variable: '--font-cormorant',
+  display: 'swap',
+  weight: ['500', '600'],
+})
+
+const greatVibes = Great_Vibes({
+  subsets: ['latin'],
+  variable: '--font-great-vibes',
+  display: 'swap',
+  weight: '400',
+})
+
+export const metadata = siteMetadata
+export const viewport = siteViewport
 
 export default function RootLayout({
   children,
@@ -32,7 +44,7 @@ export default function RootLayout({
   children: ReactNode
 }) {
   return (
-    <html lang="de" className={`${playfair.variable} ${inter.variable}`}>
+    <html lang="de" className={`${playfair.variable} ${inter.variable} ${cormorant.variable} ${greatVibes.variable}`}>
       <body className="font-sans antialiased bg-white text-gray-900">
         <MotionProvider>
         <Navigation />

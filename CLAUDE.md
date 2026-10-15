@@ -22,6 +22,10 @@ npm run lint
 npm run build          # nicht zwei Builds parallel starten (gemeinsames .next)
 ```
 
+Meldet der Build `next/font/google queries have exactly one entry` (ohne dass sich
+an den Schriften etwas geändert hat), ist der Turbopack-Cache veraltet:
+`rm -rf .next` und neu bauen.
+
 Vor jedem Commit müssen Typecheck, Lint und Test grün sein. Nach dem Löschen
 einer Route meldet `tsc` ggf. veraltete Dateien in `.next/types` – dann
 `rm -rf .next/types`.

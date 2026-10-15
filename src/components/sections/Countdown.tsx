@@ -72,7 +72,7 @@ export default function Countdown() {
           <div className="h-28 sm:h-36 md:h-40 motion-safe:animate-pulse bg-champagne/30 rounded-2xl" />
         ) : timeLeft.isPast ? (
           <div className="py-4">
-            <h2 className="font-serif text-3xl md:text-4xl text-dark-blue font-semibold">Wir sind verheiratet! 🎉</h2>
+            <h2 className="font-serif text-3xl md:text-4xl text-dark-blue font-semibold">Wir sind verheiratet!</h2>
             <p className="mt-4 text-gray-600">
               Danke, dass ihr mit uns gefeiert habt – teilt eure Fotos und eure Wünsche mit uns.
             </p>

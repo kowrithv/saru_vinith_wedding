@@ -18,9 +18,9 @@ function InfoCard({ icon: Icon, label, value, sublabel }: InfoCardProps) {
         <Icon size={18} className="text-dark-blue" />
       </div>
       <div>
-        <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">{label}</p>
+        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">{label}</p>
         <p className="text-sm font-semibold text-dark-blue">{value}</p>
-        {sublabel && <p className="text-xs text-gray-400 mt-0.5">{sublabel}</p>}
+        {sublabel && <p className="text-xs text-gray-500 mt-0.5">{sublabel}</p>}
       </div>
     </div>
   )
@@ -68,7 +68,7 @@ export default function InfoPage() {
           />
         </div>
 
-        <Card padding="lg">
+        <Card variant="ornate" padding="lg">
           <h3 className="font-serif text-xl font-semibold text-dark-blue mb-5 flex items-center gap-2">
             <InfoIcon size={18} className="text-gold" />
             Ablauf des Tages

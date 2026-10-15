@@ -5,6 +5,7 @@ import { ZoomIn } from 'lucide-react'
 import type { GalleryPhotoView } from '@/lib/gallery-photo-view'
 import { galleryCategories } from '@/lib/gallery-categories'
 import { cn } from '@/lib/utils'
+import EmptyState from '@/components/ui/EmptyState'
 import GalleryLightbox from './GalleryLightbox'
 
 interface GalleryGridProps {
@@ -27,7 +28,7 @@ export default function GalleryGrid({ photos, onPhotoDeleted, emptyMessage }: Ga
 
   if (photos.length === 0) {
     return (
-      <p className="text-center text-gray-400 py-16">{emptyMessage ?? 'Noch keine Fotos – lade das erste hoch!'}</p>
+      <EmptyState title={emptyMessage ?? 'Noch keine Fotos'} description={emptyMessage ? undefined : 'Lade das erste hoch!'} />
     )
   }
 
@@ -68,7 +69,7 @@ export default function GalleryGrid({ photos, onPhotoDeleted, emptyMessage }: Ga
       </div>
 
       {filteredPhotos.length === 0 ? (
-        <p className="text-center text-gray-400 py-16">Keine Fotos in dieser Kategorie.</p>
+        <EmptyState title="Keine Fotos in dieser Kategorie" />
       ) : (
         <div className="columns-2 md:columns-3 lg:columns-4 gap-4">
           {filteredPhotos.map((photo, index) => (

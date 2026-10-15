@@ -6,7 +6,7 @@ interface CardProps {
   className?: string
   hover?: boolean
   padding?: 'sm' | 'md' | 'lg' | 'none'
-  variant?: 'default' | 'champagne' | 'dark'
+  variant?: 'default' | 'champagne' | 'dark' | 'ornate'
 }
 
 const paddingClasses = {
@@ -20,6 +20,8 @@ const variantClasses = {
   default: 'bg-white border border-gray-100 shadow-sm',
   champagne: 'bg-champagne-light border border-champagne-dark/30',
   dark: 'bg-dark-blue text-white',
+  // Eckmarken-Karte: Champagner, feine Goldlinie innen, Bordeaux-Ecken (globals.css).
+  ornate: 'card-ornate',
 }
 
 export default function Card({

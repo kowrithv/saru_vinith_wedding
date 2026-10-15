@@ -107,7 +107,7 @@ export default function ClassicQuiz() {
         transition={{ duration: 0.4 }}
         className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 md:p-8"
       >
-        <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">
+        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
           Frage {currentIndex + 1} von {quizQuestions.length}
         </p>
         <h3 className="font-serif text-lg md:text-xl font-semibold text-dark-blue mb-6">

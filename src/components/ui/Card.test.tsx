@@ -17,4 +17,11 @@ describe('Card', () => {
     render(<Card>Standardkarte</Card>)
     expect(screen.getByText('Standardkarte')).toHaveClass('bg-white')
   })
+
+  it('has an ornate variant: champagne card with a gold line and corner marks', () => {
+    render(<Card variant="ornate">Eckmarken-Karte</Card>)
+    const card = screen.getByText('Eckmarken-Karte')
+    expect(card).toHaveClass('card-ornate')
+    expect(card).not.toHaveClass('bg-white')
+  })
 })
