@@ -49,11 +49,12 @@ und Videos sind zurückgestellt; das Rate-Limit zählt je Gerät statt je Adress
 
 Sobald die Antworten da sind:
 - „Wer von uns?" umbauen und Videos entscheiden, wenn sie nicht mehr zurückgestellt sind.
-- Rollen der Dienstleister eintragen (`src/lib/vendors.ts`).
+- Info-Seite nach eurem Feedback anpassen (Entwurf ist committet, Feedback steht aus).
 - Funde aus dem Gerätetest beheben.
 
 Ohne Antwort möglich:
-- Das **unabhängige Code-Review** der letzten Commits (steht aus).
+- Ein **unabhängiges Code-Review** (frische Sicht auf alle Änderungen seit dem letzten
+  Review; die eigene Durchsicht der letzten Commits ist gemacht).
 
 ### E. Nach der Hochzeit
 
@@ -63,9 +64,11 @@ Ohne Antwort möglich:
 
 ### F. Gut zu wissen (kein Handlungsbedarf)
 
-- Alle Gestaltungsänderungen sind per Test und Server-HTML geprüft, nicht in einem
-  echten Browser; der echte R2-Upload nur gegen einen Ersatz-Server; das Teilen-Menü des
-  Polaroids und HEIC auf echten Geräten sind ungeprüft.
+- Im echten Browser (Handy-Breite, Entwicklungsmodus) angesehen: Startseite, Info,
+  Geschichte, Galerie, Gästebuch, Quiz, Memory-Spiel, Polaroid, Zustand „Feier". Noch
+  nicht angesehen: Admin-Bereich und die Seiten in Desktop-Breite. Der echte R2-Upload
+  lief nur gegen einen Ersatz-Server; das Teilen-Menü des Polaroids und HEIC auf echten
+  Geräten sind ungeprüft.
 - Das Kennwort schützt die Seite und die Liste, nicht die Datei-Adressen der Fotos
   (zufällige UUID-Pfade). Eigene Fotos löscht man nur auf dem Gerät des Uploads, sonst
   der Admin. Die Rate-Limiter leben im Speicher (Neustart setzt zurück).
@@ -85,10 +88,10 @@ Fehlversuche je 15 Minuten, QR-Dateien; Memory-Bilder verkleinert und vorgeladen
 - **Verwaiste R2-Objekte** bei abgebrochenen Uploads (Tab geschlossen, Netz
   weg, Erinnerung nach dem Foto-Upload nicht abgesendet): kein Aufräum-Job. Beim Export nach der Hochzeit mit aufräumen oder
   per Lifecycle-Regel.
-- **Kein Schutz gegen Massen-Uploads mit gültigem Kennwort:** Der
-  Upload-Rate-Limiter zählt nur noch Fehlversuche (sonst sperrt er das
-  gemeinsame Veranstaltungs-WLAN). Kostenobergrenze stattdessen über ein
-  Billing-Alarm in Cloudflare setzen.
+- **Massen-Uploads mit gültigem Kennwort:** je Gerät sind 300 Fotos pro Stunde erlaubt.
+  Wer das einfache Kennwort kennt, kann aber immer neue Sitzungen holen; die Absicherung
+  bleiben der Notaus „Foto-Upload sperren" im Admin, das Löschen im Admin und ein
+  Billing-Alarm in Cloudflare.
 - **Echtgeräte-Test steht aus:** iPhone-Safari (HEIC→JPEG bei
   `accept="image/*"`, Speicher bei 20+ Fotos, Tab im Hintergrund),
   Android-Chrome (HEIC ohne MIME-Typ), langsames WLAN.
