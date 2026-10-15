@@ -22,11 +22,10 @@ Feature complete. Zurückgestellt: Videos.
 
 - [ ] R2 laut `docs/ops/heute-abend.md` Schritt 1–3 (Bucket, Foto-Domain, Purge-Token,
       Budget-Alarm), falls noch nicht geschehen
-- [ ] Tag `v1.0.0-rc.1` auf den Commit setzen, der auf `main` liegt (README „Deployment").
-      `develop` und `main` sind gepusht (Stand `cfd2f59`); prüfen mit
-      `git ls-remote origin main develop`: beide Zeilen sollten denselben Commit zeigen.
-      Caddy ist v2.8.4 und damit neu genug; nur in der Caddyfile darf kein
-      `trusted_proxies` stehen
+- [ ] Der Tag `v1.0.0-rc.1` ist gepusht (Commit `949783a` auf `main`). Im Actions-Lauf unter
+      „Extract metadata" prüfen, dass das Image-Tag `1.0.0-rc.1` entstanden ist; erst dann
+      kann der Server das Image holen. Caddy ist v2.8.4 und damit neu genug; nur in der
+      Caddyfile darf kein `trusted_proxies` stehen
 - [ ] `.env.production`: `GUEST_PASSWORD=love` setzen, `UPLOAD_PASSWORD_EMPFANG` entfernen,
       `R2_ENDPOINT` **nicht** setzen; **neues `ADMIN_PASSWORD`** (das alte steht in der
       Git-Historie; ein Wechsel beendet alle Admin-Sitzungen); Bucket-CORS ohne `localhost`
