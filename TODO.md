@@ -20,24 +20,17 @@ Feature complete. Zurückgestellt: Videos.
 
 ## Betreiber, vor dem Tag
 
-- [ ] R2 laut `docs/ops/heute-abend.md` Schritt 1–3 (Bucket, Foto-Domain, Purge-Token,
-      Budget-Alarm), falls noch nicht geschehen
-- [x] Image gebaut: `v1.0.0-rc.2` auf `main` (`6c3c3b2`), Package `1.0.0-rc.2` ist da. (`rc.1`
-      scheiterte an `npm ci`/`better-sqlite3` im Docker-Build, behoben mit `--ignore-scripts`.)
-      Caddy ist v2.8.4 und damit neu genug; nur in der Caddyfile darf kein
-      `trusted_proxies` stehen
-- [ ] `.env.production`: `GUEST_PASSWORD=love` setzen, `UPLOAD_PASSWORD_EMPFANG` entfernen,
-      `R2_ENDPOINT` **nicht** setzen; **neues `ADMIN_PASSWORD`** (das alte steht in der
-      Git-Historie; ein Wechsel beendet alle Admin-Sitzungen); Bucket-CORS ohne `localhost`
-- [ ] Caddy: Größe der Anfragen begrenzen (ein riesiger Body kann den Container-Speicher
-      sprengen), z. B. `request_body { max_size 64KB }` im Block für `/api/*` (Uploads
-      laufen direkt zu R2)
-- [ ] Server auf die neue Seite umstellen (README „Umstieg von der alten Seite",
-      `docs/ops/heute-abend.md` Schritt 5, mit `IMAGE_TAG=1.0.0-rc.2`), danach die alten Quiz-Stimmen übernehmen
-      (Schritt 8, mit `--password=<Gäste-Kennwort>`)
-- [ ] Gerätetest auf iPhone und Android (`docs/ops/geraetetest-checkliste.md`), danach
-      Smoke-Test gegen die echte Domain (der Lasttest schreibt Stimmen und läuft nur lokal)
-- [ ] Tag `v1.0.0` und Freeze
+Erledigt (16.10., nachts): Image `v1.0.0-rc.2` gebaut (`rc.1` scheiterte an
+`better-sqlite3` im Docker-Build, behoben mit `--ignore-scripts`); R2 und
+`.env.production` gesetzt; Server auf `1.0.0-rc.2` umgestellt (gesund, Sicherung ok);
+Caddy-Limit `request_body { max_size 64KB }` für `/api/*` (413 und 401 geprüft); Smoke-Test
+gegen `https://vsjourney.de` grün (20 von 20).
+
+- [ ] Gerätetest auf iPhone und Android (`docs/ops/geraetetest-checkliste.md`): vor allem
+      Foto-Upload nach R2 (HEIC und Android), QR-Anmeldung, Polaroid speichern, „Wer von
+      uns?" mit Ändern; Bucket-CORS ohne `localhost` prüfen
+- [ ] Im Admin „Wer von uns?" auf „Abstimmen" lassen und den Link für den DJ kopieren
+- [ ] Tag `v1.0.0` und Freeze (vor dem 19.10.)
 
 ## Betreiber, nach dem Tag (vor Samstag)
 
@@ -48,6 +41,11 @@ Feature complete. Zurückgestellt: Videos.
 
 ## Nach der Hochzeit
 
+- [ ] Alte Quiz-Stimmen: `~/who-votes-alt.json` auf dem Server enthält Namen. Entweder
+      mit `scripts/import-old-votes.mjs` übernehmen (nur solange „Abstimmen" aktiv ist) oder
+      löschen
+- [ ] `www.vsjourney.de` hat keinen DNS-Eintrag und keinen Caddy-Block; bei Bedarf A-Eintrag
+      `www` auf die Server-IP, dann `redir https://vsjourney.de{uri} permanent`
 - [ ] CI: `ubuntu-latest` zeigt ab dem 19.10.2026 auf Ubuntu 26; auf `ubuntu-24.04` festsetzen
       und die Aktionen anheben (`actions/checkout` läuft noch auf Node 20). **Das endgültige
       `v1.0.0` deshalb vor dem 19.10. bauen**
