@@ -249,4 +249,26 @@ describe('GuestbookPage', () => {
     expect(signature).toHaveClass('text-right')
     expect(signature).toHaveTextContent(/11\. Okt\.? 2026/)
   })
+
+  it('shows the newest 30 entries and the older ones on request', async () => {
+    const entries = Array.from({ length: 70 }, (_, i) => ({
+      id: 70 - i,
+      name: `Gast ${70 - i}`,
+      message: `Eine Nachricht von Gast ${70 - i}.`,
+      createdAt: '2026-10-11T10:00:00.000Z',
+    }))
+    mockFetchRoutes({
+      '/api/access': { body: { unlocked: true } },
+      '/api/guestbook': { body: { entries } },
+    })
+    render(<GuestbookPage />)
+
+    await screen.findByText('Eine Nachricht von Gast 70.')
+    expect(screen.getAllByText(/^Eine Nachricht von Gast/)).toHaveLength(30)
+    await userEvent.click(screen.getByRole('button', { name: /30 ältere/i }))
+    expect(screen.getAllByText(/^Eine Nachricht von Gast/)).toHaveLength(60)
+    await userEvent.click(screen.getByRole('button', { name: /10 ältere/i }))
+    expect(screen.getAllByText(/^Eine Nachricht von Gast/)).toHaveLength(70)
+    expect(screen.queryByRole('button', { name: /ältere/i })).not.toBeInTheDocument()
+  })
 })

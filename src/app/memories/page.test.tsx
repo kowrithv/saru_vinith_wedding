@@ -455,4 +455,27 @@ describe('MemoriesPage', () => {
     expect(card).not.toBeNull()
     expect(card?.querySelector('svg')).toBeNull()
   })
+
+  it('shows the newest 20 memories and the older ones on request', async () => {
+    const entries = Array.from({ length: 45 }, (_, i) => ({
+      id: 45 - i,
+      name: `Gast ${45 - i}`,
+      message: `Erinnerung Nummer ${45 - i} an diesen Tag.`,
+      createdAt: '2026-10-11T10:00:00.000Z',
+      hasPhoto: false,
+      photo: null,
+    }))
+    mockFetchRoutes({
+      '/api/access': { body: { unlocked: true } },
+      '/api/memories': { body: { entries, photosEnabled: true } },
+    })
+    render(<MemoriesPage />)
+
+    await screen.findByText(/Erinnerung Nummer 45 an diesen Tag/)
+    expect(screen.getAllByText(/Erinnerung Nummer \d+ an diesen Tag/)).toHaveLength(20)
+    await userEvent.click(screen.getByRole('button', { name: /20 ältere/i }))
+    expect(screen.getAllByText(/Erinnerung Nummer \d+ an diesen Tag/)).toHaveLength(40)
+    await userEvent.click(screen.getByRole('button', { name: /5 ältere/i }))
+    expect(screen.getAllByText(/Erinnerung Nummer \d+ an diesen Tag/)).toHaveLength(45)
+  })
 })

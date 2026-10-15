@@ -113,4 +113,38 @@ describe('GalleryGrid', () => {
       expect(screen.getByRole('button', { name: /^party/i })).toHaveTextContent('(1)')
     })
   })
+
+  // Am Fest kommen Tausende Fotos zusammen: die Liste wird stückweise gezeigt.
+  describe('paging', () => {
+    const many = (count: number, category = 'Party') =>
+      Array.from({ length: count }, (_, i) => photo({ id: `p${i}`, category }))
+
+    it('shows 60 photos first and offers the rest on request', () => {
+      render(<GalleryGrid photos={many(130)} onPhotoDeleted={vi.fn()} />)
+      expect(screen.getAllByRole('img')).toHaveLength(60)
+
+      fireEvent.click(screen.getByRole('button', { name: /60 weitere/i }))
+      expect(screen.getAllByRole('img')).toHaveLength(120)
+
+      fireEvent.click(screen.getByRole('button', { name: /10 weitere/i }))
+      expect(screen.getAllByRole('img')).toHaveLength(130)
+      expect(screen.queryByRole('button', { name: /weitere/i })).not.toBeInTheDocument()
+    })
+
+    it('offers nothing for a short list', () => {
+      render(<GalleryGrid photos={many(10)} onPhotoDeleted={vi.fn()} />)
+      expect(screen.queryByRole('button', { name: /weitere/i })).not.toBeInTheDocument()
+    })
+
+    it('starts again with the first page when the category changes', () => {
+      render(<GalleryGrid photos={many(130)} onPhotoDeleted={vi.fn()} />)
+      fireEvent.click(screen.getByRole('button', { name: /60 weitere/i }))
+      expect(screen.getAllByRole('img')).toHaveLength(120)
+
+      fireEvent.click(screen.getByRole('button', { name: /^alle/i }))
+      expect(screen.getAllByRole('img')).toHaveLength(120)
+      fireEvent.click(screen.getByRole('button', { name: /^party/i }))
+      expect(screen.getAllByRole('img')).toHaveLength(60)
+    })
+  })
 })

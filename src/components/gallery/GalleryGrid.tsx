@@ -6,7 +6,11 @@ import type { GalleryPhotoView } from '@/lib/gallery-photo-view'
 import { galleryCategories } from '@/lib/gallery-categories'
 import { cn } from '@/lib/utils'
 import EmptyState from '@/components/ui/EmptyState'
+import ShowMoreButton from '@/components/ui/ShowMoreButton'
 import GalleryLightbox from './GalleryLightbox'
+
+// So viele Fotos werden auf einmal gezeigt; der Rest folgt auf Wunsch.
+const PAGE_SIZE = 60
 
 interface GalleryGridProps {
   photos: GalleryPhotoView[]
@@ -46,8 +50,16 @@ function FilterChip({ active, count, onClick, children }: FilterChipProps) {
 export default function GalleryGrid({ photos, onPhotoDeleted, emptyMessage }: GalleryGridProps) {
   const [activeCategory, setActiveCategory] = useState<string>('Alle')
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
 
   const filteredPhotos = activeCategory === 'Alle' ? photos : photos.filter((p) => p.category === activeCategory)
+
+  const selectCategory = (category: string) => {
+    // Dieselbe Kategorie noch einmal anzutippen lässt die Liste, wie sie ist.
+    if (category === activeCategory) return
+    setActiveCategory(category)
+    setVisibleCount(PAGE_SIZE)
+  }
 
   const handleDeleted = (photoId: string) => {
     onPhotoDeleted(photoId)
@@ -63,7 +75,7 @@ export default function GalleryGrid({ photos, onPhotoDeleted, emptyMessage }: Ga
   return (
     <div>
       <div className="flex flex-wrap items-center justify-center gap-2 mb-8">
-        <FilterChip active={activeCategory === 'Alle'} count={photos.length} onClick={() => setActiveCategory('Alle')}>
+        <FilterChip active={activeCategory === 'Alle'} count={photos.length} onClick={() => selectCategory('Alle')}>
           Alle
         </FilterChip>
         {galleryCategories.map((category) => (
@@ -71,7 +83,7 @@ export default function GalleryGrid({ photos, onPhotoDeleted, emptyMessage }: Ga
             key={category}
             active={activeCategory === category}
             count={photos.filter((p) => p.category === category).length}
-            onClick={() => setActiveCategory(category)}
+            onClick={() => selectCategory(category)}
           >
             {category}
           </FilterChip>
@@ -82,7 +94,7 @@ export default function GalleryGrid({ photos, onPhotoDeleted, emptyMessage }: Ga
         <EmptyState title="Keine Fotos in dieser Kategorie" />
       ) : (
         <div className="columns-2 md:columns-3 lg:columns-4 gap-4">
-          {filteredPhotos.map((photo, index) => (
+          {filteredPhotos.slice(0, visibleCount).map((photo, index) => (
             <button
               key={photo.id}
               type="button"
@@ -115,6 +127,13 @@ export default function GalleryGrid({ photos, onPhotoDeleted, emptyMessage }: Ga
             </button>
           ))}
         </div>
+      )}
+
+      {filteredPhotos.length > visibleCount && (
+        <ShowMoreButton
+          label={`${filteredPhotos.length - visibleCount > PAGE_SIZE ? PAGE_SIZE : filteredPhotos.length - visibleCount} weitere Fotos anzeigen`}
+          onClick={() => setVisibleCount((count) => count + PAGE_SIZE)}
+        />
       )}
 
       {lightboxIndex !== null && (

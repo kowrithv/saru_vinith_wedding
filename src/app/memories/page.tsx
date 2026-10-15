@@ -7,6 +7,7 @@ import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
 import GuestPasswordField from '@/components/ui/GuestPasswordField'
 import EmptyState from '@/components/ui/EmptyState'
+import ShowMoreButton from '@/components/ui/ShowMoreButton'
 import MemoryPolaroid from '@/components/memories/MemoryPolaroid'
 import { textFieldClassName } from '@/lib/form-styles'
 import { MEMORY_PHOTO_CATEGORY } from '@/lib/gallery-categories'
@@ -32,8 +33,12 @@ interface MemoryEntry {
   photo: { id: string; thumbUrl: string; originalUrl: string } | null
 }
 
+// So viele Erinnerungen werden auf einmal gezeigt (neueste zuerst), die älteren auf Wunsch.
+const PAGE_SIZE = 20
+
 export default function MemoriesPage() {
   const [entries, setEntries] = useState<MemoryEntry[]>([])
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
   // Der Name wird in allen Formularen nur einmal getippt.
   const { name, setName, remember } = useGuestName()
   const [message, setMessage] = useState('')
@@ -280,27 +285,35 @@ export default function MemoriesPage() {
         {entries.length === 0 ? (
           <EmptyState title="Noch keine Erinnerungen" description="Teilt eure erste." />
         ) : (
-          <div className="columns-1 md:columns-2 gap-4">
-            {entries.map((entry) => (
-              <Card key={entry.id} variant="ornate" className="relative overflow-hidden mb-4 break-inside-avoid">
-                <div className="mb-2 pl-2">
-                  <p className="font-semibold text-dark-blue truncate">{entry.name}</p>
-                  <p className="text-xs text-gray-600">{formatEntryMoment(entry.createdAt)}</p>
-                </div>
-                <p className="text-sm text-gray-700 leading-relaxed italic pl-2">&quot;{entry.message}&quot;</p>
-                {entry.photo ? (
-                  <MemoryPolaroid guestName={entry.name} photo={entry.photo} />
-                ) : (
-                  entry.hasPhoto && (
-                    <p className="mt-3 flex items-center gap-2 pl-2 text-xs text-gray-500">
-                      <Camera size={14} aria-hidden="true" />
-                      Foto – sichtbar nach dem Entsperren (QR-Code oder Kennwort)
-                    </p>
-                  )
-                )}
-              </Card>
-            ))}
-          </div>
+          <>
+            <div className="columns-1 md:columns-2 gap-4">
+              {entries.slice(0, visibleCount).map((entry) => (
+                <Card key={entry.id} variant="ornate" className="relative overflow-hidden mb-4 break-inside-avoid">
+                  <div className="mb-2 pl-2">
+                    <p className="font-semibold text-dark-blue truncate">{entry.name}</p>
+                    <p className="text-xs text-gray-600">{formatEntryMoment(entry.createdAt)}</p>
+                  </div>
+                  <p className="text-sm text-gray-700 leading-relaxed italic pl-2">&quot;{entry.message}&quot;</p>
+                  {entry.photo ? (
+                    <MemoryPolaroid guestName={entry.name} photo={entry.photo} />
+                  ) : (
+                    entry.hasPhoto && (
+                      <p className="mt-3 flex items-center gap-2 pl-2 text-xs text-gray-500">
+                        <Camera size={14} aria-hidden="true" />
+                        Foto – sichtbar nach dem Entsperren (QR-Code oder Kennwort)
+                      </p>
+                    )
+                  )}
+                </Card>
+              ))}
+            </div>
+            {entries.length > visibleCount && (
+              <ShowMoreButton
+                label={`${Math.min(PAGE_SIZE, entries.length - visibleCount)} ältere Erinnerungen anzeigen`}
+                onClick={() => setVisibleCount((count) => count + PAGE_SIZE)}
+              />
+            )}
+          </>
         )}
       </div>
     </div>

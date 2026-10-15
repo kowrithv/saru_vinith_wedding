@@ -7,10 +7,14 @@ import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
 import GuestPasswordField from '@/components/ui/GuestPasswordField'
 import EmptyState from '@/components/ui/EmptyState'
+import ShowMoreButton from '@/components/ui/ShowMoreButton'
 import { textFieldClassName } from '@/lib/form-styles'
 import { useGuestAccess } from '@/lib/use-guest-access'
 import { useGuestName } from '@/lib/use-guest-name'
 import { cn } from '@/lib/utils'
+
+// So viele Einträge werden auf einmal gezeigt (neueste zuerst), die älteren auf Wunsch.
+const PAGE_SIZE = 30
 
 interface GuestbookEntry {
   id: number
@@ -25,6 +29,7 @@ function formatDate(iso: string): string {
 
 export default function GuestbookPage() {
   const [entries, setEntries] = useState<GuestbookEntry[]>([])
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
   // Der Name wird in allen Formularen nur einmal getippt.
   const { name, setName, remember } = useGuestName()
   const [message, setMessage] = useState('')
@@ -172,7 +177,7 @@ export default function GuestbookPage() {
             {entries.length === 0 && (
               <EmptyState title="Noch keine Einträge" description="Sei der oder die Erste, die dem Brautpaar schreibt." />
             )}
-            {entries.map((entry) => (
+            {entries.slice(0, visibleCount).map((entry) => (
               <Card key={entry.id} variant="ornate" className="relative overflow-hidden">
                 <p className="font-display text-xl italic leading-snug text-dark-blue md:text-2xl">{entry.message}</p>
                 <div className="mt-4 text-right">
@@ -181,6 +186,12 @@ export default function GuestbookPage() {
                 </div>
               </Card>
             ))}
+            {entries.length > visibleCount && (
+              <ShowMoreButton
+                label={`${Math.min(PAGE_SIZE, entries.length - visibleCount)} ältere Einträge anzeigen`}
+                onClick={() => setVisibleCount((count) => count + PAGE_SIZE)}
+              />
+            )}
           </div>
         </div>
       </div>
