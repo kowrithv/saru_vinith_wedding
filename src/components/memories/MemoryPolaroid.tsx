@@ -56,7 +56,7 @@ export default function MemoryPolaroid({ guestName, photo }: MemoryPolaroidProps
         <p className="mt-4 text-[0.6rem] font-semibold uppercase tracking-[0.32em] text-[#3a3a3a]">
           {polaroidCaption.occasion}
         </p>
-        <p className="mt-1 font-script text-[2.1rem] leading-tight text-[#1c1c1c]">{couple.combinedName}</p>
+        <p className="mt-1 font-script text-[2.1rem] leading-tight text-[#1c1c1c] [word-spacing:0.3em]">{couple.combinedName}</p>
         <p className="mt-1 font-serif text-[0.8rem] font-semibold tracking-[0.28em] text-[#3a3a3a]">
           {polaroidCaption.date}
         </p>

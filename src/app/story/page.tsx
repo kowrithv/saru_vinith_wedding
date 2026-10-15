@@ -84,7 +84,7 @@ export default function StoryPage() {
                     >
                       <div className="mb-3 flex items-start justify-between gap-4">
                         <div className={isLeft ? 'md:ml-auto md:text-right' : 'text-left'}>
-                          <p className="font-display text-6xl font-semibold leading-none text-gold-text">
+                          <p className="font-display text-6xl font-semibold leading-none lining-nums text-gold-text">
                             {yearOf(item.year)}
                           </p>
                           <p className="mt-1 text-xs font-semibold uppercase tracking-wider text-bordeaux">
