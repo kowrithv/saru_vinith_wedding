@@ -5,6 +5,7 @@ import { render, screen } from '@testing-library/react'
 import FeatureGrid from './FeatureGrid'
 import { homeFeatures } from '@/lib/home-content'
 import { navigationItems } from '@/lib/site-content'
+import { homePreviewPhotos } from '@/lib/site-images'
 
 describe('FeatureGrid', () => {
   it('renders every feature as a link to its real route', () => {
@@ -60,12 +61,14 @@ describe('FeatureGrid', () => {
         })
     })
 
-    it('gives the gallery tile a row of small decorative previews', () => {
+    it('shows four small photos of the couple on the photo tile', () => {
       render(<FeatureGrid />)
       const gallery = screen.getAllByRole('link')[1]
       const previews = gallery.querySelector('[data-testid="gallery-previews"]')
       expect(previews).toHaveAttribute('aria-hidden', 'true')
-      expect(previews?.children).toHaveLength(4)
+      const images = [...(previews?.querySelectorAll('img') ?? [])]
+      expect(images.map((image) => image.getAttribute('src'))).toEqual(homePreviewPhotos)
+      images.forEach((image) => expect(image).toHaveAttribute('alt', ''))
     })
 
     it('keeps the other tiles compact: two columns, description only from sm upwards', () => {

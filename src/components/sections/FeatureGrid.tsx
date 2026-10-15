@@ -2,17 +2,8 @@ import Link from 'next/link'
 import SectionTitle from '@/components/ui/SectionTitle'
 import Lotus from '@/components/ui/Lotus'
 import { homeFeatures } from '@/lib/home-content'
+import { homePreviewPhotos } from '@/lib/site-images'
 import { cn } from '@/lib/utils'
-
-// Farbflächen als Vorschau auf der Galerie-Kachel: bewusst keine echten
-// Fotos, damit die Startseite nichts nachladen muss (und nichts zeigt, was
-// Gäste erst nach dem Kennwort sehen dürfen).
-const PREVIEW_SWATCHES = [
-  'from-dark-blue-light to-dark-blue',
-  'from-gold to-bordeaux',
-  'from-rose-sand to-bordeaux-light',
-  'from-champagne-dark to-gold-dark',
-]
 
 export default function FeatureGrid() {
   const large = homeFeatures.filter((feature) => feature.featured)
@@ -59,8 +50,17 @@ export default function FeatureGrid() {
                     <Lotus size={52} className="absolute bottom-3 right-3 text-gold opacity-55" />
                   ) : (
                     <div data-testid="gallery-previews" aria-hidden="true" className="mt-4 flex gap-2">
-                      {PREVIEW_SWATCHES.map((swatch) => (
-                        <span key={swatch} className={cn('h-12 w-12 rounded-xl bg-gradient-to-br', swatch)} />
+                      {homePreviewPhotos.map((src) => (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          key={src}
+                          src={src}
+                          alt=""
+                          width={48}
+                          height={48}
+                          loading="lazy"
+                          className="h-12 w-12 rounded-xl object-cover"
+                        />
                       ))}
                     </div>
                   )}

@@ -5,6 +5,7 @@ import Lotus from '@/components/ui/Lotus'
 import { couple } from '@/lib/site-content'
 import { receptionEvent } from '@/lib/event-info'
 import { cn } from '@/lib/utils'
+import { heroPhoto } from '@/lib/site-images'
 import HeroBadge from '@/components/sections/HeroBadge'
 
 // Eintritts-Animation per CSS statt per JavaScript: der Server-HTML-Stand ist
@@ -15,10 +16,6 @@ const enter = 'animate-fade-up motion-reduce:animate-none'
 function stagger(step: number): CSSProperties {
   return { animationDelay: `${0.1 + step * 0.1}s` }
 }
-
-// Das Foto liegt als Datei in public/hero: zum Tauschen einfach paar.jpg
-// ersetzen (hochkant, am besten ab 900 x 1100 px, unter 200 KB).
-const HERO_PHOTO = '/hero/paar.jpg'
 
 export default function Hero() {
   return (
@@ -50,7 +47,7 @@ export default function Hero() {
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={HERO_PHOTO}
+              src={heroPhoto}
               alt="Saruga und Vinith"
               width={450}
               height={800}
