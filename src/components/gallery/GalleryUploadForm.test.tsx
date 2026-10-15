@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import GalleryUploadForm from './GalleryUploadForm'
 import { getDeleteToken } from '@/lib/gallery-delete-tokens'
@@ -145,6 +145,20 @@ describe('GalleryUploadForm', () => {
   it('preselects the wedding category instead of the first one in the list', () => {
     render(<GalleryUploadForm onUploaded={vi.fn()} />)
     expect(screen.getByLabelText(/kategorie/i)).toHaveValue('Hochzeit')
+  })
+
+  // Kennenlernen und Verlobung sind die Fotos des Brautpaars, Erinnerungen
+  // entsteht über das Erinnerungs-Formular: Gäste wählen nur Hochzeit oder Party.
+  it('offers guests only the wedding day and the party as categories', () => {
+    render(<GalleryUploadForm onUploaded={vi.fn()} />)
+    const options = within(screen.getByLabelText(/kategorie/i)).getAllByRole('option')
+    expect(options.map((option) => option.textContent)).toEqual(['Hochzeit', 'Party'])
+  })
+
+  it('offers the couple the story categories as well, but never the memory category', () => {
+    render(<GalleryUploadForm isAdmin onUploaded={vi.fn()} />)
+    const options = within(screen.getByLabelText(/kategorie/i)).getAllByRole('option')
+    expect(options.map((option) => option.textContent)).toEqual(['Kennenlernen', 'Verlobung', 'Hochzeit', 'Party'])
   })
 
   it('requires a name before submitting and announces the problem', async () => {

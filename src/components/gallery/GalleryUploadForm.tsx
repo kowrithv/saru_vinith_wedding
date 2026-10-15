@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'r
 import { Upload, CheckCircle2, XCircle, Loader2, User, ImageIcon, X } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import GuestPasswordField from '@/components/ui/GuestPasswordField'
-import { defaultGalleryCategory, galleryCategories } from '@/lib/gallery-categories'
+import { defaultGalleryCategory, uploadCategoriesFor } from '@/lib/gallery-categories'
 import { createPreviewImage, type PreviewImage } from '@/lib/gallery-preview'
 import { saveDeleteToken } from '@/lib/gallery-delete-tokens'
 import {
@@ -473,7 +473,7 @@ export default function GalleryUploadForm({
           onChange={(e) => setCategory(e.target.value)}
           className={textFieldClassName}
         >
-          {galleryCategories.map((cat) => (
+          {uploadCategoriesFor(isAdmin).map((cat) => (
             <option key={cat} value={cat}>
               {cat}
             </option>

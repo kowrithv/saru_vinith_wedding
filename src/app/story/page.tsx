@@ -62,7 +62,7 @@ export default function StoryPage() {
         <div className="relative mt-12">
           <div className="hidden md:block absolute left-1/2 -translate-x-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-champagne-dark via-gold/30 to-champagne-dark" />
 
-          <div className="space-y-12 md:space-y-0">
+          <div className="space-y-6 md:space-y-0">
             {storyTimeline.map((item) => {
               const IconComponent = iconMap[item.icon]
               const isLeft = item.align === 'left'
@@ -74,7 +74,7 @@ export default function StoryPage() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, margin: '-50px' }}
                   transition={{ duration: 0.5 }}
-                  className={`relative md:flex md:items-center ${isLeft ? 'md:flex-row' : 'md:flex-row-reverse'} md:gap-8 mb-12`}
+                  className={`relative md:flex md:items-center ${isLeft ? 'md:flex-row' : 'md:flex-row-reverse'} md:gap-8 mb-6 md:mb-12`}
                 >
                   <div className={`md:w-[calc(50%-3rem)] ${isLeft ? 'md:text-right' : 'md:text-left'}`}>
                     <Card
@@ -82,13 +82,25 @@ export default function StoryPage() {
                       padding="none"
                       className={`p-6 md:p-8 ${isLeft ? 'md:ml-auto' : 'md:mr-auto'}`}
                     >
-                      <div className={`mb-3 ${isLeft ? 'md:text-right' : 'text-left'}`}>
-                        <p className="font-display text-6xl font-semibold leading-none text-gold-text">
-                          {yearOf(item.year)}
-                        </p>
-                        <p className="mt-1 text-xs font-semibold uppercase tracking-wider text-bordeaux">
-                          {item.year}
-                        </p>
+                      <div className="mb-3 flex items-start justify-between gap-4">
+                        <div className={isLeft ? 'md:ml-auto md:text-right' : 'text-left'}>
+                          <p className="font-display text-6xl font-semibold leading-none text-gold-text">
+                            {yearOf(item.year)}
+                          </p>
+                          <p className="mt-1 text-xs font-semibold uppercase tracking-wider text-bordeaux">
+                            {item.year}
+                          </p>
+                        </div>
+                        {/* Auf dem Handy gibt es keine Mittellinie: die Markierung
+                            sitzt in der Kopfzeile der Karte statt als lose Zeile
+                            darunter. */}
+                        <span
+                          data-testid="story-marker"
+                          aria-hidden="true"
+                          className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full border border-champagne-dark bg-white text-dark-blue md:hidden"
+                        >
+                          <IconComponent size={18} />
+                        </span>
                       </div>
                       {item.photo && (
                         // eslint-disable-next-line @next/next/no-img-element
@@ -108,13 +120,6 @@ export default function StoryPage() {
 
                   <div className="hidden md:flex absolute left-1/2 -translate-x-1/2 w-14 h-14 bg-white border-4 border-champagne rounded-full items-center justify-center shadow-md z-10">
                     <IconComponent size={20} className="text-dark-blue" />
-                  </div>
-
-                  <div className="md:hidden flex items-center gap-4 mb-4">
-                    <div className="w-12 h-12 bg-champagne rounded-full flex items-center justify-center flex-shrink-0">
-                      <IconComponent size={18} className="text-dark-blue" />
-                    </div>
-                    <div className="h-px flex-1 bg-champagne-dark/40" />
                   </div>
 
                   <div className="hidden md:block md:w-[calc(50%-3rem)]" />

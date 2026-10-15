@@ -52,4 +52,18 @@ describe('StoryPage', () => {
     render(<StoryPage />)
     expect(screen.getByRole('link', { name: /erinnerung teilen/i })).toHaveAttribute('href', '/memories')
   })
+
+  // Auf dem Handy hing die Markierung als lose Zeile unter der Karte und
+  // gehörte optisch zu nichts: sie sitzt jetzt in der Kopfzeile ihrer Karte.
+  it('keeps the milestone icon in the header of its own card instead of a loose row below it', () => {
+    render(<StoryPage />)
+    const markers = screen.getAllByTestId('story-marker')
+    expect(markers).toHaveLength(storyTimeline.length)
+    markers.forEach((marker, index) => {
+      const card = marker.closest('.card-ornate') as HTMLElement
+      expect(card).not.toBeNull()
+      expect(card).toHaveTextContent(storyTimeline[index].title)
+      expect(marker).toHaveAttribute('aria-hidden', 'true')
+    })
+  })
 })

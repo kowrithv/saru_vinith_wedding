@@ -8,7 +8,7 @@ import { createPresignedPutUrl } from '@/lib/r2'
 import { signUploadTicket } from '@/lib/upload-ticket'
 import { RateLimiter } from '@/lib/rate-limit'
 import { getClientKey } from '@/lib/client-ip'
-import { galleryCategories } from '@/lib/gallery-categories'
+import { galleryCategories, isCategoryAllowedForUpload } from '@/lib/gallery-categories'
 import {
   IMAGE_CONTENT_TYPE_EXTENSIONS as CONTENT_TYPE_EXTENSIONS,
   MAX_ORIGINAL_BYTES,
@@ -57,6 +57,12 @@ export async function POST(request: Request): Promise<Response> {
   const parsed = bodySchema.safeParse(body)
   if (!parsed.success) {
     return NextResponse.json({ error: 'Ungültige Anfrage.' }, { status: 400 })
+  }
+
+  // Kennenlernen und Verlobung sind die Fotos des Brautpaars: auch per
+  // direkter Anfrage wählen Gäste sie nicht.
+  if (!isCategoryAllowedForUpload(parsed.data.category, isOfficial)) {
+    return NextResponse.json({ error: 'Diese Kategorie kann nicht gewählt werden.' }, { status: 400 })
   }
 
   // Gäste: gültige Sitzung (QR-Link oder früher eingegebenes Kennwort) oder

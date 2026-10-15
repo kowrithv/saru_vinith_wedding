@@ -65,6 +65,8 @@ export default function GalleryLightbox({ photos, index, onClose, onNavigate, on
 
   if (!photo) return null
 
+  const moment = formatPhotoMoment(photo.createdAt)
+
   const handleDelete = async () => {
     if (!deleteToken) return
     if (!window.confirm('Dieses Foto wirklich löschen? Das kann nicht rückgängig gemacht werden.')) return
@@ -115,7 +117,7 @@ export default function GalleryLightbox({ photos, index, onClose, onNavigate, on
     <div
       ref={dialogRef}
       tabIndex={-1}
-      className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center outline-none"
+      className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center outline-none"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
@@ -157,48 +159,58 @@ export default function GalleryLightbox({ photos, index, onClose, onNavigate, on
         </>
       )}
 
-      <div className="max-w-5xl max-h-[85vh] mx-8" onClick={(e) => e.stopPropagation()}>
+      <div
+        data-testid="lightbox-card"
+        className="mx-8 max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-[#0f1724] p-3 text-white shadow-2xl ring-1 ring-white/10 sm:p-4"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={imageSrc}
           alt={`Foto von ${photo.uploaderName}`}
           onError={() => setFailedPhotoId(photo.id)}
-          className="max-h-[80vh] w-auto h-auto object-contain rounded-lg mx-auto"
+          className="mx-auto max-h-[66vh] w-auto max-w-full rounded-xl object-contain"
         />
-        <p className="mt-3 text-center text-sm text-champagne-light">
-          <span>Von {photo.uploaderName}</span>
-          <span aria-hidden="true"> · </span>
-          <span>{photo.category}</span>
-          {formatPhotoMoment(photo.createdAt) && (
-            <>
-              <span aria-hidden="true"> · </span>
-              <span>{formatPhotoMoment(photo.createdAt)}</span>
-            </>
-          )}
-        </p>
-        <div className="text-center mt-3 flex items-center justify-center gap-4">
+
+        <div data-testid="lightbox-info" className="mt-4 flex flex-wrap items-center justify-between gap-3 px-1">
+          <div className="min-w-0">
+            <p className="truncate font-semibold">Von {photo.uploaderName}</p>
+            <p className="text-xs text-white/70">
+              <span>{photo.category}</span>
+              {moment && (
+                <>
+                  <span aria-hidden="true"> · </span>
+                  <span>{moment}</span>
+                </>
+              )}
+            </p>
+          </div>
           <button
             type="button"
             onClick={handleDownload}
-            className="rounded-full bg-gold px-4 py-1.5 text-sm font-semibold text-dark-blue-dark transition-colors hover:bg-gold-light"
+            className="flex-shrink-0 rounded-full bg-gold px-4 py-2 text-sm font-semibold text-dark-blue-dark transition-colors hover:bg-gold-light"
           >
             Original herunterladen
           </button>
-          {deleteToken && (
+        </div>
+
+        {deleteToken && (
+          <p className="mt-3 border-t border-white/10 px-1 pt-3 text-xs text-white/60">
+            <span>Das ist dein Foto · </span>
             <button
               type="button"
               onClick={handleDelete}
               disabled={deleting}
-              className="text-white/70 text-sm hover:text-red-400 transition-colors inline-flex items-center gap-1 disabled:opacity-50"
+              className="inline-flex items-center gap-1 underline underline-offset-2 transition-colors hover:text-red-300 disabled:opacity-50"
             >
-              <Trash2 size={14} />
+              <Trash2 size={12} />
               {deleting ? 'Wird gelöscht...' : 'Löschen'}
             </button>
-          )}
-        </div>
-        {deleteError && <p className="text-red-400 text-sm text-center mt-2">{deleteError}</p>}
-        {downloadError && <p className="text-red-400 text-sm text-center mt-2">{downloadError}</p>}
-        <p className="text-white/40 text-xs mt-1 text-center">
+          </p>
+        )}
+        {deleteError && <p className="mt-2 px-1 text-sm text-red-300">{deleteError}</p>}
+        {downloadError && <p className="mt-2 px-1 text-sm text-red-300">{downloadError}</p>}
+        <p className="mt-3 text-center text-xs text-white/40">
           {index + 1} / {photos.length}
         </p>
       </div>

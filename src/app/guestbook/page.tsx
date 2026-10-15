@@ -175,7 +175,7 @@ export default function GuestbookPage() {
             {entries.map((entry) => (
               <Card key={entry.id} variant="ornate" className="relative overflow-hidden">
                 <p className="font-display text-xl italic leading-snug text-dark-blue md:text-2xl">{entry.message}</p>
-                <div className="mt-4">
+                <div className="mt-4 text-right">
                   <p className="truncate font-script text-3xl leading-none text-dark-blue">{entry.name}</p>
                   <p className="mt-1 text-xs uppercase tracking-wider text-gray-600">{formatDate(entry.createdAt)}</p>
                 </div>

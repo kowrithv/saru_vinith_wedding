@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, cleanup, waitFor, within } from '@testing-library/react'
 import GalleryLightbox from './GalleryLightbox'
 import { saveDeleteToken } from '@/lib/gallery-delete-tokens'
 import type { GalleryPhotoView } from '@/lib/gallery-photo-view'
@@ -183,11 +183,66 @@ describe('GalleryLightbox', () => {
     vi.restoreAllMocks()
   })
 
-  it('captions the photo with the uploader, the category and the time it was taken', () => {
-    render(<GalleryLightbox photos={[photo()]} index={0} onClose={() => {}} onNavigate={() => {}} onDeleted={() => {}} />)
+  // Großansicht wie im Vorschlag C10: eine dunkle Karte mit dem Foto, darunter
+  // links Name sowie Kategorie und Uhrzeit, rechts der goldene Knopf.
+  describe('card layout', () => {
+    function renderLightbox(overrides: Partial<GalleryPhotoView> = {}) {
+      return render(
+        <GalleryLightbox
+          photos={[photo(overrides)]}
+          index={0}
+          onClose={() => {}}
+          onNavigate={() => {}}
+          onDeleted={() => {}}
+        />
+      )
+    }
 
-    const caption = screen.getByText(/von anna/i).closest('p') as HTMLElement
-    expect(caption).toHaveTextContent('Hochzeit')
-    expect(caption).toHaveTextContent('12.10. um 12:00 Uhr')
+    it('shows the photo on a dark rounded card', () => {
+      renderLightbox()
+      const card = screen.getByTestId('lightbox-card')
+      expect(card).toHaveClass('rounded-2xl')
+      expect(card).toContainElement(screen.getByRole('img', { name: /foto von anna/i }))
+    })
+
+    it('names the uploader first and puts category and time on a second, quieter line', () => {
+      renderLightbox()
+      const info = screen.getByTestId('lightbox-info')
+      expect(within(info).getByText('Von Anna')).toHaveClass('font-semibold')
+      const detail = within(info).getByText('Hochzeit').parentElement as HTMLElement
+      expect(detail).toHaveTextContent('12.10. um 12:00 Uhr')
+      expect(detail).toHaveClass('text-xs')
+    })
+
+    it('puts the gold download button in the same row as the name', () => {
+      renderLightbox()
+      const info = screen.getByTestId('lightbox-info')
+      const button = within(info).getByRole('button', { name: /original herunterladen/i })
+      expect(button).toHaveClass('bg-gold')
+    })
+
+    it('offers deleting only on own photos, as a line under the card content', () => {
+      renderLightbox()
+      expect(screen.queryByText(/das ist dein foto/i)).not.toBeInTheDocument()
+      cleanup()
+
+      saveDeleteToken('p1', 'secret-token')
+      renderLightbox()
+      const line = screen.getByText(/das ist dein foto/i).closest('p') as HTMLElement
+      expect(within(line).getByRole('button', { name: /löschen/i })).toBeInTheDocument()
+    })
+
+    it('shows the position within the shown photos', () => {
+      render(
+        <GalleryLightbox
+          photos={[photo({ id: 'p1' }), photo({ id: 'p2' })]}
+          index={1}
+          onClose={() => {}}
+          onNavigate={() => {}}
+          onDeleted={() => {}}
+        />
+      )
+      expect(screen.getByText('2 / 2')).toBeInTheDocument()
+    })
   })
 })

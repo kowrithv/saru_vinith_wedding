@@ -231,4 +231,22 @@ describe('GuestbookPage', () => {
     // Der Name steht schon als Unterschrift da: keine Initialen-Marke daneben.
     expect(screen.queryByText('AS')).not.toBeInTheDocument()
   })
+
+  // Wie bei einem Brief: die Unterschrift steht rechts unter dem Text.
+  it('aligns the signature and the date to the right under the message', async () => {
+    mockFetchRoutes({
+      '/api/access': { body: { unlocked: true } },
+      '/api/guestbook': {
+        body: {
+          entries: [{ id: 1, name: 'Anna Schmidt', message: 'Wir freuen uns so für euch!', createdAt: '2026-10-11T10:00:00.000Z' }],
+        },
+      },
+    })
+    render(<GuestbookPage />)
+
+    await screen.findByText('Wir freuen uns so für euch!')
+    const signature = screen.getByText('Anna Schmidt').parentElement as HTMLElement
+    expect(signature).toHaveClass('text-right')
+    expect(signature).toHaveTextContent(/11\. Okt\.? 2026/)
+  })
 })

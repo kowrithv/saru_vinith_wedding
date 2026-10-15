@@ -15,6 +15,34 @@ interface GalleryGridProps {
   emptyMessage?: string
 }
 
+interface FilterChipProps {
+  active: boolean
+  count: number
+  onClick: () => void
+  children: string
+}
+
+// Champagner mit Kante, damit der Filter auf dem hellen Hintergrund
+// erkennbar ist; der aktive trägt eine Goldkante. Genau eine Schatten-Klasse:
+// zwei würden dieselbe Variable setzen, im Stylesheet gewänne die spätere.
+function FilterChip({ active, count, onClick, children }: FilterChipProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        'rounded-full border px-5 py-2 text-sm font-medium transition-colors duration-200',
+        active
+          ? 'border-dark-blue bg-dark-blue text-white shadow-[inset_0_-3px_0_var(--color-gold)]'
+          : 'border-champagne-dark bg-champagne text-dark-blue hover:bg-champagne-dark'
+      )}
+    >
+      {children}
+      <span className="ml-1.5 text-xs opacity-70">({count})</span>
+    </button>
+  )
+}
+
 export default function GalleryGrid({ photos, onPhotoDeleted, emptyMessage }: GalleryGridProps) {
   const [activeCategory, setActiveCategory] = useState<string>('Alle')
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
@@ -35,36 +63,18 @@ export default function GalleryGrid({ photos, onPhotoDeleted, emptyMessage }: Ga
   return (
     <div>
       <div className="flex flex-wrap items-center justify-center gap-2 mb-8">
-        <button
-          type="button"
-          onClick={() => setActiveCategory('Alle')}
-          className={cn(
-            'px-5 py-2 rounded-full text-sm font-medium transition-all duration-200',
-            activeCategory === 'Alle'
-              ? 'bg-dark-blue text-white shadow-md shadow-[inset_0_-3px_0_var(--color-gold)]'
-              : 'bg-champagne text-dark-blue hover:bg-champagne-dark'
-          )}
-        >
+        <FilterChip active={activeCategory === 'Alle'} count={photos.length} onClick={() => setActiveCategory('Alle')}>
           Alle
-          <span className="ml-1.5 text-xs opacity-60">({photos.length})</span>
-        </button>
+        </FilterChip>
         {galleryCategories.map((category) => (
-          <button
+          <FilterChip
             key={category}
-            type="button"
+            active={activeCategory === category}
+            count={photos.filter((p) => p.category === category).length}
             onClick={() => setActiveCategory(category)}
-            className={cn(
-              'px-5 py-2 rounded-full text-sm font-medium transition-all duration-200',
-              activeCategory === category
-                ? 'bg-dark-blue text-white shadow-md shadow-[inset_0_-3px_0_var(--color-gold)]'
-                : 'bg-champagne text-dark-blue hover:bg-champagne-dark'
-            )}
           >
             {category}
-            <span className="ml-1.5 text-xs opacity-60">
-              ({photos.filter((p) => p.category === category).length})
-            </span>
-          </button>
+          </FilterChip>
         ))}
       </div>
 

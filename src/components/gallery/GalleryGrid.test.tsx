@@ -76,4 +76,41 @@ describe('GalleryGrid', () => {
     render(<GalleryGrid photos={[photo()]} onPhotoDeleted={vi.fn()} />)
     expect(screen.getByRole('img')).toHaveAttribute('loading', 'lazy')
   })
+
+  // Der Champagner-Filter muss auf dem hellen Hintergrund erkennbar sein
+  // (Kante) und der aktive eine Goldkante tragen (Vorschlag C9).
+  describe('filter chips', () => {
+    const photos = [photo({ id: 'p1', category: 'Hochzeit' }), photo({ id: 'p2', category: 'Party' })]
+
+    it('draws the inactive chips in champagne with a visible edge', () => {
+      render(<GalleryGrid photos={photos} onPhotoDeleted={vi.fn()} />)
+      const chip = screen.getByRole('button', { name: /^party/i })
+      expect(chip).toHaveClass('bg-champagne', 'border', 'border-champagne-dark', 'text-dark-blue')
+    })
+
+    it('marks the active chip in navy with a gold underline', () => {
+      render(<GalleryGrid photos={photos} onPhotoDeleted={vi.fn()} />)
+      const active = screen.getByRole('button', { name: /^alle/i })
+      expect(active).toHaveClass('bg-dark-blue', 'text-white')
+      expect(active.className).toContain('shadow-[inset_0_-3px_0_var(--color-gold)]')
+
+      fireEvent.click(screen.getByRole('button', { name: /^party/i }))
+      expect(screen.getByRole('button', { name: /^party/i }).className).toContain('shadow-[inset_0_-3px_0_var(--color-gold)]')
+      expect(screen.getByRole('button', { name: /^alle/i }).className).not.toContain('inset_0_-3px')
+    })
+
+    // Zwei Schatten-Klassen setzen dieselbe Variable: im Stylesheet gewinnt
+    // die später definierte, und die Goldkante verschwand.
+    it('never combines the underline with a second shadow utility', () => {
+      render(<GalleryGrid photos={photos} onPhotoDeleted={vi.fn()} />)
+      const active = screen.getByRole('button', { name: /^alle/i })
+      expect(active.className).not.toMatch(/\bshadow-(sm|md|lg|xl)\b/)
+    })
+
+    it('shows the category counts', () => {
+      render(<GalleryGrid photos={photos} onPhotoDeleted={vi.fn()} />)
+      expect(screen.getByRole('button', { name: /^alle/i })).toHaveTextContent('(2)')
+      expect(screen.getByRole('button', { name: /^party/i })).toHaveTextContent('(1)')
+    })
+  })
 })

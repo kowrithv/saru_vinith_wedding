@@ -258,6 +258,20 @@ describe('POST /api/uploads/request', () => {
     expect(payload?.category).toBe('Erinnerungen')
   })
 
+  // Kennenlernen und Verlobung sind die Fotos des Brautpaars: Gäste können sie
+  // auch per direkter Anfrage nicht wählen.
+  it.each(['Kennenlernen', 'Verlobung'])('rejects the story category %s for a guest', async (category) => {
+    getDb()
+    const response = await POST(
+      requestBody({
+        password: 'empfang-secret',
+        category,
+        files: [{ filename: 'a.jpg', size: 1000, contentType: 'image/jpeg', thumbSize: 50_000 }],
+      })
+    )
+    expect(response.status).toBe(400)
+  })
+
   it('rejects an unknown category value', async () => {
     getDb()
     const response = await POST(
