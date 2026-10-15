@@ -122,6 +122,19 @@ Fotos laufen **nie durch den App-Server**:
    Speicher des Upload-Geräts (in der DB steht nur dessen Hash); der Admin
    löscht jedes Foto.
 
+**Die Galerie lädt sich selbst neu** (`src/app/gallery/page.tsx`): alle 30 Sekunden
+und sobald der Tab wieder sichtbar wird (die Seite wird dabei nicht neu geladen, auch
+schon gezeigte Bilder nicht), aber **nicht während eines Uploads**
+(`GalleryUploadForm` meldet das über `onBusyChange`) und nicht im versteckten Tab.
+Wer weiter unten im Raster ist, sieht nichts springen: neue Fotos erscheinen dann
+hinter dem Knopf „N neue Fotos anzeigen“. Die Großansicht merkt sich das Foto
+(Kennung), nicht die Position, und bleibt beim Neuladen beim selben Bild. Die
+Kategorie-Filter zeigen nur Kategorien mit Fotos. Das Nachsehen ist billig: `GET /api/gallery`
+trägt einen `ETag` (Anzahl und neuestes Foto, dazu Modus, Upload-Sperre und ob der Aufrufer
+entsperrt ist); kommt er als `If-None-Match` zurück, antwortet der Server mit `304` ohne
+Liste. Erst bei einer Änderung kommt die ganze Liste. Das Auswahlfeld ist ein großer
+Knopf (`PhotoPickerButton`) mit dem echten, unsichtbaren Dateifeld dahinter.
+
 Der Admin kann im Dashboard die Galerie zwischen **Kennwort** (Standard) und
 **Öffentlich** umschalten sowie Gästebuch, Erinnerungen, den
 **Foto-Upload** und die **Erinnerungs-Fotos**

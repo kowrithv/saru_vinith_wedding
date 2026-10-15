@@ -177,7 +177,11 @@ describe('GalleryLightbox', () => {
     )
     fireEvent.click(screen.getByRole('button', { name: /original herunterladen/i }))
 
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('https://fotos.example.de/p1/original.jpg'))
+    // Eigene Adresse für den CORS-Aufruf: die <img>-Anfrage derselben Datei läge sonst
+    // ohne CORS-Kopf im Cache (Cloudflare und Browser) und der Abruf würde blockiert.
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith('https://fotos.example.de/p1/original.jpg?cors=1', { mode: 'cors' })
+    )
     expect(URL.createObjectURL).toHaveBeenCalledWith(blob)
     vi.unstubAllGlobals()
     vi.restoreAllMocks()

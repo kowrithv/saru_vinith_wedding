@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { Camera, X } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
+import { ArrowUp, Camera, X } from 'lucide-react'
 import SectionTitle from '@/components/ui/SectionTitle'
 import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
@@ -10,6 +10,20 @@ import GalleryUploadForm from '@/components/gallery/GalleryUploadForm'
 import GuestPasswordField from '@/components/ui/GuestPasswordField'
 import type { GalleryPhotoView } from '@/lib/gallery-photo-view'
 import { useGuestAccess } from '@/lib/use-guest-access'
+
+// So oft schaut die offene Galerie nach neuen Fotos (nicht während eines Uploads,
+// nicht im versteckten Tab). Auf der Feier haben viele die Galerie gleichzeitig
+// offen: 30 Sekunden halten die Last klein und fühlen sich trotzdem lebendig an.
+const REFRESH_MS = 30_000
+
+// Wer weiter unten im Raster ist, darf nicht erleben, dass sich unter dem Finger
+// alles verschiebt: neue Fotos kommen dann erst auf Tipp. Oben (fast am Anfang)
+// werden sie gleich eingesetzt.
+const NEAR_TOP_PX = 150
+
+function sameIds(a: GalleryPhotoView[], b: GalleryPhotoView[]): boolean {
+  return a.length === b.length && a.every((photo, index) => photo.id === b[index].id)
+}
 
 type GalleryData =
   | { status: 'loading' }
@@ -27,6 +41,14 @@ export default function GalleryPage() {
   // "Schließen" soll laufende Uploads (und Eingaben) nicht verwerfen.
   const [uploadFormMounted, setUploadFormMounted] = useState(false)
   const uploadPanelRef = useRef<HTMLDivElement>(null)
+  // Läuft gerade ein Upload? Dann lädt die Galerie nicht von selbst neu.
+  const [uploading, setUploading] = useState(false)
+  // Neuere Fotoliste vom Server, die noch nicht gezeigt wird (siehe NEAR_TOP_PX).
+  const [pendingPhotos, setPendingPhotos] = useState<GalleryPhotoView[] | null>(null)
+  // Der ETag der Fotoliste, die zuletzt angekommen ist (gezeigt oder wartend):
+  // damit fragt das Neuladen "hat sich etwas geändert?" und bekommt meist nur ein
+  // winziges 304 zurück statt der ganzen Liste.
+  const etagRef = useRef<string | null>(null)
   const access = useGuestAccess()
   // Erst wenn feststeht, ob dieser Browser entsperrt ist (QR-Link wird dabei
   // eingelöst), wird die Liste geladen: sonst käme zuerst die gesperrte Antwort.
@@ -53,6 +75,7 @@ export default function GalleryPage() {
           setData({ status: 'error' })
           return undefined
         }
+        etagRef.current = res.headers?.get('etag') ?? null
         return res.json() as Promise<{ unlocked: boolean; photos: GalleryPhotoView[] | null; uploadsLocked?: boolean }>
       })
       .then((body) => {
@@ -69,6 +92,80 @@ export default function GalleryPage() {
   useEffect(() => {
     if (accessResolved) loadGallery()
   }, [accessResolved])
+
+  // Regelmäßig nach neuen Fotos sehen, solange die Galerie offen ist und nichts
+  // hochgeladen wird; auch gleich, wenn der Tab wieder sichtbar wird (z. B. nach
+  // der Kamera-App). Ändert sich die Liste durch die Seite selbst (hochgeladen,
+  // gelöscht), startet dieser Effekt neu und `active` verwirft die Antwort einer
+  // noch laufenden Anfrage: sie kennt die Änderung nicht und ließe sonst ein eben
+  // hochgeladenes Foto bis zur nächsten Runde wieder verschwinden.
+  useEffect(() => {
+    if (data.status !== 'unlocked' || uploading) return
+    const shown = data.photos
+    let active = true
+
+    const refresh = () => {
+      if (document.hidden) return
+      const knownEtag = etagRef.current
+      fetch('/api/gallery', {
+        cache: 'no-store',
+        // Mit diesem Kopf kommt bei "nichts geändert" ein 304 ohne Liste zurück.
+        headers: knownEtag ? { 'If-None-Match': knownEtag } : undefined,
+      })
+        .then(async (res) => {
+          if (!active || res.status === 304 || !res.ok) return null
+          const body = (await res.json()) as {
+            unlocked?: boolean
+            photos?: GalleryPhotoView[] | null
+            uploadsLocked?: boolean
+          }
+          return { body, etag: res.headers?.get('etag') ?? null }
+        })
+        .then((answer) => {
+          if (!active || !answer) return
+          const { body, etag } = answer
+          if (!body.unlocked || !body.photos) return
+          // Erst jetzt merken: eine verworfene Antwort darf nicht als "gesehen" gelten.
+          etagRef.current = etag
+          const photos = body.photos
+          const uploadsLocked = Boolean(body.uploadsLocked)
+          setData((prev) =>
+            prev.status === 'unlocked' && prev.uploadsLocked !== uploadsLocked ? { ...prev, uploadsLocked } : prev
+          )
+          if (sameIds(shown, photos)) {
+            setPendingPhotos(null)
+          } else if (window.scrollY < NEAR_TOP_PX) {
+            setData((prev) => (prev.status === 'unlocked' ? { ...prev, photos } : prev))
+            setPendingPhotos(null)
+          } else {
+            setPendingPhotos(photos)
+          }
+        })
+        // Ein Fehler beim Nachladen ändert nichts am Gezeigten: die nächste
+        // Runde versucht es wieder.
+        .catch(() => {})
+    }
+
+    const timer = setInterval(refresh, REFRESH_MS)
+    const onVisible = () => {
+      if (!document.hidden) refresh()
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => {
+      active = false
+      clearInterval(timer)
+      document.removeEventListener('visibilitychange', onVisible)
+    }
+  }, [data, uploading])
+
+  const handleBusyChange = useCallback((busy: boolean) => setUploading(busy), [])
+
+  const showPendingPhotos = () => {
+    if (!pendingPhotos) return
+    setData((prev) => (prev.status === 'unlocked' ? { ...prev, photos: pendingPhotos } : prev))
+    setPendingPhotos(null)
+    window.scrollTo?.({ top: 0, behavior: 'smooth' })
+  }
 
   const handleUnlock = async (e: FormEvent) => {
     e.preventDefault()
@@ -88,6 +185,7 @@ export default function GalleryPage() {
   }
 
   const handlePhotoDeleted = (photoId: string) => {
+    setPendingPhotos(null)
     setData((prev) =>
       prev.status === 'unlocked' ? { ...prev, photos: prev.photos.filter((p) => p.id !== photoId) } : prev
     )
@@ -97,8 +195,16 @@ export default function GalleryPage() {
   // hoch, und das Formular zeigt den Fortschritt und eventuelle Fehler der
   // übrigen Fotos. Geschlossen wird es nur über den Button.
   const handleUploaded = (photo: GalleryPhotoView) => {
+    setPendingPhotos(null)
     setData((prev) => (prev.status === 'unlocked' ? { ...prev, photos: [photo, ...prev.photos] } : prev))
   }
+
+  // Wie viele Fotos der Server mehr kennt, als gezeigt werden (nur Neue zählen, ein
+  // gelöschtes Foto ist keine Meldung wert).
+  const newPhotoCount =
+    pendingPhotos && data.status === 'unlocked'
+      ? pendingPhotos.filter((photo) => !data.photos.some((shown) => shown.id === photo.id)).length
+      : 0
 
   return (
     // pb-28 statt pb-16: der schwebende Upload-Knopf (fixed, unten rechts)
@@ -165,11 +271,25 @@ export default function GalleryPage() {
                         onAccessGranted={access.markUnlocked}
                         onAccessLost={access.markLocked}
                         onUploaded={handleUploaded}
+                        onBusyChange={handleBusyChange}
                       />
                     </Card>
                   </div>
                 )}
               </>
+            )}
+
+            {newPhotoCount > 0 && (
+              <div className="sticky top-20 z-20 mb-4 flex justify-center">
+                <button
+                  type="button"
+                  onClick={showPendingPhotos}
+                  className="flex items-center gap-2 rounded-full bg-dark-blue px-5 py-2.5 text-sm font-medium text-white shadow-lg transition-colors hover:bg-dark-blue-light"
+                >
+                  <ArrowUp size={16} aria-hidden="true" />
+                  {newPhotoCount === 1 ? '1 neues Foto anzeigen' : `${newPhotoCount} neue Fotos anzeigen`}
+                </button>
+              </div>
             )}
 
             <GalleryGrid

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import GalleryPage from './page'
 import { bodyOf, callsTo, mockFetchRoutes, type MockResponse } from '@/test-utils/mock-fetch'
@@ -7,7 +7,15 @@ import { bodyOf, callsTo, mockFetchRoutes, type MockResponse } from '@/test-util
 // Das Formular hat eigene Tests - hier zählt nur, wie die Seite darauf
 // reagiert (ein Klick auf "stub-upload" meldet ein fertig hochgeladenes Foto).
 vi.mock('@/components/gallery/GalleryUploadForm', () => ({
-  default: ({ onUploaded, hasAccess }: { onUploaded: (photo: unknown) => void; hasAccess?: boolean }) => (
+  default: ({
+    onUploaded,
+    onBusyChange,
+    hasAccess,
+  }: {
+    onUploaded: (photo: unknown) => void
+    onBusyChange?: (busy: boolean) => void
+    hasAccess?: boolean
+  }) => (
     <form aria-label="Upload-Formular" data-has-access={String(Boolean(hasAccess))}>
       <label>
         Dein Name
@@ -28,6 +36,12 @@ vi.mock('@/components/gallery/GalleryUploadForm', () => ({
         }
       >
         stub-upload
+      </button>
+      <button type="button" onClick={() => onBusyChange?.(true)}>
+        stub-busy
+      </button>
+      <button type="button" onClick={() => onBusyChange?.(false)}>
+        stub-idle
       </button>
     </form>
   ),
@@ -291,5 +305,283 @@ describe('GalleryPage', () => {
     await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent(/pausiert/i))
     expect(screen.queryByText(/lade das erste hoch/i)).not.toBeInTheDocument()
     expect(screen.getByText(/noch keine fotos/i)).toBeInTheDocument()
+  })
+
+  describe('reloading by itself', () => {
+    const newPhoto = {
+      id: 'p2',
+      uploaderName: 'Ben',
+      category: 'Party',
+      isOfficial: false,
+      createdAt: '2026-10-12T12:00:00.000Z',
+      thumbUrl: 'https://fotos.example.de/p2/thumb.jpg',
+      originalUrl: 'https://fotos.example.de/p2/original.jpg',
+    }
+    const body = (photos: unknown[]) => ({ body: { mode: 'public', unlocked: true, photos } })
+
+    beforeEach(() => {
+      vi.useFakeTimers({ shouldAdvanceTime: true })
+      Object.defineProperty(window, 'scrollY', { value: 0, configurable: true, writable: true })
+      Object.defineProperty(document, 'hidden', { value: false, configurable: true })
+    })
+
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    async function tick(ms: number) {
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(ms)
+      })
+    }
+
+    it('shows photos that others uploaded in the meantime', async () => {
+      const fetchMock = mockApi([body([samplePhoto]), body([newPhoto, samplePhoto])])
+      render(<GalleryPage />)
+      await waitFor(() => expect(screen.getAllByRole('img')).toHaveLength(1))
+
+      await tick(30_000)
+
+      await waitFor(() => expect(screen.getAllByRole('img')).toHaveLength(2))
+      expect(callsTo(fetchMock, '/api/gallery')).toHaveLength(2)
+    })
+
+    describe('asking cheaply whether anything changed', () => {
+      const tagged = (photos: unknown[], etag: string) => ({ ...body(photos), headers: { etag } })
+      const sentTags = (fetchMock: ReturnType<typeof mockApi>) =>
+        callsTo(fetchMock, '/api/gallery').map(
+          ([, init]) => ((init as RequestInit | undefined)?.headers as Record<string, string> | undefined)?.['If-None-Match']
+        )
+
+      it('sends the ETag of the last list along and keeps everything when the answer is 304', async () => {
+        const fetchMock = mockApi([tagged([samplePhoto], '"v1"'), { status: 304, body: null, headers: { etag: '"v1"' } }])
+        render(<GalleryPage />)
+        const before = await screen.findByRole('img')
+
+        await tick(30_000)
+        await tick(30_000)
+
+        expect(sentTags(fetchMock).slice(0, 2)).toEqual([undefined, '"v1"'])
+        expect(screen.getByRole('img')).toBe(before)
+        expect(screen.queryByText(/konnte nicht geladen werden/i)).not.toBeInTheDocument()
+        expect(screen.queryByRole('button', { name: /neue.*foto.*anzeigen/i })).not.toBeInTheDocument()
+      })
+
+      it('uses the newer ETag after a changed list came in', async () => {
+        const fetchMock = mockApi([
+          tagged([samplePhoto], '"v1"'),
+          tagged([newPhoto, samplePhoto], '"v2"'),
+          { status: 304, body: null, headers: { etag: '"v2"' } },
+        ])
+        render(<GalleryPage />)
+        await waitFor(() => expect(screen.getAllByRole('img')).toHaveLength(1))
+
+        await tick(30_000)
+        await waitFor(() => expect(screen.getAllByRole('img')).toHaveLength(2))
+        await tick(30_000)
+
+        expect(sentTags(fetchMock).slice(0, 3)).toEqual([undefined, '"v1"', '"v2"'])
+        expect(screen.getAllByRole('img')).toHaveLength(2)
+      })
+
+      it('keeps asking with the same ETag while a newer list waits behind the button', async () => {
+        window.scrollY = 900
+        window.scrollTo = vi.fn()
+        const fetchMock = mockApi([
+          tagged([samplePhoto], '"v1"'),
+          tagged([newPhoto, samplePhoto], '"v2"'),
+          { status: 304, body: null, headers: { etag: '"v2"' } },
+        ])
+        render(<GalleryPage />)
+        await waitFor(() => expect(screen.getAllByRole('img')).toHaveLength(1))
+
+        await tick(30_000)
+        await screen.findByRole('button', { name: '1 neues Foto anzeigen' })
+        await tick(30_000)
+
+        expect(sentTags(fetchMock).slice(0, 3)).toEqual([undefined, '"v1"', '"v2"'])
+        expect(screen.getByRole('button', { name: '1 neues Foto anzeigen' })).toBeInTheDocument()
+      })
+
+      it('works without any ETag (older server answers)', async () => {
+        const fetchMock = mockApi([body([samplePhoto]), body([newPhoto, samplePhoto])])
+        render(<GalleryPage />)
+        await waitFor(() => expect(screen.getAllByRole('img')).toHaveLength(1))
+
+        await tick(30_000)
+
+        await waitFor(() => expect(screen.getAllByRole('img')).toHaveLength(2))
+        expect(sentTags(fetchMock)).toEqual([undefined, undefined])
+      })
+    })
+
+    it('looks again every 30 seconds, not more often', async () => {
+      const fetchMock = mockApi(body([samplePhoto]))
+      render(<GalleryPage />)
+      await waitFor(() => expect(screen.getAllByRole('img')).toHaveLength(1))
+
+      await tick(29_000)
+      expect(callsTo(fetchMock, '/api/gallery')).toHaveLength(1)
+
+      await tick(1_000)
+      expect(callsTo(fetchMock, '/api/gallery')).toHaveLength(2)
+      await tick(30_000)
+      expect(callsTo(fetchMock, '/api/gallery')).toHaveLength(3)
+    })
+
+    it('does not reload while a photo is being uploaded, and resumes afterwards', async () => {
+      const fetchMock = mockApi([body([samplePhoto]), body([newPhoto, samplePhoto])])
+      render(<GalleryPage />)
+      await waitFor(() => expect(screen.getAllByRole('img')).toHaveLength(1))
+      await userEvent.click(screen.getByRole('button', { name: /fotos hochladen/i }))
+      await userEvent.click(screen.getByRole('button', { name: 'stub-busy' }))
+
+      await tick(120_000)
+      expect(callsTo(fetchMock, '/api/gallery')).toHaveLength(1)
+      expect(screen.getAllByRole('img')).toHaveLength(1)
+
+      await userEvent.click(screen.getByRole('button', { name: 'stub-idle' }))
+      await tick(30_000)
+
+      await waitFor(() => expect(screen.getAllByRole('img')).toHaveLength(2))
+      expect(callsTo(fetchMock, '/api/gallery')).toHaveLength(2)
+    })
+
+    it('does not reload in a hidden tab, but looks at once when the tab is back', async () => {
+      const fetchMock = mockApi([body([samplePhoto]), body([newPhoto, samplePhoto])])
+      render(<GalleryPage />)
+      await waitFor(() => expect(screen.getAllByRole('img')).toHaveLength(1))
+
+      Object.defineProperty(document, 'hidden', { value: true, configurable: true })
+      await tick(90_000)
+      expect(callsTo(fetchMock, '/api/gallery')).toHaveLength(1)
+
+      Object.defineProperty(document, 'hidden', { value: false, configurable: true })
+      await act(async () => {
+        document.dispatchEvent(new Event('visibilitychange'))
+      })
+
+      await waitFor(() => expect(screen.getAllByRole('img')).toHaveLength(2))
+    })
+
+    it('keeps the photo that was just uploaded when an older answer arrives afterwards', async () => {
+      let resolveStale: (value: Response) => void = () => {}
+      let calls = 0
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async (input: RequestInfo | URL) => {
+          const path = String(input).split('?')[0]
+          if (path === '/api/access') return { ok: true, status: 200, json: async () => ({ unlocked: true }) } as Response
+          if (path === '/api/gallery') {
+            calls += 1
+            if (calls === 1) return { ok: true, status: 200, json: async () => body([samplePhoto]).body } as Response
+            // Die zweite Antwort (Neuladen) kommt erst später: sie kennt das gerade
+            // hochgeladene Foto noch nicht, dafür das eines anderen Gastes.
+            return new Promise<Response>((resolve) => {
+              resolveStale = resolve
+            })
+          }
+          throw new Error(`unexpected ${path}`)
+        })
+      )
+      render(<GalleryPage />)
+      await waitFor(() => expect(screen.getAllByRole('img')).toHaveLength(1))
+      await userEvent.click(screen.getByRole('button', { name: /fotos hochladen/i }))
+
+      await tick(30_000) // das Neuladen ist unterwegs
+      await userEvent.click(screen.getByRole('button', { name: 'stub-upload' })) // das Foto ist da
+      await waitFor(() => expect(screen.getAllByRole('img')).toHaveLength(2))
+
+      await act(async () => {
+        resolveStale({ ok: true, status: 200, json: async () => body([newPhoto, samplePhoto]).body } as Response)
+      })
+
+      const sources = screen.getAllByRole('img').map((img) => img.getAttribute('src'))
+      expect(sources).toContain('https://fotos.example.de/new-photo/thumb.jpg')
+    })
+
+    it('keeps what is shown when a reload fails', async () => {
+      mockApi([body([samplePhoto]), { status: 500, body: {} }])
+      render(<GalleryPage />)
+      await waitFor(() => expect(screen.getAllByRole('img')).toHaveLength(1))
+
+      await tick(30_000)
+
+      expect(screen.getAllByRole('img')).toHaveLength(1)
+      expect(screen.queryByText(/konnte nicht geladen werden/i)).not.toBeInTheDocument()
+    })
+
+    it('does not touch the list when nothing changed', async () => {
+      mockApi(body([samplePhoto]))
+      render(<GalleryPage />)
+      const before = await screen.findByRole('img')
+
+      await tick(60_000)
+
+      expect(screen.getByRole('img')).toBe(before)
+    })
+
+    it('does not reload while the password form is shown', async () => {
+      const fetchMock = mockApi({ body: { mode: 'password', unlocked: false, photos: null } }, { access: false })
+      render(<GalleryPage />)
+      await screen.findByLabelText(/kennwort/i)
+
+      await tick(120_000)
+
+      expect(callsTo(fetchMock, '/api/gallery')).toHaveLength(1)
+    })
+
+    describe('when the guest has scrolled down', () => {
+      beforeEach(() => {
+        window.scrollY = 900
+        window.scrollTo = vi.fn()
+      })
+
+      it('does not move the grid but offers the new photos in a button', async () => {
+        mockApi([body([samplePhoto]), body([newPhoto, samplePhoto])])
+        render(<GalleryPage />)
+        await waitFor(() => expect(screen.getAllByRole('img')).toHaveLength(1))
+
+        await tick(30_000)
+
+        expect(await screen.findByRole('button', { name: '1 neues Foto anzeigen' })).toBeInTheDocument()
+        expect(screen.getAllByRole('img')).toHaveLength(1)
+      })
+
+      it('shows them and scrolls to the top when the button is tapped', async () => {
+        mockApi([body([samplePhoto]), body([newPhoto, samplePhoto])])
+        render(<GalleryPage />)
+        await waitFor(() => expect(screen.getAllByRole('img')).toHaveLength(1))
+        await tick(30_000)
+
+        await userEvent.click(await screen.findByRole('button', { name: /neue.*foto.*anzeigen/i }))
+
+        expect(screen.getAllByRole('img')).toHaveLength(2)
+        expect(screen.queryByRole('button', { name: /neue.*foto.*anzeigen/i })).not.toBeInTheDocument()
+        expect(window.scrollTo).toHaveBeenCalledWith(expect.objectContaining({ top: 0 }))
+      })
+
+      it('counts several new photos', async () => {
+        const third = { ...newPhoto, id: 'p3' }
+        mockApi([body([samplePhoto]), body([third, newPhoto, samplePhoto])])
+        render(<GalleryPage />)
+        await waitFor(() => expect(screen.getAllByRole('img')).toHaveLength(1))
+
+        await tick(30_000)
+
+        expect(await screen.findByRole('button', { name: '2 neue Fotos anzeigen' })).toBeInTheDocument()
+      })
+
+      it('does not offer anything for a removed photo and leaves the grid alone', async () => {
+        mockApi([body([newPhoto, samplePhoto]), body([samplePhoto])])
+        render(<GalleryPage />)
+        await waitFor(() => expect(screen.getAllByRole('img')).toHaveLength(2))
+
+        await tick(30_000)
+
+        expect(screen.queryByRole('button', { name: /neue.*foto.*anzeigen/i })).not.toBeInTheDocument()
+        expect(screen.getAllByRole('img')).toHaveLength(2)
+      })
+    })
   })
 })

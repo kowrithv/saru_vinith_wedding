@@ -6,6 +6,7 @@ import SectionTitle from '@/components/ui/SectionTitle'
 import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
 import GuestPasswordField from '@/components/ui/GuestPasswordField'
+import PhotoPickerButton from '@/components/ui/PhotoPickerButton'
 import EmptyState from '@/components/ui/EmptyState'
 import ShowMoreButton from '@/components/ui/ShowMoreButton'
 import MemoryPolaroid from '@/components/memories/MemoryPolaroid'
@@ -253,13 +254,11 @@ export default function MemoriesPage() {
                   <Camera size={14} className="inline mr-1" />
                   Foto (optional)
                 </label>
-                <input
+                <PhotoPickerButton
                   key={photoInputKey}
                   id="memories-photo"
-                  type="file"
-                  accept="image/*"
+                  label={photoFile ? 'Anderes Foto wählen' : 'Foto auswählen'}
                   onChange={handlePhotoChange}
-                  className="block w-full text-sm text-gray-600 file:mr-3 file:rounded-full file:border-0 file:bg-champagne file:px-4 file:py-2 file:text-sm file:font-medium file:text-dark-blue"
                 />
                 <p className="mt-1.5 text-xs text-gray-500">Nur Fotos, keine Videos.</p>
                 {photoFile && (

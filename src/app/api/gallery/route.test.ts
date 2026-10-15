@@ -3,7 +3,7 @@ import { GET } from './route'
 import { getDb } from '@/lib/db'
 import { setFeatureLocked } from '@/lib/app-config'
 import { setGalleryMode } from '@/lib/gallery-mode'
-import { addGalleryPhoto } from '@/lib/gallery-photos'
+import { addGalleryPhoto, deleteGalleryPhotoRow } from '@/lib/gallery-photos'
 import { createGallerySessionCookieValue, GALLERY_COOKIE_NAME } from '@/lib/gallery-auth'
 import { ADMIN_COOKIE_NAME, getOrCreateAdminSecret, signCookieValue, adminCookieSecret } from '@/lib/admin-auth'
 
@@ -135,5 +135,120 @@ describe('GET /api/gallery', () => {
   it('marks the answer as not cacheable', async () => {
     const response = await GET(new Request('http://localhost/api/gallery'))
     expect(response.headers.get('cache-control')).toMatch(/no-store/)
+  })
+
+  describe('conditional requests (ETag)', () => {
+    const photo = (id: string) => ({
+      id,
+      thumbKey: `gallery/${id}/thumb.jpg`,
+      originalKey: `gallery/${id}/original.jpg`,
+      uploaderName: 'Anna',
+      deleteTokenHash: `h-${id}`,
+      category: 'Standesamt',
+      isOfficial: false,
+    })
+    const withTag = (etag: string, cookies: Record<string, string> = {}) => {
+      const request = requestWithCookies(cookies)
+      request.headers.set('if-none-match', etag)
+      return request
+    }
+
+    it('sends an ETag with the list', async () => {
+      setGalleryMode(getDb(), 'public')
+      const response = await GET(requestWithCookies({}))
+      expect(response.headers.get('etag')).toMatch(/^"[0-9a-f]{24}"$/)
+    })
+
+    it('answers 304 without a body when nothing changed', async () => {
+      const db = getDb()
+      setGalleryMode(db, 'public')
+      addGalleryPhoto(db, photo('p1'))
+      const etag = (await GET(requestWithCookies({}))).headers.get('etag') as string
+
+      const response = await GET(withTag(etag))
+
+      expect(response.status).toBe(304)
+      expect(await response.text()).toBe('')
+      expect(response.headers.get('etag')).toBe(etag)
+      expect(response.headers.get('cache-control')).toMatch(/no-store/)
+    })
+
+    it('sends the whole list again after a photo was added', async () => {
+      const db = getDb()
+      setGalleryMode(db, 'public')
+      addGalleryPhoto(db, photo('p1'))
+      const etag = (await GET(requestWithCookies({}))).headers.get('etag') as string
+
+      addGalleryPhoto(db, photo('p2'))
+      const response = await GET(withTag(etag))
+
+      expect(response.status).toBe(200)
+      expect((await response.json()).photos).toHaveLength(2)
+      expect(response.headers.get('etag')).not.toBe(etag)
+    })
+
+    it('sends the list again after a photo was deleted', async () => {
+      const db = getDb()
+      setGalleryMode(db, 'public')
+      addGalleryPhoto(db, photo('p1'))
+      addGalleryPhoto(db, photo('p2'))
+      const etag = (await GET(requestWithCookies({}))).headers.get('etag') as string
+
+      deleteGalleryPhotoRow(db, 'p1')
+      const response = await GET(withTag(etag))
+
+      expect(response.status).toBe(200)
+      expect((await response.json()).photos).toHaveLength(1)
+    })
+
+    it('notices a deleted newest photo that was replaced by a new one (same count)', async () => {
+      const db = getDb()
+      setGalleryMode(db, 'public')
+      addGalleryPhoto(db, photo('p1'))
+      addGalleryPhoto(db, photo('p2'))
+      const etag = (await GET(requestWithCookies({}))).headers.get('etag') as string
+
+      deleteGalleryPhotoRow(db, 'p2')
+      addGalleryPhoto(db, photo('p3'))
+      const response = await GET(withTag(etag))
+
+      expect(response.status).toBe(200)
+      expect((await response.json()).photos.map((p: { id: string }) => p.id)).toEqual(['p3', 'p1'])
+    })
+
+    it('sends the list again when uploads get locked or unlocked', async () => {
+      const db = getDb()
+      setGalleryMode(db, 'public')
+      const etag = (await GET(requestWithCookies({}))).headers.get('etag') as string
+
+      setFeatureLocked(db, 'gallery_upload', true)
+      const response = await GET(withTag(etag))
+
+      expect(response.status).toBe(200)
+      expect((await response.json()).uploadsLocked).toBe(true)
+    })
+
+    it('does not hand a locked browser the list because it sends the ETag of an unlocked one', async () => {
+      const db = getDb()
+      setGalleryMode(db, 'password')
+      addGalleryPhoto(db, photo('p1'))
+      const session = createGallerySessionCookieValue(db)
+      const unlockedTag = (await GET(requestWithCookies({ [GALLERY_COOKIE_NAME]: session }))).headers.get('etag') as string
+
+      const response = await GET(withTag(unlockedTag))
+
+      expect(response.status).toBe(200)
+      const body = await response.json()
+      expect(body.unlocked).toBe(false)
+      expect(body.photos).toBeNull()
+    })
+
+    it('treats a wrong or malformed ETag as no ETag', async () => {
+      setGalleryMode(getDb(), 'public')
+      for (const tag of ['"nope"', 'W/"x"', '*', '']) {
+        const response = await GET(withTag(tag))
+        expect(response.status).toBe(200)
+      }
+    })
   })
 })

@@ -49,21 +49,35 @@ function FilterChip({ active, count, onClick, children }: FilterChipProps) {
 
 export default function GalleryGrid({ photos, onPhotoDeleted, emptyMessage }: GalleryGridProps) {
   const [activeCategory, setActiveCategory] = useState<string>('Alle')
-  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
+  // Die offene Großansicht merkt sich das Foto, nicht die Position: kommen beim
+  // Neuladen der Galerie neue Fotos nach vorn, bleibt sie beim selben Bild.
+  const [lightboxId, setLightboxId] = useState<string | null>(null)
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
 
-  const filteredPhotos = activeCategory === 'Alle' ? photos : photos.filter((p) => p.category === activeCategory)
+  // Nur Kategorien mit Fotos sind ein Filter; eine leere zu zeigen führte zu
+  // "Keine Fotos in dieser Kategorie". Verschwindet die gewählte Kategorie (das
+  // letzte Foto wurde gelöscht), gilt wieder "Alle".
+  const categoryCounts = new Map<string, number>(galleryCategories.map((category) => [category, 0]))
+  for (const photo of photos) {
+    categoryCounts.set(photo.category, (categoryCounts.get(photo.category) ?? 0) + 1)
+  }
+  const shownCategories = galleryCategories.filter((category) => (categoryCounts.get(category) ?? 0) > 0)
+  const category = activeCategory !== 'Alle' && (categoryCounts.get(activeCategory) ?? 0) > 0 ? activeCategory : 'Alle'
 
-  const selectCategory = (category: string) => {
+  const filteredPhotos = category === 'Alle' ? photos : photos.filter((p) => p.category === category)
+  const lightboxIndex = lightboxId === null ? -1 : filteredPhotos.findIndex((p) => p.id === lightboxId)
+
+  const selectCategory = (next: string) => {
     // Dieselbe Kategorie noch einmal anzutippen lässt die Liste, wie sie ist.
-    if (category === activeCategory) return
-    setActiveCategory(category)
+    if (next === category) return
+    setActiveCategory(next)
+    setLightboxId(null)
     setVisibleCount(PAGE_SIZE)
   }
 
   const handleDeleted = (photoId: string) => {
     onPhotoDeleted(photoId)
-    setLightboxIndex(null)
+    setLightboxId(null)
   }
 
   if (photos.length === 0) {
@@ -75,59 +89,55 @@ export default function GalleryGrid({ photos, onPhotoDeleted, emptyMessage }: Ga
   return (
     <div>
       <div className="flex flex-wrap items-center justify-center gap-2 mb-8">
-        <FilterChip active={activeCategory === 'Alle'} count={photos.length} onClick={() => selectCategory('Alle')}>
+        <FilterChip active={category === 'Alle'} count={photos.length} onClick={() => selectCategory('Alle')}>
           Alle
         </FilterChip>
-        {galleryCategories.map((category) => (
+        {shownCategories.map((name) => (
           <FilterChip
-            key={category}
-            active={activeCategory === category}
-            count={photos.filter((p) => p.category === category).length}
-            onClick={() => selectCategory(category)}
+            key={name}
+            active={category === name}
+            count={categoryCounts.get(name) ?? 0}
+            onClick={() => selectCategory(name)}
           >
-            {category}
+            {name}
           </FilterChip>
         ))}
       </div>
 
-      {filteredPhotos.length === 0 ? (
-        <EmptyState title="Keine Fotos in dieser Kategorie" />
-      ) : (
-        <div className="columns-2 md:columns-3 lg:columns-4 gap-4">
-          {filteredPhotos.slice(0, visibleCount).map((photo, index) => (
-            <button
-              key={photo.id}
-              type="button"
-              onClick={() => setLightboxIndex(index)}
-              className="block w-full mb-4 break-inside-avoid relative overflow-hidden rounded-xl shadow-sm hover:shadow-md transition-shadow group"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={photo.thumbUrl}
-                alt={`Foto von ${photo.uploaderName}`}
-                loading="lazy"
-                className="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-105"
-              />
-              <div className="absolute inset-0 bg-dark-blue/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                <ZoomIn size={28} className="text-white" />
-              </div>
-              {/* Badge ist absichtlich immer sichtbar, nicht nur bei
-                  group-hover: hover gibt es auf Touch-Geräten nicht, und
-                  die meisten Gäste öffnen die Galerie am Handy. */}
-              <div className="absolute bottom-2 left-2 right-2">
-                <span
-                  className={cn(
-                    'inline-block text-xs font-medium px-2 py-1 rounded-full',
-                    photo.isOfficial ? 'bg-dark-blue text-gold' : 'bg-white/90 text-dark-blue'
-                  )}
-                >
-                  {photo.isOfficial ? photo.category : `Von ${photo.uploaderName}`}
-                </span>
-              </div>
-            </button>
-          ))}
-        </div>
-      )}
+      <div className="columns-2 md:columns-3 lg:columns-4 gap-4">
+        {filteredPhotos.slice(0, visibleCount).map((photo) => (
+          <button
+            key={photo.id}
+            type="button"
+            onClick={() => setLightboxId(photo.id)}
+            className="block w-full mb-4 break-inside-avoid relative overflow-hidden rounded-xl shadow-sm hover:shadow-md transition-shadow group"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={photo.thumbUrl}
+              alt={`Foto von ${photo.uploaderName}`}
+              loading="lazy"
+              className="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-105"
+            />
+            <div className="absolute inset-0 bg-dark-blue/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+              <ZoomIn size={28} className="text-white" />
+            </div>
+            {/* Badge ist absichtlich immer sichtbar, nicht nur bei
+                group-hover: hover gibt es auf Touch-Geräten nicht, und
+                die meisten Gäste öffnen die Galerie am Handy. */}
+            <div className="absolute bottom-2 left-2 right-2">
+              <span
+                className={cn(
+                  'inline-block text-xs font-medium px-2 py-1 rounded-full',
+                  photo.isOfficial ? 'bg-dark-blue text-gold' : 'bg-white/90 text-dark-blue'
+                )}
+              >
+                {photo.isOfficial ? photo.category : `Von ${photo.uploaderName}`}
+              </span>
+            </div>
+          </button>
+        ))}
+      </div>
 
       {filteredPhotos.length > visibleCount && (
         <ShowMoreButton
@@ -137,12 +147,12 @@ export default function GalleryGrid({ photos, onPhotoDeleted, emptyMessage }: Ga
         />
       )}
 
-      {lightboxIndex !== null && (
+      {lightboxIndex >= 0 && (
         <GalleryLightbox
           photos={filteredPhotos}
           index={lightboxIndex}
-          onClose={() => setLightboxIndex(null)}
-          onNavigate={setLightboxIndex}
+          onClose={() => setLightboxId(null)}
+          onNavigate={(next) => setLightboxId(filteredPhotos[next]?.id ?? null)}
           onDeleted={handleDeleted}
         />
       )}

@@ -304,6 +304,21 @@ describe('MemoriesPage', () => {
       expect(screen.queryByLabelText(/foto \(optional\)/i)).not.toBeInTheDocument()
     })
 
+    it('offers the photo choice as a large button and changes its text once a photo is chosen', async () => {
+      mockApi()
+      render(<MemoriesPage />)
+      const input = await screen.findByLabelText(/foto \(optional\)/i)
+
+      const button = screen.getByText('Foto auswählen').closest('label')
+      expect(button).toHaveClass('border-dashed', 'cursor-pointer')
+      expect(button).toHaveAttribute('for', 'memories-photo')
+
+      await userEvent.upload(input, photoFile('urlaub.jpg'))
+
+      expect(await screen.findByText('Anderes Foto wählen')).toBeInTheDocument()
+      expect(screen.getByText('urlaub.jpg')).toBeInTheDocument()
+    })
+
     it('uploads the photo first and sends the ticket with the entry', async () => {
       vi.mocked(uploadPhotoForTicket).mockResolvedValue({ ok: true, ticket: 'T-1' })
       const fetchMock = mockApi()

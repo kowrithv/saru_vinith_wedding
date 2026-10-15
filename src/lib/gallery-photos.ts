@@ -66,6 +66,21 @@ export function addGalleryPhoto(
   return toPhoto(row)
 }
 
+/**
+ * Kurzer Stand der Galerie: Anzahl und Kennung des neuesten Fotos. Jede
+ * Änderung (hochgeladen, gelöscht) ändert mindestens eines von beiden: ein neues
+ * Foto ist das neueste und hat eine neue, nie wiederkehrende UUID; ein gelöschtes
+ * ändert die Anzahl. Das genügt, um ohne die ganze Liste zu laden zu erkennen,
+ * ob sich etwas geändert hat (siehe ETag in /api/gallery).
+ */
+export function galleryFingerprint(db: Database.Database): string {
+  const { count } = db.prepare('SELECT COUNT(*) AS count FROM gallery_photos').get() as { count: number }
+  const newest = db.prepare('SELECT id FROM gallery_photos ORDER BY rowid DESC LIMIT 1').get() as
+    | { id: string }
+    | undefined
+  return `${count}:${newest?.id ?? '-'}`
+}
+
 /** Neueste zuerst; mit `limit` nur die neuesten (Obergrenze für die Antwort). */
 export function listGalleryPhotos(db: Database.Database, limit?: number): GalleryPhoto[] {
   // Sortierung nach `rowid`, nicht `created_at`: `id` ist eine UUID (keine

@@ -1,6 +1,7 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   POLAROID_SIZE,
+  createPolaroidBlob,
   drawPolaroid,
   photoCropRect,
   polaroidFileName,
@@ -206,5 +207,40 @@ describe('drawPolaroid', () => {
     const xs = letters.map((c) => c.args[1] as number)
     expect(Math.min(...xs)).toBeGreaterThanOrEqual(0)
     expect(Math.max(...xs)).toBeLessThanOrEqual(POLAROID_SIZE.width)
+  })
+})
+
+describe('createPolaroidBlob', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  const request = {
+    photoUrl: 'https://fotos.example.de/gallery/abc/thumb.jpg',
+    guestName: 'Anna',
+    coupleName: 'Saruga & Vinith',
+    occasion: 'Standesamtliche Hochzeit',
+    date: '17.10.2026',
+  }
+
+  // Das Foto wird auf der Seite als <img> ohne Origin-Kopf gezeigt; Cloudflare und
+  // der Browser speichern diese Antwort ohne CORS-Kopf. Würde das Polaroid dieselbe
+  // Adresse per fetch holen, bekäme es diese Kopie und der Browser blockierte sie.
+  it('loads the photo from its own CORS address, not the one the page shows', async () => {
+    const fetchMock = vi.fn(async () => ({ ok: true, blob: async () => new Blob(['x'], { type: 'image/jpeg' }) }))
+    vi.stubGlobal('fetch', fetchMock)
+    vi.stubGlobal('createImageBitmap', vi.fn(async () => ({ width: 800, height: 600, close: () => {} })))
+
+    // jsdom hat kein Canvas: nach dem Laden bricht das Rendern hier ab, uns genügt der Abruf.
+    await expect(createPolaroidBlob(request)).rejects.toThrow()
+
+    expect(fetchMock).toHaveBeenCalledWith('https://fotos.example.de/gallery/abc/thumb.jpg?cors=1', { mode: 'cors' })
+  })
+
+  it('fails when the photo cannot be loaded', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: false, status: 404, blob: async () => new Blob() })))
+    vi.stubGlobal('createImageBitmap', vi.fn())
+
+    await expect(createPolaroidBlob(request)).rejects.toThrow('Foto konnte nicht geladen werden.')
   })
 })

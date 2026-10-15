@@ -3,6 +3,8 @@ import { vi } from 'vitest'
 export interface MockResponse {
   status?: number
   body: unknown
+  /** Antwort-Header, z. B. ETag. */
+  headers?: Record<string, string>
 }
 
 /** Antwort fest, per Funktion oder als Folge (der letzte Eintrag wiederholt sich). */
@@ -31,8 +33,8 @@ export function mockFetchRoutes(routes: Record<string, MockRoute>) {
     } else {
       response = route
     }
-    const { status = 200, body } = response
-    return { ok: status < 400, status, json: async () => body } as Response
+    const { status = 200, body, headers } = response
+    return { ok: status < 400, status, headers: new Headers(headers), json: async () => body } as Response
   })
   vi.stubGlobal('fetch', fn)
   return fn
