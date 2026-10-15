@@ -11,7 +11,7 @@ import { useCallback, useEffect, useState } from 'react'
 // geteilten Links hängen bleibt.
 
 export type GuestAccessStatus = 'checking' | 'locked' | 'unlocked'
-export type UnlockResult = { ok: true } | { ok: false; error: string }
+export type UnlockResult = { ok: true } | { ok: false; error: string; rateLimited?: boolean }
 
 const KEY_PARAM = 'k'
 const UNLOCK_FAILED_MESSAGE = 'Entsperren fehlgeschlagen. Bitte versuch es erneut.'
@@ -42,7 +42,11 @@ async function requestUnlock(password: string): Promise<UnlockResult> {
     })
     if (response.ok) return { ok: true }
     const body = (await response.json().catch(() => null)) as { error?: string } | null
-    return { ok: false, error: body?.error ?? 'Falsches Kennwort.' }
+    return {
+      ok: false,
+      error: body?.error ?? 'Falsches Kennwort.',
+      ...(response.status === 429 ? { rateLimited: true } : {}),
+    }
   } catch {
     return { ok: false, error: UNLOCK_FAILED_MESSAGE }
   }
@@ -82,7 +86,11 @@ export function useGuestAccess() {
     }
 
     const outcome = pendingKeyUnlock
-      ? pendingKeyUnlock.then((result) => ({ unlocked: result.ok, rejected: !result.ok }))
+      ? pendingKeyUnlock.then((result) => ({
+          unlocked: result.ok,
+          // Eine Sperre wegen zu vieler Versuche heißt nicht, dass der Link ungültig ist.
+          rejected: !result.ok && !result.rateLimited,
+        }))
       : requestAccess().then((unlocked) => ({ unlocked, rejected: false }))
 
     void outcome.then(({ unlocked, rejected }) => {

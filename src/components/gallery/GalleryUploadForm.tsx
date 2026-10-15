@@ -494,6 +494,7 @@ export default function GalleryUploadForm({
           onChange={handleFilesChange}
           className="w-full text-sm"
         />
+        <p className="mt-1.5 text-xs text-gray-500">Nur Fotos, keine Videos.</p>
       </div>
 
       {selectedFiles.length > 0 && (

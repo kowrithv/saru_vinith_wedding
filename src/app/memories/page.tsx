@@ -236,6 +236,7 @@ export default function MemoriesPage() {
                   onChange={handlePhotoChange}
                   className="block w-full text-sm text-gray-600 file:mr-3 file:rounded-full file:border-0 file:bg-champagne file:px-4 file:py-2 file:text-sm file:font-medium file:text-dark-blue"
                 />
+                <p className="mt-1.5 text-xs text-gray-500">Nur Fotos, keine Videos.</p>
                 {photoFile && (
                   <p className="mt-2 flex items-center gap-2 text-sm text-gray-600">
                     <span className="break-all">{photoFile.name}</span>

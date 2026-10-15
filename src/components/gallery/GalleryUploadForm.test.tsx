@@ -161,6 +161,13 @@ describe('GalleryUploadForm', () => {
     expect(options.map((option) => option.textContent)).toEqual(['Kennenlernen', 'Verlobung', 'Standesamt', 'Party'])
   })
 
+  // Videos werden nicht angenommen: das steht vor der Auswahl da, nicht erst
+  // in einer Fehlermeldung danach.
+  it('says before the choice that only photos work, no videos', () => {
+    render(<GalleryUploadForm onUploaded={vi.fn()} />)
+    expect(screen.getByText(/nur fotos, keine videos/i)).toBeInTheDocument()
+  })
+
   it('requires a name before submitting and announces the problem', async () => {
     const user = setupUser()
     const fetchMock = vi.fn()

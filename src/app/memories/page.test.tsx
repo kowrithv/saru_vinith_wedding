@@ -103,6 +103,15 @@ describe('MemoriesPage', () => {
     await waitFor(() => expect(screen.queryByLabelText(/kennwort/i)).not.toBeInTheDocument())
   })
 
+  it('says next to the photo field that only photos work, no videos', async () => {
+    mockFetchRoutes({
+      '/api/access': { body: { unlocked: true } },
+      '/api/memories': { body: { entries: [], photosEnabled: true } },
+    })
+    render(<MemoriesPage />)
+    expect(await screen.findByText(/nur fotos, keine videos/i)).toBeInTheDocument()
+  })
+
   it('does not submit without a password while the browser is locked', async () => {
     const fetchMock = mockFetchRoutes({
       '/api/access': { body: { unlocked: false } },

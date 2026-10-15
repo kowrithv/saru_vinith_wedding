@@ -78,6 +78,20 @@ describe('useGuestAccess', () => {
     expect(window.location.hash).toBe('')
   })
 
+  // Bei einer Sperre wegen zu vieler Versuche ist der Link nicht ungültig: der
+  // Hinweis "QR-Code nicht mehr gültig" wäre falsch.
+  it('does not call the link invalid when the server only asks to wait', async () => {
+    window.history.replaceState(null, '', '/gallery#k=love')
+    mockFetch({
+      '/api/gallery/unlock': { status: 429, body: { error: 'Zu viele Versuche. Bitte in etwa 5 Minuten erneut versuchen.' } },
+    })
+
+    const { result } = renderHook(() => useGuestAccess())
+    await waitFor(() => expect(result.current.status).toBe('locked'))
+
+    expect(result.current.linkRejected).toBe(false)
+  })
+
   it('does not send the key twice under React strict mode', async () => {
     window.history.replaceState(null, '', '/gallery#k=Hochzeit')
     const fetchMock = mockFetch({ '/api/gallery/unlock': { body: { success: true } } })
