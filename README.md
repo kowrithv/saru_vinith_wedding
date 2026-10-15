@@ -240,6 +240,22 @@ qrencode -s 10 -o gaeste-qr.png 'https://vsjourney.de/gallery#k=Hochzeit'
 `.env.production` setzen und `up -d --force-recreate web`. Alle bisherigen
 Sitzungen und gedruckten QR-Codes sind dann ungültig; neuen QR-Code erzeugen.
 
+### Bekannte Grenzen
+
+- **Datei-Adressen:** Das Kennwort schützt die Seite und die Liste der Fotos, nicht die
+  Adressen der Dateien auf der Foto-Domain (zufällige UUID-Pfade, nicht erratbar, aber wer
+  eine Adresse hat, sieht das Foto).
+- **Löschen:** Eigene Fotos löscht ein Gast nur auf dem Gerät des Uploads (einmaliges
+  Token im Browser); sonst der Admin.
+- **Massen-Uploads:** Je Gerät sind 300 Fotos pro Stunde erlaubt. Wer das einfache
+  Kennwort kennt, kann neue Sitzungen holen; die Absicherung sind der Notaus „Foto-Upload
+  sperren", das Löschen im Admin und ein Billing-Alarm in Cloudflare.
+- **Memory-Rekord:** Das Spiel läuft im Browser, wir vertrauen auf Fairness. Ein
+  gefälschter Wert lässt sich nicht verhindern, aber im Admin einzeln entfernen (alle
+  Meldungen werden ohne Namen gespeichert, Obergrenze 100.000; „Zurücksetzen" leert alles).
+  Wer das Fälschen ausschließen will, bräuchte ein vom Server verteiltes Spiel.
+- **Rate-Limiter:** liegen im Speicher, ein Neustart setzt sie zurück.
+
 ## Deployment
 
 Der Produktionsserver betreibt die App **hinter einem Caddy auf dem Host**:

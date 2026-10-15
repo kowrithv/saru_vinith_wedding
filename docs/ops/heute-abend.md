@@ -108,14 +108,12 @@ Datei waren unbrauchbar (die Hinweise stehen darüber).
 `geraetetest-checkliste.md` abarbeiten, zusätzlich beim ersten Aufruf der
 Startseite am Handy ansehen:
 
-- Die sieben Kacheln sind jetzt **kompakte Zeilen** (Icon, Titel, Aktion, ohne
-  Beschreibung). Bei Bedarf lässt sich das mit `git revert df5a1c5` zurücknehmen.
+- Die Kacheln: zwei große (Hochzeitsinfos, Fotos), darunter kompakte Kacheln in zwei
+  Spalten.
 - Das Memory-Spiel startet die Zeit erst mit der **ersten aufgedeckten Karte**.
 
 ## Noch offen (nicht heute Abend)
 
-- Ablauf auf `/info`: eingetragen (15.10.); die Brautleute bestätigen noch die
-  beiden „Einzug"-Zeilen und die Zeit des Abendessens (`TODO.md`).
 - SMTP-Zugang für die Alarm-Mails: kommt vom Betreiber, nicht von den
   Brautleuten (`TODO.md`).
 - Ziel für die Off-Box-Kopie der Sicherungen und ein Uptime-Monitor:
