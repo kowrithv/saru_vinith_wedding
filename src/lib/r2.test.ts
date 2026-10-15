@@ -128,6 +128,7 @@ describe('S3 endpoint', () => {
 
   afterEach(() => {
     delete process.env.R2_JURISDICTION
+    delete process.env.R2_ENDPOINT
   })
 
   it('uses the plain account endpoint when no jurisdiction is configured', async () => {
@@ -160,5 +161,26 @@ describe('S3 endpoint', () => {
     expect(S3ClientMock).toHaveBeenCalledWith(
       expect.objectContaining({ endpoint: 'https://test-account.eu.r2.cloudflarestorage.com' })
     )
+  })
+
+  // Nur für lokale Tests mit einem Ersatz-Server statt R2 (siehe README).
+  it('uses R2_ENDPOINT with path-style addressing when it is set', async () => {
+    process.env.R2_ENDPOINT = 'http://127.0.0.1:3199'
+    const { S3ClientMock, r2 } = await loadFreshModules()
+
+    await r2.createPresignedPutUrl('gallery/a/thumb.jpg', 'image/jpeg')
+
+    expect(S3ClientMock).toHaveBeenCalledWith(
+      expect.objectContaining({ endpoint: 'http://127.0.0.1:3199', forcePathStyle: true })
+    )
+  })
+
+  it('keeps virtual-host addressing for the real R2 endpoint', async () => {
+    const { S3ClientMock, r2 } = await loadFreshModules()
+
+    await r2.createPresignedPutUrl('gallery/a/thumb.jpg', 'image/jpeg')
+
+    const config = vi.mocked(S3ClientMock).mock.calls[0][0] as { forcePathStyle?: boolean }
+    expect(config.forcePathStyle).not.toBe(true)
   })
 })

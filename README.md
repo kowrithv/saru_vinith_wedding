@@ -60,6 +60,7 @@ wirklich auszuprobieren.
 | `R2_PUBLIC_BASE_URL` | ja | öffentliche Auslieferungs-URL, z. B. `https://fotos.<domain>` |
 | `CLIENT_IP_HEADER` | nein | Quelle der Client-IP für die Rate-Limiter: Standard `x-forwarded-for` (der Proxy – Caddy – setzt ihn). `cf-connecting-ip` nur, wenn die Website hinter dem Cloudflare-Proxy läuft; ohne Proxy kann jeder den Header selbst setzen |
 | `R2_JURISDICTION` | nein | `eu`, wenn der Bucket mit EU-Jurisdiktion angelegt wurde: der S3-Endpoint lautet dann `<ACCOUNT_ID>.eu.r2.cloudflarestorage.com` (fest, nachträglich nicht änderbar) |
+| `R2_ENDPOINT` | nein | **Nur für lokale Tests:** Adresse eines Ersatz-Servers statt R2 (siehe „Ohne R2 testen“). In Produktion leer lassen |
 | `ADMIN_SECRET` | nein | Signierschlüssel für Cookies; wird sonst zufällig erzeugt und in der DB gespeichert |
 | `CLOUDFLARE_API_TOKEN` | nein | Recht „Cache Purge“; ohne Wert wird der Cache-Purge beim Löschen übersprungen |
 | `CLOUDFLARE_ZONE_ID` | nein | Zone für den Cache-Purge |
@@ -128,6 +129,26 @@ Produktions-Domain sowie `http://localhost:3000` erlauben (Einstellung im
 Cloudflare-Dashboard, nicht im Code).
 
 Details: `docs/superpowers/specs/2026-10-12-gallery-design.md`.
+
+**Kategorien beim Hochladen:** Gäste wählen nur *Hochzeit* oder *Party*;
+*Kennenlernen* und *Verlobung* legt der Admin an (der Server lehnt sie für Gäste
+ab), *Erinnerungen* entsteht allein über das Erinnerungs-Formular.
+
+#### Ohne R2 testen
+
+Foto-Upload und Erinnerungen mit Foto lassen sich lokal ohne Cloudflare
+ausprobieren. Ein kleiner Ersatz-Server nimmt die presigned PUTs an und liefert
+die Dateien aus (er prüft keine Signaturen – nie öffentlich erreichbar machen):
+
+```bash
+node scripts/dev-fake-r2.mjs data/fake-r2 3199 demo      # Ordner, Port, Bucket
+# in .env.local:
+#   R2_BUCKET_NAME=demo
+#   R2_ENDPOINT=http://127.0.0.1:3199
+#   R2_PUBLIC_BASE_URL=http://127.0.0.1:3199
+```
+
+Danach `npm run dev` neu starten. `data/fake-r2/` ist ignoriert.
 
 ### Gestaltung und Tageszustände
 

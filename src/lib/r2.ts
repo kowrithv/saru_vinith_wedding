@@ -8,6 +8,10 @@ let client: S3Client | undefined
 // Standard-Endpoint meldet für ihn "NoSuchBucket". Der Wert wird beim Start in
 // validateEnv geprüft.
 function r2Endpoint(): string {
+  // Nur für lokale Tests mit einem Ersatz-Server (siehe README): in
+  // Produktion ist die Variable nicht gesetzt.
+  const override = process.env.R2_ENDPOINT?.trim()
+  if (override) return override
   const jurisdiction = process.env.R2_JURISDICTION?.trim().toLowerCase()
   const host = jurisdiction
     ? `${process.env.R2_ACCOUNT_ID}.${jurisdiction}.r2.cloudflarestorage.com`
@@ -20,6 +24,9 @@ function getClient(): S3Client {
     client = new S3Client({
       region: 'auto',
       endpoint: r2Endpoint(),
+      // Ein Ersatz-Server unter einer IP-Adresse kann keine
+      // <bucket>.<host>-Adressen auflösen: dort Pfad-Adressierung.
+      ...(process.env.R2_ENDPOINT?.trim() ? { forcePathStyle: true } : {}),
       credentials: {
         accessKeyId: process.env.R2_ACCESS_KEY_ID ?? '',
         secretAccessKey: process.env.R2_SECRET_ACCESS_KEY ?? '',

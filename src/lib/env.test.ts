@@ -88,6 +88,17 @@ describe('validateEnv', () => {
     expect(() => validateEnv({ ...allSet, R2_JURISDICTION: 'germany' })).toThrowError(/R2_JURISDICTION/)
   })
 
+  it('accepts an http(s) URL as R2_ENDPOINT and leaves it out otherwise', () => {
+    expect(validateEnv({ ...allSet, R2_ENDPOINT: 'http://127.0.0.1:3199' }).r2Endpoint).toBe('http://127.0.0.1:3199')
+    expect(validateEnv({ ...allSet, R2_ENDPOINT: '' }).r2Endpoint).toBeUndefined()
+    expect(validateEnv(allSet).r2Endpoint).toBeUndefined()
+  })
+
+  it('rejects an R2_ENDPOINT that is not an http(s) URL', () => {
+    expect(() => validateEnv({ ...allSet, R2_ENDPOINT: 'localhost:3199' })).toThrowError(InvalidEnvError)
+    expect(() => validateEnv({ ...allSet, R2_ENDPOINT: 'ftp://example.org' })).toThrowError(/R2_ENDPOINT/)
+  })
+
   it('accepts the supported client IP headers and normalises them', () => {
     expect(validateEnv({ ...allSet, CLIENT_IP_HEADER: ' CF-Connecting-IP ' }).clientIpHeader).toBe('cf-connecting-ip')
     expect(validateEnv({ ...allSet, CLIENT_IP_HEADER: 'x-forwarded-for' }).clientIpHeader).toBe('x-forwarded-for')

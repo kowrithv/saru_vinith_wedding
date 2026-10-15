@@ -27,3 +27,4 @@ next-env.d.ts
 data/*.db
 data/*.db-*
 data/backups/
+data/fake-r2/

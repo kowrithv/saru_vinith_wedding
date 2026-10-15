@@ -51,6 +51,8 @@ export interface AppEnv {
   r2BucketName: string
   r2PublicBaseUrl: string
   r2Jurisdiction?: string
+  /** Nur für lokale Tests: ein Ersatz-Server statt R2 (siehe README). */
+  r2Endpoint?: string
   clientIpHeader?: string
 }
 
@@ -70,6 +72,13 @@ export function validateEnv(
       `Ungültiger Wert für R2_JURISDICTION: "${source.R2_JURISDICTION}" - erlaubt sind ${R2_JURISDICTIONS.join(', ')} oder leer.`
     )
   }
+  const r2Endpoint = source.R2_ENDPOINT?.trim() || undefined
+  if (r2Endpoint && !/^https?:\/\/[^\s/]+/i.test(r2Endpoint)) {
+    throw new InvalidEnvError(
+      'R2_ENDPOINT',
+      `Ungültiger Wert für R2_ENDPOINT: "${source.R2_ENDPOINT}" - erwartet wird eine http(s)-Adresse oder leer.`
+    )
+  }
   const clientIpHeader = source.CLIENT_IP_HEADER?.trim().toLowerCase() || undefined
   if (clientIpHeader && !(CLIENT_IP_HEADERS as readonly string[]).includes(clientIpHeader)) {
     throw new InvalidEnvError(
@@ -86,6 +95,7 @@ export function validateEnv(
     r2BucketName: source.R2_BUCKET_NAME as string,
     r2PublicBaseUrl: source.R2_PUBLIC_BASE_URL as string,
     r2Jurisdiction: jurisdiction,
+    r2Endpoint,
     clientIpHeader,
   }
 }
