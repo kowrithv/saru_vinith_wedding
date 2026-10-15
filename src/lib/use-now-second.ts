@@ -1,4 +1,5 @@
 import { useCallback, useSyncExternalStore } from 'react'
+import { previewOffsetMs } from './time-preview'
 
 // Der Takt ist feiner als eine Sekunde: der Schnappschuss (ganze Sekunden)
 // ändert sich nur einmal pro Sekunde, React rendert also auch nur dann neu.
@@ -6,8 +7,10 @@ import { useCallback, useSyncExternalStore } from 'react'
 // und gelegentlich eine Sekunde überspringen.
 const TICK_MS = 250
 
+// Mit `?zeit=…` (siehe time-preview.ts) läuft die Uhr der Seite ab einem
+// vorgegebenen Zeitpunkt; sonst ist der Versatz 0.
 function getNowSecond(): number {
-  return Math.floor(Date.now() / 1000)
+  return Math.floor((Date.now() + previewOffsetMs()) / 1000)
 }
 
 // Beim Server-Rendering und beim Hydrieren ist die Uhrzeit unbekannt (null):

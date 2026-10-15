@@ -111,4 +111,22 @@ describe('ProgramTimeline', () => {
     const next = screen.getByText(/als nächstes/i).closest('li')
     expect(next).toHaveTextContent('Einlass')
   })
+
+  it('follows the preview time: at 18:00 the next point is the one at about 18:30', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-10-15T08:00:00Z'))
+    window.history.replaceState(null, '', '/info?zeit=feier')
+    render(
+      <ProgramTimeline
+        schedule={[
+          { time: '16:30 Uhr', event: 'Einlass' },
+          { time: 'ca. 18:30 Uhr', event: 'Traditioneller Einzug' },
+        ]}
+      />
+    )
+    const next = screen.getByText(/als nächstes/i).closest('li')
+    expect(next).toHaveTextContent('Traditioneller Einzug')
+    window.sessionStorage.clear()
+    window.history.replaceState(null, '', '/')
+  })
 })

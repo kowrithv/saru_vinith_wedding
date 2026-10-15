@@ -4,6 +4,7 @@ import './globals.css'
 import Navigation from '@/components/layout/Navigation'
 import Footer from '@/components/layout/Footer'
 import MotionProvider from '@/components/layout/MotionProvider'
+import TimePreviewBanner from '@/components/layout/TimePreviewBanner'
 import { siteMetadata, siteViewport } from '@/lib/site-metadata'
 
 const playfair = Playfair_Display({
@@ -57,6 +58,7 @@ export default function RootLayout({
             Abstand. */}
         <main className="min-h-screen">{children}</main>
         <Footer />
+        <TimePreviewBanner />
         </MotionProvider>
       </body>
     </html>

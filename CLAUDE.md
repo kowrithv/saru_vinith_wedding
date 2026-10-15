@@ -69,7 +69,8 @@ einer Route meldet `tsc` ggf. veraltete Dateien in `.next/types` – dann
 - Tageszustände: `event-phase.ts` (`before | today | after`, feste Zeitpunkte mit
   MESZ-Offset, nie die Gerätezeit-Zone). Countdown, Hero-Knöpfe und
   `ProgramTimeline` ("Als Nächstes") hängen daran; im Test eine feste Systemzeit
-  setzen. Kalender: `calendar.ts` (iCalendar im Browser).
+  setzen. Ansehen ohne Warten: `?zeit=heute|feier|danach` (`time-preview.ts`,
+  wirkt über `useNowSecond`; zeitabhängige UI immer darüber lesen, nie `Date.now()`). Kalender: `calendar.ts` (iCalendar im Browser).
 - Polaroid: `MemoryPolaroid` (Anzeige) und `polaroid-image.ts` (PNG per Canvas,
   Schriften über die CSS-Variablen `--font-cormorant`/`--font-great-vibes`).
 

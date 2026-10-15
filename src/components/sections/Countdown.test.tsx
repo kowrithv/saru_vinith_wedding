@@ -198,6 +198,7 @@ describe('Countdown', () => {
   describe('versions', () => {
     afterEach(() => {
       window.history.replaceState({}, '', '/')
+      window.sessionStorage.clear()
     })
 
     function atBeforeTheWedding(search: string) {
@@ -275,6 +276,30 @@ describe('Countdown', () => {
       ] as const) {
         expect(screen.getByRole('link', { name })).toHaveAttribute('href', `/?countdown=${version}#countdown`)
       }
+    })
+
+    // Die Zustände vom 17.10. und danach lassen sich vorab ansehen (?zeit=…).
+    it('shows the day itself with ?zeit=heute, although the real day is still ahead', () => {
+      atBeforeTheWedding('?zeit=heute')
+      render(<Countdown />)
+      expect(screen.getByRole('heading', { name: /heute ist es so weit/i })).toBeInTheDocument()
+      expect(screen.getByRole('link', { name: /fotos hochladen/i })).toHaveAttribute('href', '/gallery')
+    })
+
+    it('shows the running party with ?zeit=feier', () => {
+      atBeforeTheWedding('?zeit=feier')
+      render(<Countdown />)
+      expect(screen.getByText(/wir sind verheiratet/i)).toBeInTheDocument()
+      expect(screen.getByText(/danke, dass ihr mit uns feiert/i)).toBeInTheDocument()
+      expect(screen.getByRole('link', { name: /fotos hochladen/i })).toBeInTheDocument()
+    })
+
+    it('shows the thank-you state with ?zeit=danach', () => {
+      atBeforeTheWedding('?zeit=danach')
+      render(<Countdown />)
+      expect(screen.getByText(/wir sind verheiratet/i)).toBeInTheDocument()
+      expect(screen.getByText(/danke, dass ihr mit uns gefeiert habt/i)).toBeInTheDocument()
+      expect(screen.getByRole('link', { name: /erinnerung teilen/i })).toHaveAttribute('href', '/memories')
     })
 
     it('falls back to the big days for an unknown value', () => {

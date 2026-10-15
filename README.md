@@ -159,6 +159,11 @@ Danach `npm run dev` neu starten. `data/fake-r2/` ist ignoriert.
   am 17.10. "Heute ist es so weit" mit Fotos hochladen, Ablauf und Gästebuch;
   ab 18.10. "Wir sind verheiratet!" mit Danke. Die Grenzen sind feste Zeitpunkte
   (MESZ), nicht die Zeit des Geräts (`src/lib/event-phase.ts`).
+- **Vorschau der Zustände:** `?zeit=heute` (17.10. vor dem Empfang, 12:00),
+  `?zeit=feier` (17.10., 18:00, die Feier läuft) und `?zeit=danach` (18.10.)
+  versetzen die Uhr der ganzen Seite in diesem Browser-Tab; ein kleines Band
+  unten links erinnert daran und beendet es (`?zeit=aus` tut dasselbe). Es
+  ändert nichts auf dem Server (`src/lib/time-preview.ts`).
 - **Ablauf:** `receptionSchedule` in `src/lib/event-info.ts`; "TBA" wird als
   "Uhrzeit folgt" gezeigt, ungefähre Zeiten ("ca. 18:30 Uhr", "ca. 20:00 – 21:00 Uhr")
   stehen wie geschrieben da, "Als Nächstes" erscheint am Tag für den nächsten Punkt

@@ -48,4 +48,25 @@ describe('useNowSecond', () => {
 
     expect(vi.getTimerCount()).toBe(0)
   })
+
+  // Vorschau der Zustände (?zeit=heute|feier|danach), siehe time-preview.ts.
+  describe('time preview', () => {
+    afterEach(() => {
+      window.sessionStorage.clear()
+      window.history.replaceState(null, '', '/')
+    })
+
+    it('shows the preview instant instead of the real time and ticks along', async () => {
+      vi.useFakeTimers()
+      vi.setSystemTime(new Date('2026-10-15T08:00:00Z'))
+      window.history.replaceState(null, '', '/?zeit=feier')
+      render(<Probe />)
+      const start = Math.floor(Date.parse('2026-10-17T18:00:00+02:00') / 1000)
+      expect(screen.getByText(String(start))).toBeInTheDocument()
+
+      await vi.advanceTimersByTimeAsync(3000)
+
+      expect(screen.getByText(String(start + 3))).toBeInTheDocument()
+    })
+  })
 })
