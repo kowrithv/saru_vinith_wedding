@@ -44,13 +44,6 @@ export async function GET(request: Request): Promise<Response> {
 
 export async function POST(request: Request): Promise<Response> {
   const db = getDb()
-  const limit = memoriesLimiter.check(request, db)
-  if (!limit.allowed) {
-    return NextResponse.json(
-      { error: 'Zu viele Einträge. Bitte später erneut versuchen.' },
-      { status: 429 }
-    )
-  }
 
   if (isFeatureLocked(db, 'memories')) {
     return NextResponse.json(
@@ -75,6 +68,17 @@ export async function POST(request: Request): Promise<Response> {
         status: gate.status,
         ...(gate.status === 429 ? { headers: { 'Retry-After': String(gate.retryAfterSeconds) } } : {}),
       }
+    )
+  }
+
+  // Umfang je Gerät: erst NACH der Kennwort-Prüfung. Anfragen ohne Kennwort
+  // dürfen das Kontingent der Adresse nicht füllen, sonst bekäme jeder Gast
+  // dahinter ein "zu viele", auch mit richtigem Kennwort.
+  const limit = memoriesLimiter.check(request, db)
+  if (!limit.allowed) {
+    return NextResponse.json(
+      { error: 'Zu viele Einträge. Bitte später erneut versuchen.' },
+      { status: 429 }
     )
   }
 

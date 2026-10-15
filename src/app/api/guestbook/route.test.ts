@@ -160,6 +160,24 @@ describe('/api/guestbook', () => {
     expect((await write(quiet)).status).toBe(201)
   })
 
+  // Wer ohne Kennwort viele Anfragen schickt, darf das Kontingent der Adresse
+  // nicht füllen: sonst bekäme jeder Gast dahinter 429, auch mit richtigem Kennwort.
+  it('is not filled up by requests that do not carry the password', async () => {
+    getDb()
+    const send = (password?: string) =>
+      POST(
+        new Request('http://localhost/api/guestbook', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-forwarded-for': '203.0.113.70' },
+          body: JSON.stringify({ name: 'Anna', message: 'Eine ganz gültige Nachricht hier drin.', ...(password ? { password } : {}) }),
+        })
+      )
+
+    for (let i = 0; i < 260; i++) await send(i % 2 ? 'falsch' : undefined)
+
+    expect((await send(PASSWORD)).status).toBe(201)
+  })
+
   it('does not turn away the right password after many wrong ones from the same address', async () => {
     getDb()
     const send = (password: string) =>
