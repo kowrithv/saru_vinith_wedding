@@ -61,9 +61,11 @@ export default function InfoPage() {
           </div>
         </div>
 
-        <div className="mt-8">
-          <GoodToKnow items={goodToKnow} />
-        </div>
+        {goodToKnow.length > 0 && (
+          <div className="mt-8">
+            <GoodToKnow items={goodToKnow} />
+          </div>
+        )}
 
         <Vendors vendors={vendors} />
       </div>

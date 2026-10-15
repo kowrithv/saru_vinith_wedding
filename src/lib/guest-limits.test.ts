@@ -125,6 +125,23 @@ describe('guest limits', () => {
       expect(attempt('love', '10.1.0.4')).toEqual({ ok: true, issueSession: true })
     })
 
+    // Eine Anfrage ohne Kennwort (z. B. abgelaufene Sitzung) ist kein Raten: sie
+    // darf nicht dazu führen, dass der Saal "zu viele Versuche" bekommt.
+    it('does not count a request without a password as a wrong guess', () => {
+      for (let i = 0; i < 30; i++) {
+        const answer = attempt(undefined, '10.1.0.7')
+        expect(answer).toEqual({ ok: false, status: 401, error: 'Falsches Kennwort.' })
+      }
+      const first = attempt('falsch', '10.1.0.7')
+      expect(first.ok === false && first.status).toBe(401)
+    })
+
+    it('does not count an empty password either', () => {
+      for (let i = 0; i < 30; i++) attempt('   ', '10.1.0.8')
+      const first = attempt('falsch', '10.1.0.8')
+      expect(first.ok === false && first.status).toBe(401)
+    })
+
     it('counts wrong passwords per address only', () => {
       for (let i = 0; i < 25; i++) attempt('falsch', '10.1.0.5')
       const other = attempt('falsch', '10.1.0.6')

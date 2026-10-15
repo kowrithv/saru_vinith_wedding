@@ -106,5 +106,10 @@ export type GuestGate = { ok: true; issueSession: boolean } | WrongPassword
 export function gateGuest(request: Request, db: Database.Database, candidatePassword: unknown): GuestGate {
   const access = authorizeGuest(request, db, candidatePassword)
   if (access.ok) return { ok: true, issueSession: access.issueSession }
+  // Ohne ein getipptes Kennwort wurde nichts geraten (abgelaufene Sitzung, Feld
+  // leer): die Anfrage ist nur "noch nicht entsperrt" und zählt nicht.
+  if (typeof candidatePassword !== 'string' || candidatePassword.trim() === '') {
+    return { ok: false, status: 401, error: 'Falsches Kennwort.' }
+  }
   return registerWrongPassword(request)
 }
