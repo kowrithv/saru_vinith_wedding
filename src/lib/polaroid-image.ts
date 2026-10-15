@@ -5,6 +5,8 @@
 // Gezeichnet wird auf ein Canvas im Browser; das Foto kommt von der Foto-Domain
 // (die Bucket-CORS-Regel erlaubt GET für die Seite).
 
+import { fetchPhotoBlob } from './photo-fetch'
+
 export const POLAROID_SIZE = { width: 1000, height: 1500 } as const
 
 export const POLAROID_COLORS = {
@@ -304,9 +306,8 @@ export async function createPolaroidBlob(request: PolaroidRequest): Promise<Blob
     // Ohne Schrift-API bleibt es bei der Ersatzschrift.
   }
 
-  const response = await fetch(photoUrl)
-  if (!response.ok) throw new Error('Foto konnte nicht geladen werden.')
-  const bitmap = await createImageBitmap(await response.blob())
+  // Eigene Adresse für den CORS-Aufruf, siehe photo-fetch.ts.
+  const bitmap = await createImageBitmap(await fetchPhotoBlob(photoUrl))
 
   const canvas = document.createElement('canvas')
   canvas.width = POLAROID_SIZE.width

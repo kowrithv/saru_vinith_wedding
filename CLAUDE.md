@@ -110,6 +110,12 @@ einer Route meldet `tsc` ggf. veraltete Dateien in `.next/types` – dann
   reinen String nicht. Genau eine Schatten-Klasse verwenden.
 - **Touch:** Bedienelemente nie nur per Hover sichtbar machen.
 - **Download:** `<a download>` wird bei Cross-Origin ignoriert – per Blob laden.
+- **Fotos per `fetch()` (Polaroid, Download):** nie dieselbe Adresse wie das `<img>`.
+  Cloudflare und der Browser speichern die Antwort der `<img>`-Anfrage ohne
+  `Access-Control-Allow-Origin` (`Vary: Origin` ignoriert Cloudflare); der spätere
+  CORS-Abruf bekäme dieselbe Kopie und würde blockiert. `fetchPhotoBlob`
+  (`photo-fetch.ts`) hängt `?cors=1` an, das ist ein eigener Cache-Eintrag. Mit
+  einem Test-Server, der immer CORS-Köpfe sendet, fällt der Fehler nicht auf.
 - **R2/AWS-SDK:** `requestChecksumCalculation: 'WHEN_REQUIRED'` ist nötig.
 - **Tests:** `vi.fn`-Mocks, die mit `new` aufgerufen werden, müssen
   `function`-Ausdrücke sein; Regex-Selektoren können mit Label-Texten

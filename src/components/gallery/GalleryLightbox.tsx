@@ -5,6 +5,7 @@ import { X, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react'
 import type { GalleryPhotoView } from '@/lib/gallery-photo-view'
 import { formatPhotoMoment } from '@/lib/format-time'
 import { getDeleteToken, removeDeleteToken } from '@/lib/gallery-delete-tokens'
+import { fetchPhotoBlob } from '@/lib/photo-fetch'
 
 interface GalleryLightboxProps {
   photos: GalleryPhotoView[]
@@ -98,8 +99,9 @@ export default function GalleryLightbox({ photos, index, onClose, onNavigate, on
       // Cross-Origin-URLs ignoriert (die Datei öffnet sich nur, statt
       // gespeichert zu werden) - R2 liegt immer auf einer anderen Domain
       // als die Seite selbst. Ein Blob über denselben Origin umgeht das.
-      const response = await fetch(photo.originalUrl)
-      const blob = await response.blob()
+      // Über eine eigene Adresse (photo-fetch.ts): die <img>-Anfrage derselben
+      // Datei läge sonst ohne CORS-Kopf im Cache und der Abruf scheiterte.
+      const blob = await fetchPhotoBlob(photo.originalUrl)
       const blobUrl = URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = blobUrl
