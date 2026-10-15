@@ -63,7 +63,7 @@ export default function VenueMap({ lat, lng, label, address }: VenueMapProps) {
   }, [lat, lng, label, address])
 
   return (
-    <div className="rounded-2xl overflow-hidden border border-gray-100 shadow-sm bg-white">
+    <div className="isolate rounded-2xl overflow-hidden border border-gray-100 shadow-sm bg-white">
       <div ref={containerRef} className="w-full h-64 md:h-80" />
       <div className="flex flex-col sm:flex-row gap-3 p-4">
         <a

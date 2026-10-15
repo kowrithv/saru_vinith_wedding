@@ -52,4 +52,11 @@ describe('VenueMap', () => {
       expect(url.startsWith('http')).toBe(false)
     })
   })
+
+  // Leaflet vergibt intern z-index bis 1000: ohne eigenen Stapelkontext liegt
+  // die Karte beim Scrollen über der fixen Navigation (z-50).
+  it('keeps the map in its own stacking context so it never covers the fixed navigation', () => {
+    const { container } = render(<VenueMap {...props} />)
+    expect(container.firstElementChild).toHaveClass('isolate')
+  })
 })

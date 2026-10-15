@@ -89,6 +89,8 @@ einer Route meldet `tsc` ggf. veraltete Dateien in `.next/types` – dann
   (307). Der Produktions-Build rendert die Seite vor und liefert sie mit 404
   und leerem Body aus – deshalb Router-Replace + Meta-Refresh + Link. Solche
   Verhalten immer gegen `npm run build` + `next start` prüfen, nicht nur Dev.
+- **Leaflet:** die Karte braucht einen eigenen Stapelkontext (`isolate`): ihre
+  internen z-index-Werte (bis 1000) liegen sonst über der fixen Navigation.
 - **Touch:** Bedienelemente nie nur per Hover sichtbar machen.
 - **Download:** `<a download>` wird bei Cross-Origin ignoriert – per Blob laden.
 - **R2/AWS-SDK:** `requestChecksumCalculation: 'WHEN_REQUIRED'` ist nötig.
