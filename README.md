@@ -310,7 +310,8 @@ Prefix vor einem einzelnen Kommando reicht nicht. `.env` (Compose) und
   `X-Forwarded-For` (siehe `CLIENT_IP_HEADER`). Das ist nur vertrauenswürdig,
   solange der Proxy fremde `X-Forwarded-*`-Header überschreibt. Nach unserem
   Wissen tut Caddy das ab Version 2.5, solange in der Caddyfile keine
-  `trusted_proxies` gesetzt sind (`caddy version` auf dem Server prüfen).
+  `trusted_proxies` gesetzt sind. Auf dem Server läuft Caddy v2.8.4 (am 15.10.
+  mit `caddy --version` geprüft); in der Caddyfile darf kein `trusted_proxies` stehen.
   Hinter Traefik gilt dasselbe für den Entrypoint: weder
   `forwardedHeaders.insecure` noch ein zu weites `trustedIPs`.
 

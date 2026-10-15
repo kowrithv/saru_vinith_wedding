@@ -18,8 +18,8 @@ Feature complete bis auf: Videos (zurückgestellt) und das Ansehen von Admin und
 
 ## Betreiber, vor dem Tag
 
-- [ ] Vorher `caddy version` ≥ 2.5 prüfen; dann `develop` pushen, `develop:main`, Tag
-      `v1.0.0-rc.1` (README „Deployment")
+- [ ] `develop` pushen, `develop:main`, Tag `v1.0.0-rc.1` (README „Deployment"). Caddy ist
+      v2.8.4 und damit neu genug; nur in der Caddyfile darf kein `trusted_proxies` stehen
 - [ ] `.env.production`: `GUEST_PASSWORD=love` setzen, `UPLOAD_PASSWORD_EMPFANG` entfernen,
       `R2_ENDPOINT` **nicht** setzen; **neues `ADMIN_PASSWORD`** (das alte steht in der
       Git-Historie; ein Wechsel beendet alle Admin-Sitzungen); Bucket-CORS ohne `localhost`
