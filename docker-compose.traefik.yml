@@ -36,7 +36,8 @@ services:
       - "traefik.http.routers.hochzeit.tls=true"
       - "traefik.http.routers.hochzeit.tls.certresolver=${TRAEFIK_CERTRESOLVER:-letsencrypt}"
       - "traefik.http.services.hochzeit.loadbalancer.server.port=3000"
-      # Nur relevant, wenn ein Autoheal-Container auf dem Server läuft.
+      # Für einen Autoheal-Container, falls einer auf dem Server läuft. Ohne ihn
+      # übernimmt scripts/ops/restart-if-unhealthy.sh (Cron, siehe Runbook §7).
       - "autoheal=true"
     healthcheck:
       test:

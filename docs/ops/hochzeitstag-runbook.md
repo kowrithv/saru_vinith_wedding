@@ -131,6 +131,18 @@ privater Bucket mit `rclone copy` geht genauso):
 - Einmal probeweise ausführen und im Ziel nachsehen, dass `wedding-*.db`
   angekommen ist.
 
+**Neustart bei hängendem Prozess** (`restart: unless-stopped` startet nur neu, wenn der
+Prozess endet; ein hängender bleibt "running (unhealthy)"):
+
+```bash
+# crontab -e auf dem Server, jede Minute:
+* * * * * <repo>/scripts/ops/restart-if-unhealthy.sh >> /var/log/saru-autoheal.log 2>&1
+```
+
+Das Skript prüft den Healthcheck des Containers `saru-vinith-wedding` und startet
+ihn neu, sobald er `unhealthy` meldet. Es braucht nur `docker` auf dem Host, keinen
+zusätzlichen Container.
+
 **Uptime-Monitor** (z. B. UptimeRobot oder Better Stack, beide mit kostenlosem Tarif):
 
 - Prüfung: HTTPS-GET auf `https://vsjourney.de/api/health`, erwartet Status 200
