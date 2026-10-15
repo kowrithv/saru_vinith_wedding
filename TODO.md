@@ -3,18 +3,17 @@
 Stand Do 15.10.2026 abends. Nur, was jetzt ansteht; Späteres steht in `docs/backlog.md`,
 dauerhafte Hinweise in der README („Bekannte Grenzen").
 
-Feature complete bis auf: Videos (zurückgestellt) und das Ansehen von Admin und Desktop.
+Feature complete. Zurückgestellt: Videos.
 
 ## Brautpaar
 
-- [ ] „Wer von uns?" ansehen (`/wer-von-uns`) und entscheiden: Vorgaben sind eine Stimme je
-      Frage und Gerät (bis zur Auflösung änderbar), DJ-Seite `/dj` mit Wort aus dem Admin, Abstimmung über Fotos statt Namen (andere Fotos:
-      Dateien in `public/who/` ersetzen)
 - [ ] Videos bleiben zurückgestellt (Empfehlung: erst nach der Feier)
 
 ## Claude
 
-- [ ] Admin und Desktop-Breite im Browser ansehen
+- [ ] Desktop-Breite von Geschichte, Info, Galerie, Gästebuch und Erinnerungen sowie die
+      Listen im Admin (Gästebuch, Erinnerungen, Galerie, Memory-Ergebnisse) im Browser
+      ansehen; Startseite, Navigation, „Wer von uns?" und der obere Admin sind gesehen
 
 ## Betreiber, vor dem Tag
 
