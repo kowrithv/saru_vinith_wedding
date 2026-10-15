@@ -248,6 +248,21 @@ describe('GalleryPage', () => {
     expect(screen.getByRole('button', { name: /fotos hochladen/i })).toHaveAttribute('aria-expanded', 'false')
   })
 
+  it('shrinks the floating button to a round close button while the form is open', async () => {
+    mockApi({ body: { mode: 'public', unlocked: true, photos: [samplePhoto] } })
+    render(<GalleryPage />)
+    const open = await screen.findByRole('button', { name: /fotos hochladen/i })
+    expect(open).toHaveClass('px-5')
+
+    await userEvent.click(open)
+
+    const close = screen.getByRole('button', { name: 'Schließen' })
+    expect(close).toHaveClass('h-12', 'w-12')
+    expect(close).not.toHaveClass('px-5')
+    expect(close).toHaveAttribute('aria-expanded', 'true')
+    expect(close).toHaveTextContent('')
+  })
+
   it('only hides the form on close, so running uploads and what was typed survive', async () => {
     mockApi({ body: { mode: 'public', unlocked: true, photos: [] } })
     render(<GalleryPage />)

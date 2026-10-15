@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getDb } from '@/lib/db'
-import { addGuestbookEntry, listGuestbookEntries } from '@/lib/guestbook'
+import { addGuestbookEntry, guestbookFingerprint, listGuestbookEntries } from '@/lib/guestbook'
+import { etagFor, hasEtag, notModified } from '@/lib/etag'
 import { isFeatureLocked } from '@/lib/app-config'
 import { setGallerySessionCookie } from '@/lib/gallery-auth'
 import { GuestRateLimiter, gateGuest } from '@/lib/guest-limits'
@@ -21,9 +22,14 @@ const guestbookLimiter = new GuestRateLimiter({ perDevice: 20, perAddress: 200, 
 // davon stückweise.
 const MAX_ENTRIES = 1000
 
-export async function GET(): Promise<Response> {
-  const entries = listGuestbookEntries(getDb(), MAX_ENTRIES)
-  return NextResponse.json({ entries })
+export async function GET(request?: Request): Promise<Response> {
+  const db = getDb()
+  // Die offene Seite fragt alle 30 Sekunden nach Neuem: ohne Änderung nur ein 304.
+  const etag = etagFor(['guestbook', guestbookFingerprint(db)])
+  const headers = { 'Cache-Control': 'no-store' }
+  if (hasEtag(request, etag)) return notModified(etag, headers)
+
+  return NextResponse.json({ entries: listGuestbookEntries(db, MAX_ENTRIES) }, { headers: { ...headers, ETag: etag } })
 }
 
 export async function POST(request: Request): Promise<Response> {

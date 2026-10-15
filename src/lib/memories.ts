@@ -74,3 +74,17 @@ export function deleteMemoryEntry(db: Database.Database, id: number): boolean {
   const result = db.prepare('DELETE FROM memories_entries WHERE id = ?').run(id)
   return result.changes > 0
 }
+
+/**
+ * Kurzer Stand: Anzahl, höchste Kennung und wie viele Einträge ein sichtbares Foto haben
+ * (ein aus der Galerie gelöschtes Foto lässt den Eintrag stehen, ändert ihn aber).
+ */
+export function memoriesFingerprint(db: Database.Database): string {
+  const row = db
+    .prepare(
+      `SELECT COUNT(*) AS count, COALESCE(MAX(m.id), 0) AS newest, COALESCE(SUM(g.id IS NOT NULL), 0) AS photos
+       FROM memories_entries m LEFT JOIN gallery_photos g ON g.id = m.photo_id`
+    )
+    .get() as { count: number; newest: number; photos: number }
+  return `${row.count}:${row.newest}:${row.photos}`
+}

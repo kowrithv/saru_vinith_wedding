@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import MemoriesPage from './page'
 import { bodyOf, callsTo, mockFetchRoutes } from '@/test-utils/mock-fetch'
@@ -520,5 +520,90 @@ describe('MemoriesPage', () => {
     await userEvent.click(screen.getByRole('button', { name: /erneut versuchen/i }))
 
     expect(await screen.findByText(/Ich erinnere mich an den schönen Abend/)).toBeInTheDocument()
+  })
+
+  describe('new memories by themselves', () => {
+    const base = { createdAt: '2026-10-11T10:00:00.000Z', hasPhoto: false, photo: null }
+    const anna = { ...base, id: 1, name: 'Anna', message: 'Der Tanz mit der ganzen Familie war toll!' }
+    const ben = { ...base, id: 2, name: 'Ben', message: 'Ein Lachen, das ich nie vergesse.' }
+    const answer = (entries: unknown[], etag: string, photosEnabled = false) => ({
+      body: { entries, photosEnabled },
+      headers: { etag },
+    })
+
+    beforeEach(() => {
+      vi.useFakeTimers({ shouldAdvanceTime: true })
+      Object.defineProperty(window, 'scrollY', { value: 0, configurable: true, writable: true })
+      Object.defineProperty(document, 'hidden', { value: false, configurable: true })
+    })
+
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    async function tick(ms: number) {
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(ms)
+      })
+    }
+
+    it('shows a memory another guest wrote after about 30 seconds', async () => {
+      mockFetchRoutes({
+        '/api/access': { body: { unlocked: true } },
+        '/api/memories': [answer([anna], '"v1"'), answer([ben, anna], '"v2"')],
+      })
+      render(<MemoriesPage />)
+      await screen.findByText(/der tanz mit der ganzen familie/i)
+
+      await tick(30_000)
+
+      expect(await screen.findByText(/ein lachen, das ich nie vergesse/i)).toBeInTheDocument()
+    })
+
+    it('offers new memories behind a button when the guest has scrolled down', async () => {
+      window.scrollY = 900
+      window.scrollTo = vi.fn()
+      mockFetchRoutes({
+        '/api/access': { body: { unlocked: true } },
+        '/api/memories': [answer([anna], '"v1"'), answer([ben, anna], '"v2"')],
+      })
+      render(<MemoriesPage />)
+      await screen.findByText(/der tanz mit der ganzen familie/i)
+      await tick(30_000)
+
+      const button = await screen.findByRole('button', { name: '1 neue Erinnerung anzeigen' })
+      expect(screen.queryByText(/ein lachen, das ich nie vergesse/i)).not.toBeInTheDocument()
+
+      await userEvent.click(button)
+
+      expect(screen.getByText(/ein lachen, das ich nie vergesse/i)).toBeInTheDocument()
+    })
+
+    it('shows the photo field again when photos were switched on in the meantime', async () => {
+      mockFetchRoutes({
+        '/api/access': { body: { unlocked: true } },
+        '/api/memories': [answer([anna], '"v1"', false), answer([anna], '"v2"', true)],
+      })
+      render(<MemoriesPage />)
+      await screen.findByText(/der tanz mit der ganzen familie/i)
+      expect(screen.queryByLabelText(/foto \(optional\)/i)).not.toBeInTheDocument()
+
+      await tick(30_000)
+
+      expect(await screen.findByLabelText(/foto \(optional\)/i)).toBeInTheDocument()
+    })
+
+    it('does not look again while the list could not be loaded', async () => {
+      const fetchMock = mockFetchRoutes({
+        '/api/access': { body: { unlocked: true } },
+        '/api/memories': { status: 500, body: {} },
+      })
+      render(<MemoriesPage />)
+      await screen.findByText(/konnten nicht geladen werden/i)
+
+      await tick(90_000)
+
+      expect(callsTo(fetchMock, '/api/memories')).toHaveLength(1)
+    })
   })
 })

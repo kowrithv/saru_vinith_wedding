@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import GuestbookPage from './page'
 import { bodyOf, callsTo, mockFetchRoutes } from '@/test-utils/mock-fetch'
@@ -294,5 +294,95 @@ describe('GuestbookPage', () => {
 
     expect(await screen.findByText('Alles Liebe für euch beide!')).toBeInTheDocument()
     expect(screen.queryByText(/konnten nicht geladen werden/i)).not.toBeInTheDocument()
+  })
+
+  describe('new entries by themselves', () => {
+    const anna = { id: 1, name: 'Anna', message: 'Wir freuen uns so für euch!', createdAt: '2026-10-11T10:00:00.000Z' }
+    const ben = { id: 2, name: 'Ben', message: 'Alles Gute euch beiden zusammen!', createdAt: '2026-10-11T11:00:00.000Z' }
+    const withTag = (entries: unknown[], etag: string) => ({ body: { entries }, headers: { etag } })
+
+    beforeEach(() => {
+      vi.useFakeTimers({ shouldAdvanceTime: true })
+      Object.defineProperty(window, 'scrollY', { value: 0, configurable: true, writable: true })
+      Object.defineProperty(document, 'hidden', { value: false, configurable: true })
+    })
+
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    async function tick(ms: number) {
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(ms)
+      })
+    }
+
+    it('shows an entry another guest wrote after about 30 seconds', async () => {
+      const fetchMock = mockFetchRoutes({
+        '/api/access': { body: { unlocked: true } },
+        '/api/guestbook': [withTag([anna], '"v1"'), withTag([ben, anna], '"v2"')],
+      })
+      render(<GuestbookPage />)
+      await screen.findByText('Wir freuen uns so für euch!')
+
+      await tick(30_000)
+
+      expect(await screen.findByText('Alles Gute euch beiden zusammen!')).toBeInTheDocument()
+      expect(callsTo(fetchMock, '/api/guestbook')).toHaveLength(2)
+    })
+
+    it('asks with the ETag and keeps the list on a 304', async () => {
+      const fetchMock = mockFetchRoutes({
+        '/api/access': { body: { unlocked: true } },
+        '/api/guestbook': [
+          withTag([anna], '"v1"'), // das erste Laden der Seite
+          withTag([anna], '"v1"'), // die erste Runde: noch ohne ETag
+          { status: 304, body: null, headers: { etag: '"v1"' } },
+        ],
+      })
+      render(<GuestbookPage />)
+      await screen.findByText('Wir freuen uns so für euch!')
+      await tick(30_000)
+      await tick(30_000)
+
+      const tags = callsTo(fetchMock, '/api/guestbook').map(
+        ([, init]) => ((init as RequestInit | undefined)?.headers as Record<string, string> | undefined)?.['If-None-Match']
+      )
+      expect(tags.slice(0, 3)).toEqual([undefined, undefined, '"v1"'])
+      expect(screen.getByText('Wir freuen uns so für euch!')).toBeInTheDocument()
+    })
+
+    it('offers new entries behind a button when the guest has scrolled down', async () => {
+      window.scrollY = 900
+      window.scrollTo = vi.fn()
+      mockFetchRoutes({
+        '/api/access': { body: { unlocked: true } },
+        '/api/guestbook': [withTag([anna], '"v1"'), withTag([ben, anna], '"v2"')],
+      })
+      render(<GuestbookPage />)
+      await screen.findByText('Wir freuen uns so für euch!')
+      await tick(30_000)
+
+      const button = await screen.findByRole('button', { name: '1 neuer Eintrag anzeigen' })
+      expect(screen.queryByText('Alles Gute euch beiden zusammen!')).not.toBeInTheDocument()
+
+      await userEvent.click(button)
+
+      expect(screen.getByText('Alles Gute euch beiden zusammen!')).toBeInTheDocument()
+      expect(window.scrollTo).toHaveBeenCalledWith(expect.objectContaining({ top: 0 }))
+    })
+
+    it('does not look again while the list could not be loaded', async () => {
+      const fetchMock = mockFetchRoutes({
+        '/api/access': { body: { unlocked: true } },
+        '/api/guestbook': { status: 500, body: {} },
+      })
+      render(<GuestbookPage />)
+      await screen.findByText(/konnten nicht geladen werden/i)
+
+      await tick(90_000)
+
+      expect(callsTo(fetchMock, '/api/guestbook')).toHaveLength(1)
+    })
   })
 })

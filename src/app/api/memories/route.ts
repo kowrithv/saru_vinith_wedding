@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getDb } from '@/lib/db'
-import { addMemoryEntry, listMemoryEntries } from '@/lib/memories'
+import { addMemoryEntry, listMemoryEntries, memoriesFingerprint } from '@/lib/memories'
+import { etagFor, hasEtag, notModified } from '@/lib/etag'
 import { toMemoryEntryView } from '@/lib/memory-view'
 import { getOrCreateAdminSecret } from '@/lib/admin-auth'
 import { hasGuestAccess, setGallerySessionCookie } from '@/lib/gallery-auth'
@@ -35,11 +36,15 @@ export async function GET(request: Request): Promise<Response> {
   const db = getDb()
   // Fotos nur für entsperrte Browser (wie die Galerie); der Text bleibt offen.
   const showPhoto = hasGuestAccess(request, db)
+  const photosOn = photosEnabled(db)
+  // Die offene Seite fragt alle 30 Sekunden nach Neuem: ohne Änderung nur ein 304. Der
+  // ETag enthält, ob Fotos sichtbar sind (entsperrt) und ob sie angehängt werden dürfen.
+  const etag = etagFor(['memories', showPhoto, photosOn, memoriesFingerprint(db)])
+  const headers = { 'Cache-Control': 'no-store' }
+  if (hasEtag(request, etag)) return notModified(etag, headers)
+
   const entries = listMemoryEntries(db, MAX_ENTRIES).map((entry) => toMemoryEntryView(entry, { showPhoto }))
-  return NextResponse.json(
-    { entries, photosEnabled: photosEnabled(db) },
-    { headers: { 'Cache-Control': 'no-store' } }
-  )
+  return NextResponse.json({ entries, photosEnabled: photosOn }, { headers: { ...headers, ETag: etag } })
 }
 
 export async function POST(request: Request): Promise<Response> {

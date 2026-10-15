@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { GET, POST } from './route'
 import { setFeatureLocked } from '@/lib/app-config'
 import { getDb } from '@/lib/db'
+import { addGuestbookEntry, deleteGuestbookEntry } from '@/lib/guestbook'
 import { GALLERY_COOKIE_NAME, createGallerySessionCookieValue } from '@/lib/gallery-auth'
 
 // Gäste schreiben mit dem Kennwort vom Empfang (oder einer Sitzung daraus).
@@ -226,5 +227,61 @@ describe('/api/guestbook', () => {
       postRequest({ name: 'Anna', message: 'Gästebuch bleibt offen.' })
     )
     expect(response.status).toBe(201)
+  })
+
+  describe('conditional requests (ETag)', () => {
+    const withTag = (etag: string) => new Request('http://localhost/api/guestbook', { headers: { 'if-none-match': etag } })
+
+    it('sends an ETag with the list', async () => {
+      const response = await GET()
+      expect(response.headers.get('etag')).toMatch(/^"[0-9a-f]{24}"$/)
+    })
+
+    it('answers 304 without a body when nothing changed', async () => {
+      addGuestbookEntry(getDb(), 'Anna', 'Wir freuen uns so sehr für euch beide!')
+      const etag = (await GET()).headers.get('etag') as string
+
+      const response = await GET(withTag(etag))
+
+      expect(response.status).toBe(304)
+      expect(await response.text()).toBe('')
+      expect(response.headers.get('etag')).toBe(etag)
+    })
+
+    it('sends the list again after a new entry', async () => {
+      addGuestbookEntry(getDb(), 'Anna', 'Wir freuen uns so sehr für euch beide!')
+      const etag = (await GET()).headers.get('etag') as string
+
+      addGuestbookEntry(getDb(), 'Ben', 'Alles Liebe und Gute für euch zwei!')
+      const response = await GET(withTag(etag))
+
+      expect(response.status).toBe(200)
+      expect((await response.json()).entries).toHaveLength(2)
+    })
+
+    it('sends the list again after an entry was deleted', async () => {
+      const first = addGuestbookEntry(getDb(), 'Anna', 'Wir freuen uns so sehr für euch beide!')
+      addGuestbookEntry(getDb(), 'Ben', 'Alles Liebe und Gute für euch zwei!')
+      const etag = (await GET()).headers.get('etag') as string
+
+      deleteGuestbookEntry(getDb(), first.id)
+      const response = await GET(withTag(etag))
+
+      expect(response.status).toBe(200)
+      expect((await response.json()).entries).toHaveLength(1)
+    })
+
+    it('notices a deleted newest entry that was replaced by a new one (same count)', async () => {
+      addGuestbookEntry(getDb(), 'Anna', 'Wir freuen uns so sehr für euch beide!')
+      const newest = addGuestbookEntry(getDb(), 'Ben', 'Alles Liebe und Gute für euch zwei!')
+      const etag = (await GET()).headers.get('etag') as string
+
+      deleteGuestbookEntry(getDb(), newest.id)
+      addGuestbookEntry(getDb(), 'Carla', 'Auf viele gemeinsame Jahre voller Lachen!')
+      const response = await GET(withTag(etag))
+
+      expect(response.status).toBe(200)
+      expect((await response.json()).entries.map((e: { name: string }) => e.name)).toEqual(['Carla', 'Anna'])
+    })
   })
 })

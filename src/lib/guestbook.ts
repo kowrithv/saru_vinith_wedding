@@ -44,3 +44,14 @@ export function deleteGuestbookEntry(db: Database.Database, id: number): boolean
   const result = db.prepare('DELETE FROM guestbook_entries WHERE id = ?').run(id)
   return result.changes > 0
 }
+
+/**
+ * Kurzer Stand: Anzahl und höchste Kennung (AUTOINCREMENT, wird nie wieder vergeben).
+ * Jede Änderung (neuer oder gelöschter Eintrag) ändert eines von beiden, siehe etag.ts.
+ */
+export function guestbookFingerprint(db: Database.Database): string {
+  const row = db
+    .prepare('SELECT COUNT(*) AS count, COALESCE(MAX(id), 0) AS newest FROM guestbook_entries')
+    .get() as { count: number; newest: number }
+  return `${row.count}:${row.newest}`
+}

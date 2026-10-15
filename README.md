@@ -132,7 +132,12 @@ hinter dem Knopf „N neue Fotos anzeigen“. Die Großansicht merkt sich das Fo
 Kategorie-Filter zeigen nur Kategorien mit Fotos. Das Nachsehen ist billig: `GET /api/gallery`
 trägt einen `ETag` (Anzahl und neuestes Foto, dazu Modus, Upload-Sperre und ob der Aufrufer
 entsperrt ist); kommt er als `If-None-Match` zurück, antwortet der Server mit `304` ohne
-Liste. Erst bei einer Änderung kommt die ganze Liste. Das Auswahlfeld ist ein großer
+Liste. Erst bei einer Änderung kommt die ganze Liste. Dasselbe machen **Gästebuch** und
+**Erinnerungen** (`GET /api/guestbook`, `GET /api/memories`, Hilfen in `etag.ts`, Verhalten
+der Seiten in `use-live-list.ts`): neue Einträge anderer Gäste erscheinen nach höchstens
+ca. 30 Sekunden von selbst; wer weiter unten ist, bekommt den Knopf „N neue Einträge
+anzeigen". Bei den Erinnerungen steckt in den Stand auch, ob Fotos sichtbar sind und wie
+viele Einträge ein Foto haben (ein aus der Galerie gelöschtes Foto ändert den Eintrag). Das Auswahlfeld ist ein großer
 Knopf (`PhotoPickerButton`) mit dem echten, unsichtbaren Dateifeld dahinter.
 
 Der Admin kann im Dashboard die Galerie zwischen **Kennwort** (Standard) und

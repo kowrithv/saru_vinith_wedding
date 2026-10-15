@@ -6,7 +6,8 @@ import { GALLERY_COOKIE_NAME, createGallerySessionCookieValue } from '@/lib/gall
 import { getOrCreateAdminSecret } from '@/lib/admin-auth'
 import { signUploadTicket, type TicketPayload } from '@/lib/upload-ticket'
 import { listGalleryPhotos } from '@/lib/gallery-photos'
-import { listMemoryEntries } from '@/lib/memories'
+import { addMemoryEntry, listMemoryEntries } from '@/lib/memories'
+import { addGalleryPhoto, deleteGalleryPhotoRow } from '@/lib/gallery-photos'
 
 const mockHeadObject = vi.fn()
 vi.mock('@/lib/r2', () => ({
@@ -389,6 +390,79 @@ describe('/api/memories', () => {
         postWithTicket({ password: undefined }, { cookie: `${GALLERY_COOKIE_NAME}=${cookieValue}` })
       )
       expect(response.status).toBe(201)
+    })
+  })
+
+  describe('conditional requests (ETag)', () => {
+    const get = (headers: Record<string, string> = {}) =>
+      GET(new Request('http://localhost/api/memories', { headers }))
+    const withTag = (etag: string, cookie?: string) =>
+      get({ 'if-none-match': etag, ...(cookie ? { cookie } : {}) })
+    const galleryPhoto = (id: string) => ({
+      id,
+      thumbKey: `gallery/${id}/thumb.jpg`,
+      originalKey: `gallery/${id}/original.jpg`,
+      uploaderName: 'Anna',
+      deleteTokenHash: `h-${id}`,
+      category: 'Erinnerungen',
+      isOfficial: false,
+    })
+
+    it('answers 304 without a body when nothing changed', async () => {
+      addMemoryEntry(getDb(), 'Anna', 'Ein Moment, den ich nie vergesse.', null)
+      const etag = (await get()).headers.get('etag') as string
+
+      const response = await withTag(etag)
+
+      expect(response.status).toBe(304)
+      expect(await response.text()).toBe('')
+    })
+
+    it('sends the list again after a new entry', async () => {
+      addMemoryEntry(getDb(), 'Anna', 'Ein Moment, den ich nie vergesse.', null)
+      const etag = (await get()).headers.get('etag') as string
+
+      addMemoryEntry(getDb(), 'Ben', 'Ein Lachen, das bleibt für immer.', null)
+      const response = await withTag(etag)
+
+      expect(response.status).toBe(200)
+      expect((await response.json()).entries).toHaveLength(2)
+    })
+
+    it('sends the list again when the photo of an entry was deleted from the gallery', async () => {
+      addGalleryPhoto(getDb(), galleryPhoto('p1'))
+      addMemoryEntry(getDb(), 'Anna', 'Ein Moment, den ich nie vergesse.', 'p1')
+      const cookie = `${GALLERY_COOKIE_NAME}=${createGallerySessionCookieValue(getDb())}`
+      const etag = (await get({ cookie })).headers.get('etag') as string
+
+      deleteGalleryPhotoRow(getDb(), 'p1')
+      const response = await withTag(etag, cookie)
+
+      expect(response.status).toBe(200)
+      expect((await response.json()).entries[0].hasPhoto).toBe(false)
+    })
+
+    it('does not give a locked browser the photos because it sends the ETag of an unlocked one', async () => {
+      addGalleryPhoto(getDb(), galleryPhoto('p1'))
+      addMemoryEntry(getDb(), 'Anna', 'Ein Moment, den ich nie vergesse.', 'p1')
+      const cookie = `${GALLERY_COOKIE_NAME}=${createGallerySessionCookieValue(getDb())}`
+      const unlockedTag = (await get({ cookie })).headers.get('etag') as string
+
+      const response = await withTag(unlockedTag)
+
+      expect(response.status).toBe(200)
+      expect((await response.json()).entries[0].photo).toBeNull()
+    })
+
+    it('sends the list again when photos get switched off for new entries', async () => {
+      addMemoryEntry(getDb(), 'Anna', 'Ein Moment, den ich nie vergesse.', null)
+      const etag = (await get()).headers.get('etag') as string
+
+      setFeatureLocked(getDb(), 'memory_photos', true)
+      const response = await withTag(etag)
+
+      expect(response.status).toBe(200)
+      expect((await response.json()).photosEnabled).toBe(false)
     })
   })
 })
