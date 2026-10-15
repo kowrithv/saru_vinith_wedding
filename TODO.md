@@ -1,6 +1,6 @@
 # TODO
 
-## Einplanung (Stand Di 13.10.2026)
+## Einplanung (Stand Do 15.10.2026)
 
 | Wann | Wer | Was |
 |---|---|---|
@@ -16,6 +16,17 @@
 | ab So 18.10. | Entwicklung | Export der Originale aus R2 (Runbook §6); **verwaiste R2-Objekte** aufräumen (Skript, Abgleich mit der Datenbank) |
 
 Nicht geplant: ein vom Server verteiltes Memory-Spiel (bewusst clientseitig).
+
+## Vom Brautpaar noch zu entscheiden (Stand Do 15.10.)
+
+- **Countdown:** `/?countdown=gross` (Tage groß, jetzt Standard) oder
+  `/?countdown=kacheln` (frühere vier weiße Kacheln) ansehen und eine wählen;
+  danach den Umschalter (`use-countdown-variant.ts`, `TileCountdown`/`VariantSwitcher`
+  in `Countdown.tsx`) entfernen.
+- **„Wer von uns?":** eigenes Feedback steht noch aus (bleibt vorerst im Quiz;
+  Porträtfotos wären die Ergänzung aus dem Vorschlag C14).
+- **Galerie:** der rote Punkt für neue Fotos aus dem Vorschlag C9 ist nicht
+  umgesetzt (bräuchte „zuletzt gesehen" je Gerät).
 
 ## Inhalte vor dem Freeze (von euch)
 

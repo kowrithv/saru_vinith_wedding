@@ -44,7 +44,7 @@ einer Route meldet `tsc` ggf. veraltete Dateien in `.next/types` – dann
   `upload-ticket.ts`, `api/uploads/*`). Rohe R2-Keys verlassen den Server
   nie – Clients bekommen nur `GalleryPhotoView` mit URLs.
 - Schreib-Sperren (`app-config.ts`, `LOCKABLE_FEATURES`):
-  `guestbook | memories | who_votes | gallery_upload` einzeln schaltbar; `gallery_mode` (`public | password`, Standard `password`) ist davon getrennt.
+  `guestbook | memories | memory_photos | who_votes | gallery_upload` einzeln schaltbar; `gallery_mode` (`public | password`, Standard `password`) ist davon getrennt.
 - Fotos zu Erinnerungen sind **Galerie-Fotos** (`gallery_photos`, Kategorie
   `MEMORY_PHOTO_CATEGORY`); `memories_entries.photo_id` verweist darauf
   (`photo_key` ist ungenutzt). Foto und Eintrag entstehen in `POST /api/memories`
@@ -61,6 +61,11 @@ einer Route meldet `tsc` ggf. veraltete Dateien in `.next/types` – dann
   `bordeaux`, `rose-sand`; Schriften `font-serif` (Playfair), `font-display`
   (Cormorant), `font-script` (Great Vibes, nur Namen/Unterschriften). Ornament:
   `Lotus`, `FloralSpray`, `Card variant="ornate"` (Eckmarken), `EmptyState`.
+- Upload-Kategorien: Gäste wählen nur `Hochzeit`/`Party` (`uploadCategoriesFor`
+  in `gallery-categories.ts`); `/api/uploads/request` lehnt `Kennenlernen`/`Verlobung`
+  für Gäste ab, `Erinnerungen` kommt nur aus dem Erinnerungs-Formular.
+- Lokal ohne R2: `R2_ENDPOINT` + `scripts/dev-fake-r2.mjs` (README "Ohne R2 testen");
+  in Produktion ungesetzt.
 - Tageszustände: `event-phase.ts` (`before | today | after`, feste Zeitpunkte mit
   MESZ-Offset, nie die Gerätezeit-Zone). Countdown, Hero-Knöpfe und
   `ProgramTimeline` ("Als Nächstes") hängen daran; im Test eine feste Systemzeit
@@ -91,6 +96,10 @@ einer Route meldet `tsc` ggf. veraltete Dateien in `.next/types` – dann
   Verhalten immer gegen `npm run build` + `next start` prüfen, nicht nur Dev.
 - **Leaflet:** die Karte braucht einen eigenen Stapelkontext (`isolate`): ihre
   internen z-index-Werte (bis 1000) liegen sonst über der fixen Navigation.
+- **Tailwind-Schatten:** zwei Schatten-Klassen am selben Element (`shadow-sm` +
+  `shadow-[…]`) setzen dieselbe Variable, im Stylesheet gewinnt die später
+  definierte – über `cn()` (tailwind-merge) wird das aufgelöst, in einem
+  reinen String nicht. Genau eine Schatten-Klasse verwenden.
 - **Touch:** Bedienelemente nie nur per Hover sichtbar machen.
 - **Download:** `<a download>` wird bei Cross-Origin ignoriert – per Blob laden.
 - **R2/AWS-SDK:** `requestChecksumCalculation: 'WHEN_REQUIRED'` ist nötig.
