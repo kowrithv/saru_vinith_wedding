@@ -83,10 +83,18 @@ describe('MemoriesPage', () => {
   })
 
   it('submits a new entry with the password when the browser is not unlocked yet', async () => {
+    // Nach dem Eintragen ist der Browser entsperrt und die Liste wird neu geholt:
+    // wie beim echten Server enthält sie dann den neuen Eintrag.
+    let posted = false
     const fetchMock = mockFetchRoutes({
       '/api/access': { body: { unlocked: false } },
-      '/api/memories': (init) =>
-        init?.method === 'POST' ? { status: 201, body: { entry: newEntry } } : { body: { entries: [], photosEnabled: true } },
+      '/api/memories': (init) => {
+        if (init?.method === 'POST') {
+          posted = true
+          return { status: 201, body: { entry: newEntry } }
+        }
+        return { body: { entries: posted ? [newEntry] : [], photosEnabled: true } }
+      },
     })
     render(<MemoriesPage />)
     const field = await screen.findByLabelText(/Kennwort/i)
@@ -162,6 +170,38 @@ describe('MemoriesPage', () => {
 
     expect(await screen.findByLabelText(/Kennwort/i)).toBeInTheDocument()
     expect(screen.getByText(/bitte gib das kennwort vom empfang ein/i)).toBeInTheDocument()
+  })
+
+  // Wer über den QR-Link direkt auf dieser Seite landet, bekommt die Fotos erst
+  // mit dem Cookie: die Einträge müssen nach dem Entsperren geholt werden.
+  it('shows the photos of the entries right after unlocking with the QR link', async () => {
+    window.history.replaceState(null, '', '/memories#k=love')
+    let unlocked = false
+    mockFetchRoutes({
+      '/api/gallery/unlock': () => {
+        unlocked = true
+        return { body: { success: true } }
+      },
+      '/api/memories': () => ({
+        body: {
+          photosEnabled: true,
+          entries: [
+            {
+              id: 1,
+              name: 'Lena',
+              message: 'Ihr habt mich zum Lachen gebracht.',
+              createdAt: '2026-10-11T10:00:00.000Z',
+              hasPhoto: true,
+              photo: unlocked ? photoView : null,
+            },
+          ],
+        },
+      }),
+    })
+    render(<MemoriesPage />)
+
+    expect(await screen.findByAltText('Foto von Lena')).toHaveAttribute('src', photoView.thumbUrl)
+    expect(screen.queryByText(/sichtbar nach dem entsperren/i)).not.toBeInTheDocument()
   })
 
   it('unlocks from the QR link in the address', async () => {

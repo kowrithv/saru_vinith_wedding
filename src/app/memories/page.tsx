@@ -51,15 +51,26 @@ export default function MemoriesPage() {
   // Das Feld erscheint nur, solange dieser Browser nicht entsperrt ist.
   const needsPassword = access.status === 'locked'
 
+  // Erst laden, wenn feststeht, ob dieser Browser entsperrt ist: die Fotos
+  // liefert der Server nur mit Sitzung (QR-Link auf dieser Seite löst sie erst
+  // einen Augenblick nach dem Öffnen ein), und ein späteres Entsperren lädt neu.
+  const accessResolved = access.status !== 'checking'
+  const unlocked = access.status === 'unlocked'
   useEffect(() => {
+    if (!accessResolved) return
+    let active = true
     fetch('/api/memories')
       .then((res) => (res.ok ? res.json() : { entries: [], photosEnabled: false }))
       .then((data: { entries: MemoryEntry[]; photosEnabled?: boolean }) => {
+        if (!active) return
         setEntries(data.entries)
         setPhotosEnabled(Boolean(data.photosEnabled))
       })
       .catch(() => {})
-  }, [])
+    return () => {
+      active = false
+    }
+  }, [accessResolved, unlocked])
 
   const handlePhotoChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] ?? null
