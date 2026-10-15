@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { GET } from './route'
 import { getDb } from '@/lib/db'
 import { GALLERY_COOKIE_NAME, createGallerySessionCookieValue } from '@/lib/gallery-auth'
-import { ADMIN_COOKIE_NAME, getOrCreateAdminSecret, signCookieValue } from '@/lib/admin-auth'
+import { ADMIN_COOKIE_NAME, getOrCreateAdminSecret, signCookieValue, adminCookieSecret } from '@/lib/admin-auth'
 
 function requestWithCookies(cookies: Record<string, string>): Request {
   const headers = new Headers()
@@ -49,7 +49,7 @@ describe('GET /api/access', () => {
 
   it('reports unlocked for an admin session', async () => {
     const secret = getOrCreateAdminSecret(getDb())
-    const adminCookie = signCookieValue(Date.now() + 1000, secret)
+    const adminCookie = signCookieValue(Date.now() + 1000, adminCookieSecret(secret))
     const response = await GET(requestWithCookies({ [ADMIN_COOKIE_NAME]: adminCookie }))
     expect(await response.json()).toEqual({ unlocked: true })
   })

@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { DELETE } from './route'
 import { getDb } from '@/lib/db'
-import { ADMIN_COOKIE_NAME, getOrCreateAdminSecret, signCookieValue } from '@/lib/admin-auth'
+import { ADMIN_COOKIE_NAME, getOrCreateAdminSecret, signCookieValue, adminCookieSecret } from '@/lib/admin-auth'
 import { getMemoryRecord, listMemoryResults, submitMemoryResult } from '@/lib/memory-record'
 
 function request(cookie?: string): Request {
@@ -27,7 +27,7 @@ describe('DELETE /api/admin/memory-results/[id]', () => {
   })
 
   function adminCookie() {
-    return signCookieValue(Date.now() + 60_000, getOrCreateAdminSecret(getDb()))
+    return signCookieValue(Date.now() + 60_000, adminCookieSecret(getOrCreateAdminSecret(getDb())))
   }
 
   it('rejects a request without an admin cookie and keeps the result', async () => {

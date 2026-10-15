@@ -42,6 +42,20 @@ export function getOrCreateAdminSecret(db: Database.Database): string {
 
 export const ADMIN_SESSION_DURATION_MS = 12 * 60 * 60 * 1000 // 12h
 
+/**
+ * Schlüssel, mit dem Admin-Cookies signiert werden. Er hängt am Admin-Kennwort:
+ * wer das Kennwort wechselt, beendet damit alle bestehenden Admin-Sitzungen
+ * (sonst gälte ein altes Cookie bis zum Ablauf weiter). Vom Signierschlüssel der
+ * Gast-Sitzungen und der Upload-Tickets ist er getrennt abgeleitet.
+ */
+export function adminCookieSecret(rawSecret: string): string {
+  return createHmac('sha256', rawSecret)
+    .update('admin-session')
+    .update('\0')
+    .update(process.env.ADMIN_PASSWORD ?? '')
+    .digest('hex')
+}
+
 export function signCookieValue(expiresAt: number, secret: string): string {
   const signature = createHmac('sha256', secret)
     .update(String(expiresAt))
@@ -93,6 +107,6 @@ export function isAdminRequest(request: Request, db: Database.Database): boolean
   if (!match) return false
 
   const value = match.slice(ADMIN_COOKIE_NAME.length + 1)
-  const secret = getOrCreateAdminSecret(db)
+  const secret = adminCookieSecret(getOrCreateAdminSecret(db))
   return verifyCookieValue(value, secret)
 }

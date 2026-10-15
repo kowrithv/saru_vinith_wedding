@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto'
 import { DELETE } from './route'
 import { getDb } from '@/lib/db'
 import { addGalleryPhoto } from '@/lib/gallery-photos'
-import { ADMIN_COOKIE_NAME, getOrCreateAdminSecret, signCookieValue } from '@/lib/admin-auth'
+import { ADMIN_COOKIE_NAME, getOrCreateAdminSecret, signCookieValue, adminCookieSecret } from '@/lib/admin-auth'
 
 vi.mock('@/lib/r2', () => ({ deleteObjects: vi.fn().mockResolvedValue(undefined) }))
 vi.mock('@/lib/cloudflare-purge', () => ({ purgeCache: vi.fn().mockResolvedValue(undefined) }))
@@ -81,7 +81,7 @@ describe('DELETE /api/gallery/[id]', () => {
     const db = getDb()
     seedPhoto(db, 'photo-1', 'the-real-token')
     const secret = getOrCreateAdminSecret(db)
-    const cookieValue = signCookieValue(Date.now() + 1000, secret)
+    const cookieValue = signCookieValue(Date.now() + 1000, adminCookieSecret(secret))
 
     const response = await DELETE(deleteRequest('photo-1', { cookieValue }), {
       params: Promise.resolve({ id: 'photo-1' }),

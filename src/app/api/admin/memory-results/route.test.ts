@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { GET } from './route'
 import { getDb } from '@/lib/db'
-import { ADMIN_COOKIE_NAME, getOrCreateAdminSecret, signCookieValue } from '@/lib/admin-auth'
+import { ADMIN_COOKIE_NAME, getOrCreateAdminSecret, signCookieValue, adminCookieSecret } from '@/lib/admin-auth'
 import { submitMemoryResult } from '@/lib/memory-record'
 
 function request(cookie?: string): Request {
@@ -35,7 +35,7 @@ describe('GET /api/admin/memory-results', () => {
     const db = getDb()
     submitMemoryResult(db, { moves: 14, seconds: 75 })
     submitMemoryResult(db, { moves: 9, seconds: 30 })
-    const cookie = signCookieValue(Date.now() + 60_000, getOrCreateAdminSecret(db))
+    const cookie = signCookieValue(Date.now() + 60_000, adminCookieSecret(getOrCreateAdminSecret(db)))
 
     const response = await GET(request(cookie))
 

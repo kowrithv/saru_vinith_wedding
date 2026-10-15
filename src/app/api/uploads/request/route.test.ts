@@ -3,7 +3,7 @@ import { POST } from './route'
 import { createPresignedPutUrl } from '@/lib/r2'
 import { getDb } from '@/lib/db'
 import { setFeatureLocked } from '@/lib/app-config'
-import { ADMIN_COOKIE_NAME, getOrCreateAdminSecret, signCookieValue } from '@/lib/admin-auth'
+import { ADMIN_COOKIE_NAME, getOrCreateAdminSecret, signCookieValue, adminCookieSecret } from '@/lib/admin-auth'
 import { GALLERY_COOKIE_NAME, createGallerySessionCookieValue } from '@/lib/gallery-auth'
 import { verifyUploadTicket } from '@/lib/upload-ticket'
 
@@ -211,7 +211,7 @@ describe('POST /api/uploads/request', () => {
   it('issues an official ticket without any password when the request has a valid admin cookie', async () => {
     const db = getDb()
     const secret = getOrCreateAdminSecret(db)
-    const cookieValue = signCookieValue(Date.now() + 1000, secret)
+    const cookieValue = signCookieValue(Date.now() + 1000, adminCookieSecret(secret))
 
     const response = await POST(
       requestBody(
@@ -409,7 +409,7 @@ describe('POST /api/uploads/request', () => {
     it('does not limit the admin', async () => {
       const db = getDb()
       const secret = getOrCreateAdminSecret(db)
-      const cookieValue = signCookieValue(Date.now() + 60_000, secret)
+      const cookieValue = signCookieValue(Date.now() + 60_000, adminCookieSecret(secret))
       for (let i = 0; i < 20; i++) {
         const response = await POST(
           requestBody({ category: 'Kennenlernen', files: files(20) }, cookieValue, '10.0.3.3')
@@ -459,7 +459,7 @@ describe('POST /api/uploads/request', () => {
     const db = getDb()
     setFeatureLocked(db, 'gallery_upload', true)
     const secret = getOrCreateAdminSecret(db)
-    const cookieValue = signCookieValue(Date.now() + 60_000, secret)
+    const cookieValue = signCookieValue(Date.now() + 60_000, adminCookieSecret(secret))
     const response = await POST(
       requestBody(
         { category: 'Standesamt', files: [{ filename: 'a.jpg', size: 1000, contentType: 'image/jpeg', thumbSize: 50_000 }] },

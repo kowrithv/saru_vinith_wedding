@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { GET, POST } from './route'
 import { getDb } from '@/lib/db'
-import { ADMIN_COOKIE_NAME, getOrCreateAdminSecret, signCookieValue } from '@/lib/admin-auth'
+import { ADMIN_COOKIE_NAME, getOrCreateAdminSecret, signCookieValue, adminCookieSecret } from '@/lib/admin-auth'
 
 function requestWithCookie(method: string, cookieValue?: string, body?: unknown): Request {
   const headers = new Headers()
@@ -40,7 +40,7 @@ describe('/api/admin/gallery-mode', () => {
   it('GET returns password by default', async () => {
     const db = getDb()
     const secret = getOrCreateAdminSecret(db)
-    const cookieValue = signCookieValue(Date.now() + 1000, secret)
+    const cookieValue = signCookieValue(Date.now() + 1000, adminCookieSecret(secret))
 
     const response = await GET(requestWithCookie('GET', cookieValue))
     expect(response.status).toBe(200)
@@ -50,7 +50,7 @@ describe('/api/admin/gallery-mode', () => {
   it('POST switches the mode and a subsequent GET reflects it', async () => {
     const db = getDb()
     const secret = getOrCreateAdminSecret(db)
-    const cookieValue = signCookieValue(Date.now() + 1000, secret)
+    const cookieValue = signCookieValue(Date.now() + 1000, adminCookieSecret(secret))
 
     const postResponse = await POST(requestWithCookie('POST', cookieValue, { mode: 'password' }))
     expect(postResponse.status).toBe(200)
@@ -63,7 +63,7 @@ describe('/api/admin/gallery-mode', () => {
   it('POST rejects an unknown mode value', async () => {
     const db = getDb()
     const secret = getOrCreateAdminSecret(db)
-    const cookieValue = signCookieValue(Date.now() + 1000, secret)
+    const cookieValue = signCookieValue(Date.now() + 1000, adminCookieSecret(secret))
 
     const response = await POST(requestWithCookie('POST', cookieValue, { mode: 'secret-club' }))
     expect(response.status).toBe(400)

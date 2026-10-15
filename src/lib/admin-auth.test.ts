@@ -1,7 +1,8 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import { createDb } from './db'
 import {
   ADMIN_COOKIE_NAME,
+  adminCookieSecret,
   getOrCreateAdminSecret,
   hashPassword,
   isAdminRequest,
@@ -104,7 +105,7 @@ describe('isAdminRequest', () => {
     const db = createDb(':memory:')
     const secret = getOrCreateAdminSecret(db)
     const expiresAt = Date.now() + 1000
-    const value = signCookieValue(expiresAt, secret)
+    const value = signCookieValue(expiresAt, adminCookieSecret(secret))
 
     expect(isAdminRequest(requestWithCookie(value), db)).toBe(true)
     db.close()
@@ -121,7 +122,7 @@ describe('isAdminRequest', () => {
     const db = createDb(':memory:')
     const secret = getOrCreateAdminSecret(db)
     const expiresAt = Date.now() - 1000
-    const value = signCookieValue(expiresAt, secret)
+    const value = signCookieValue(expiresAt, adminCookieSecret(secret))
 
     expect(isAdminRequest(requestWithCookie(value), db)).toBe(false)
     db.close()
@@ -131,10 +132,50 @@ describe('isAdminRequest', () => {
     const db = createDb(':memory:')
     const secret = getOrCreateAdminSecret(db)
     const expiresAt = Date.now() + 1000
-    const value = signCookieValue(expiresAt, secret)
+    const value = signCookieValue(expiresAt, adminCookieSecret(secret))
     const tampered = value.slice(0, -1) + (value.endsWith('0') ? '1' : '0')
 
     expect(isAdminRequest(requestWithCookie(tampered), db)).toBe(false)
     db.close()
+  })
+})
+
+// Ein Wechsel des Admin-Kennworts beendet alle Admin-Sitzungen: das Cookie
+// hängt am Kennwort, nicht nur am (gleichbleibenden) Signierschlüssel.
+describe('admin cookie and the admin password', () => {
+  const original = process.env.ADMIN_PASSWORD
+
+  afterEach(() => {
+    process.env.ADMIN_PASSWORD = original
+  })
+
+  function requestWith(value: string): Request {
+    return new Request('http://localhost/api/x', { headers: { cookie: `${ADMIN_COOKIE_NAME}=${value}` } })
+  }
+
+  it('invalidates a session issued under the old password', () => {
+    const db = createDb(':memory:')
+    process.env.ADMIN_PASSWORD = 'altes-kennwort'
+    const cookie = signCookieValue(Date.now() + 60_000, adminCookieSecret(getOrCreateAdminSecret(db)))
+    expect(isAdminRequest(requestWith(cookie), db)).toBe(true)
+
+    process.env.ADMIN_PASSWORD = 'neues-kennwort'
+
+    expect(isAdminRequest(requestWith(cookie), db)).toBe(false)
+    db.close()
+  })
+
+  it('does not accept a cookie signed with the raw secret alone', () => {
+    const db = createDb(':memory:')
+    process.env.ADMIN_PASSWORD = 'kennwort'
+    const cookie = signCookieValue(Date.now() + 60_000, getOrCreateAdminSecret(db))
+    expect(isAdminRequest(requestWith(cookie), db)).toBe(false)
+    db.close()
+  })
+
+  it('derives a different key than the raw secret', () => {
+    process.env.ADMIN_PASSWORD = 'kennwort'
+    expect(adminCookieSecret('geheim')).not.toBe('geheim')
+    expect(adminCookieSecret('geheim')).toBe(adminCookieSecret('geheim'))
   })
 })

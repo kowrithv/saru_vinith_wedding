@@ -10,7 +10,7 @@ import {
   isGalleryUnlocked,
   setGallerySessionCookie,
 } from './gallery-auth'
-import { ADMIN_COOKIE_NAME, getOrCreateAdminSecret, isAdminRequest, signCookieValue } from './admin-auth'
+import { ADMIN_COOKIE_NAME, adminCookieSecret, getOrCreateAdminSecret, isAdminRequest, signCookieValue } from './admin-auth'
 
 function requestWithCookie(cookieValue?: string): Request {
   const headers = new Headers()
@@ -128,7 +128,7 @@ describe('hasGuestAccess', () => {
 
   it('is true for an admin session', () => {
     const db = createDb(':memory:')
-    const adminCookie = signCookieValue(Date.now() + 1000, getOrCreateAdminSecret(db))
+    const adminCookie = signCookieValue(Date.now() + 1000, adminCookieSecret(getOrCreateAdminSecret(db)))
     const headers = new Headers({ cookie: `${ADMIN_COOKIE_NAME}=${adminCookie}` })
     expect(hasGuestAccess(new Request('http://localhost/x', { headers }), db)).toBe(true)
     db.close()

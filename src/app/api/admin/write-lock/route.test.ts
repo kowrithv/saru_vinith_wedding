@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { GET, POST } from './route'
 import { getDb } from '@/lib/db'
-import { ADMIN_COOKIE_NAME, getOrCreateAdminSecret, signCookieValue } from '@/lib/admin-auth'
+import { ADMIN_COOKIE_NAME, getOrCreateAdminSecret, signCookieValue, adminCookieSecret } from '@/lib/admin-auth'
 
 function requestWithCookie(method: string, cookieValue?: string, body?: unknown): Request {
   const headers = new Headers()
@@ -40,7 +40,7 @@ describe('/api/admin/write-lock', () => {
   it('GET returns all five lock states (false by default) for an admin', async () => {
     const db = getDb()
     const secret = getOrCreateAdminSecret(db)
-    const cookieValue = signCookieValue(Date.now() + 1000, secret)
+    const cookieValue = signCookieValue(Date.now() + 1000, adminCookieSecret(secret))
 
     const response = await GET(requestWithCookie('GET', cookieValue))
     expect(response.status).toBe(200)
@@ -56,7 +56,7 @@ describe('/api/admin/write-lock', () => {
   it('POST updates only the targeted feature, and a subsequent GET reflects it', async () => {
     const db = getDb()
     const secret = getOrCreateAdminSecret(db)
-    const cookieValue = signCookieValue(Date.now() + 1000, secret)
+    const cookieValue = signCookieValue(Date.now() + 1000, adminCookieSecret(secret))
 
     const postResponse = await POST(
       requestWithCookie('POST', cookieValue, { feature: 'guestbook', locked: true })
@@ -73,7 +73,7 @@ describe('/api/admin/write-lock', () => {
   it('POST rejects an unknown feature value', async () => {
     const db = getDb()
     const secret = getOrCreateAdminSecret(db)
-    const cookieValue = signCookieValue(Date.now() + 1000, secret)
+    const cookieValue = signCookieValue(Date.now() + 1000, adminCookieSecret(secret))
 
     const response = await POST(
       requestWithCookie('POST', cookieValue, { feature: 'gallery', locked: true })
@@ -86,7 +86,7 @@ describe('/api/admin/write-lock', () => {
     async (feature) => {
       const db = getDb()
       const secret = getOrCreateAdminSecret(db)
-      const cookieValue = signCookieValue(Date.now() + 1000, secret)
+      const cookieValue = signCookieValue(Date.now() + 1000, adminCookieSecret(secret))
 
       const response = await POST(requestWithCookie('POST', cookieValue, { feature, locked: true }))
       expect(response.status).toBe(200)

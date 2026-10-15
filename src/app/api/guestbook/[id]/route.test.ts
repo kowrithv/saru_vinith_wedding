@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { DELETE } from './route'
 import { addGuestbookEntry } from '@/lib/guestbook'
 import { getDb } from '@/lib/db'
-import { ADMIN_COOKIE_NAME, getOrCreateAdminSecret, signCookieValue } from '@/lib/admin-auth'
+import { ADMIN_COOKIE_NAME, getOrCreateAdminSecret, signCookieValue, adminCookieSecret } from '@/lib/admin-auth'
 
 function deleteRequest(id: string, cookieValue?: string): Request {
   const headers = new Headers()
@@ -30,7 +30,7 @@ describe('DELETE /api/guestbook/[id]', () => {
     const db = getDb()
     const entry = addGuestbookEntry(db, 'Anna', 'Eine Nachricht, die gelöscht werden soll.')
     const secret = getOrCreateAdminSecret(db)
-    const cookieValue = signCookieValue(Date.now() + 1000, secret)
+    const cookieValue = signCookieValue(Date.now() + 1000, adminCookieSecret(secret))
 
     const response = await DELETE(deleteRequest(String(entry.id), cookieValue), {
       params: Promise.resolve({ id: String(entry.id) }),
@@ -51,7 +51,7 @@ describe('DELETE /api/guestbook/[id]', () => {
   it('returns 404 when deleting an id that does not exist, not a 500', async () => {
     const db = getDb()
     const secret = getOrCreateAdminSecret(db)
-    const cookieValue = signCookieValue(Date.now() + 1000, secret)
+    const cookieValue = signCookieValue(Date.now() + 1000, adminCookieSecret(secret))
 
     const response = await DELETE(deleteRequest('999999', cookieValue), {
       params: Promise.resolve({ id: '999999' }),

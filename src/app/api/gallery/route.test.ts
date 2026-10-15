@@ -5,7 +5,7 @@ import { setFeatureLocked } from '@/lib/app-config'
 import { setGalleryMode } from '@/lib/gallery-mode'
 import { addGalleryPhoto } from '@/lib/gallery-photos'
 import { createGallerySessionCookieValue, GALLERY_COOKIE_NAME } from '@/lib/gallery-auth'
-import { ADMIN_COOKIE_NAME, getOrCreateAdminSecret, signCookieValue } from '@/lib/admin-auth'
+import { ADMIN_COOKIE_NAME, getOrCreateAdminSecret, signCookieValue, adminCookieSecret } from '@/lib/admin-auth'
 
 function requestWithCookies(cookies: Record<string, string>): Request {
   const headers = new Headers()
@@ -79,7 +79,7 @@ describe('GET /api/gallery', () => {
     setGalleryMode(db, 'password')
     addGalleryPhoto(db, { id: 'p1', thumbKey: 't1', originalKey: 'o1', uploaderName: 'Anna', deleteTokenHash: 'h1', category: 'Standesamt', isOfficial: false })
     const secret = getOrCreateAdminSecret(db)
-    const adminCookie = signCookieValue(Date.now() + 1000, secret)
+    const adminCookie = signCookieValue(Date.now() + 1000, adminCookieSecret(secret))
 
     const body = await (await GET(requestWithCookies({ [ADMIN_COOKIE_NAME]: adminCookie }))).json()
     expect(body.unlocked).toBe(true)

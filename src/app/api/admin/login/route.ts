@@ -6,6 +6,7 @@ import {
   ADMIN_SESSION_DURATION_MS,
   getOrCreateAdminSecret,
   signCookieValue,
+  adminCookieSecret,
   verifyPassword,
 } from '@/lib/admin-auth'
 import { RateLimiter } from '@/lib/rate-limit'
@@ -53,7 +54,7 @@ export async function POST(request: Request): Promise<Response> {
 
   const secret = getOrCreateAdminSecret(getDb())
   const expiresAt = Date.now() + ADMIN_SESSION_DURATION_MS
-  const cookieValue = signCookieValue(expiresAt, secret)
+  const cookieValue = signCookieValue(expiresAt, adminCookieSecret(secret))
 
   const response = NextResponse.json({ success: true })
   response.cookies.set(ADMIN_COOKIE_NAME, cookieValue, {

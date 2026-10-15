@@ -12,7 +12,7 @@ vi.mock('@/lib/cloudflare-purge', () => ({
   purgeCache: (urls: string[]) => mockPurgeCache(urls),
 }))
 import { getDb } from '@/lib/db'
-import { ADMIN_COOKIE_NAME, getOrCreateAdminSecret, signCookieValue } from '@/lib/admin-auth'
+import { ADMIN_COOKIE_NAME, getOrCreateAdminSecret, signCookieValue, adminCookieSecret } from '@/lib/admin-auth'
 
 function deleteRequest(id: string, cookieValue?: string): Request {
   const headers = new Headers()
@@ -43,7 +43,7 @@ describe('DELETE /api/memories/[id]', () => {
     const db = getDb()
     const entry = addMemoryEntry(db, 'Anna', 'Eine Erinnerung, die gelöscht werden soll.', null)
     const secret = getOrCreateAdminSecret(db)
-    const cookieValue = signCookieValue(Date.now() + 1000, secret)
+    const cookieValue = signCookieValue(Date.now() + 1000, adminCookieSecret(secret))
 
     const response = await DELETE(deleteRequest(String(entry.id), cookieValue), {
       params: Promise.resolve({ id: String(entry.id) }),
@@ -64,7 +64,7 @@ describe('DELETE /api/memories/[id]', () => {
   it('returns 404 when deleting an id that does not exist, not a 500', async () => {
     const db = getDb()
     const secret = getOrCreateAdminSecret(db)
-    const cookieValue = signCookieValue(Date.now() + 1000, secret)
+    const cookieValue = signCookieValue(Date.now() + 1000, adminCookieSecret(secret))
 
     const response = await DELETE(deleteRequest('999999', cookieValue), {
       params: Promise.resolve({ id: '999999' }),
@@ -84,7 +84,7 @@ describe('DELETE /api/memories/[id]', () => {
       isOfficial: false,
     })
     const entry = addMemoryEntry(db, 'Anna', 'Eine Erinnerung mit Foto, lang genug.', 'p1')
-    const cookieValue = signCookieValue(Date.now() + 1000, getOrCreateAdminSecret(db))
+    const cookieValue = signCookieValue(Date.now() + 1000, adminCookieSecret(getOrCreateAdminSecret(db)))
 
     const response = await DELETE(deleteRequest(String(entry.id), cookieValue), {
       params: Promise.resolve({ id: String(entry.id) }),
@@ -112,7 +112,7 @@ describe('DELETE /api/memories/[id]', () => {
       isOfficial: false,
     })
     const entry = addMemoryEntry(db, 'Anna', 'Eine Erinnerung mit Foto, lang genug.', 'p1')
-    const cookieValue = signCookieValue(Date.now() + 1000, getOrCreateAdminSecret(db))
+    const cookieValue = signCookieValue(Date.now() + 1000, adminCookieSecret(getOrCreateAdminSecret(db)))
     mockDeleteObjects.mockRejectedValueOnce(new Error('R2 nicht erreichbar'))
 
     await expect(
@@ -125,7 +125,7 @@ describe('DELETE /api/memories/[id]', () => {
   it('does not touch R2 for an entry without a photo', async () => {
     const db = getDb()
     const entry = addMemoryEntry(db, 'Anna', 'Nur Text, lang genug für die Prüfung.', null)
-    const cookieValue = signCookieValue(Date.now() + 1000, getOrCreateAdminSecret(db))
+    const cookieValue = signCookieValue(Date.now() + 1000, adminCookieSecret(getOrCreateAdminSecret(db)))
 
     await DELETE(deleteRequest(String(entry.id), cookieValue), { params: Promise.resolve({ id: String(entry.id) }) })
 

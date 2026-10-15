@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { DELETE, GET, POST } from './route'
 import { getDb } from '@/lib/db'
-import { ADMIN_COOKIE_NAME, getOrCreateAdminSecret, signCookieValue } from '@/lib/admin-auth'
+import { ADMIN_COOKIE_NAME, getOrCreateAdminSecret, signCookieValue, adminCookieSecret } from '@/lib/admin-auth'
 
 function request(method: string, options: { body?: unknown; cookie?: string; ip?: string } = {}): Request {
   const headers = new Headers()
@@ -98,7 +98,7 @@ describe('/api/memory-record', () => {
   it('DELETE resets the record for an admin', async () => {
     await POST(request('POST', { body: { moves: 14, seconds: 75 }, ip: '10.1.0.7' }))
     const db = getDb()
-    const cookie = signCookieValue(Date.now() + 60_000, getOrCreateAdminSecret(db))
+    const cookie = signCookieValue(Date.now() + 60_000, adminCookieSecret(getOrCreateAdminSecret(db)))
 
     const response = await DELETE(request('DELETE', { cookie }))
 
