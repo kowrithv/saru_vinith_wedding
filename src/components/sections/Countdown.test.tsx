@@ -240,6 +240,43 @@ describe('Countdown', () => {
       expect(screen.getByRole('link', { name: /große tage/i })).toHaveAttribute('href', '/?countdown=gross#countdown')
     })
 
+    it('shows four rings in the navy section with ?countdown=ringe', () => {
+      atBeforeTheWedding('?countdown=ringe')
+      const { container } = render(<Countdown />)
+
+      const rings = screen.getAllByTestId('countdown-ring')
+      expect(rings).toHaveLength(4)
+      expect(rings[0]).toHaveTextContent('02')
+      expect(rings[0]).toHaveTextContent('Tage')
+      expect(rings[3]).toHaveTextContent('Sekunden')
+      rings.forEach((ring) => expect(ring.querySelector('svg')).toHaveAttribute('aria-hidden', 'true'))
+      expect(container.querySelector('section#countdown')).toHaveClass('bg-dark-blue')
+      expect(screen.getByRole('button', { name: /in meinen kalender/i })).toBeInTheDocument()
+    })
+
+    it('shows one calm sentence on champagne with ?countdown=ruhig', () => {
+      atBeforeTheWedding('?countdown=ruhig')
+      const { container } = render(<Countdown />)
+
+      expect(screen.getByText('Noch 2 Tage, 6 Stunden und 30 Minuten')).toBeInTheDocument()
+      expect(screen.getByText(/bis zu unserem empfang/i)).toBeInTheDocument()
+      expect(container.querySelector('section#countdown')).toHaveClass('bg-champagne-light')
+      expect(screen.getByRole('button', { name: /kalender/i })).toBeInTheDocument()
+    })
+
+    it('lists all four versions in the switcher', () => {
+      atBeforeTheWedding('?countdown=ruhig')
+      render(<Countdown />)
+      for (const [name, version] of [
+        [/große tage/i, 'gross'],
+        [/kacheln/i, 'kacheln'],
+        [/ringe/i, 'ringe'],
+        [/ruhig/i, 'ruhig'],
+      ] as const) {
+        expect(screen.getByRole('link', { name })).toHaveAttribute('href', `/?countdown=${version}#countdown`)
+      }
+    })
+
     it('falls back to the big days for an unknown value', () => {
       atBeforeTheWedding('?countdown=quatsch')
       render(<Countdown />)

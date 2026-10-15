@@ -1,8 +1,8 @@
 import { useSyncExternalStore } from 'react'
 
-export type CountdownVariant = 'gross' | 'kacheln'
+export type CountdownVariant = 'gross' | 'kacheln' | 'ringe' | 'ruhig'
 
-const VARIANTS: ReadonlySet<string> = new Set<CountdownVariant>(['gross', 'kacheln'])
+const VARIANTS: ReadonlySet<string> = new Set<CountdownVariant>(['gross', 'kacheln', 'ringe', 'ruhig'])
 
 function subscribe(onChange: () => void): () => void {
   window.addEventListener('popstate', onChange)
@@ -22,7 +22,7 @@ function getServerRequested(): null {
 }
 
 /**
- * Zum Vergleichen der Countdown-Gestaltungen: `?countdown=gross|kacheln`.
+ * Zum Vergleichen der Countdown-Gestaltungen: `?countdown=gross|kacheln|ringe|ruhig`.
  * `requested` ist null, solange nichts angefordert wurde (auch beim Server-
  * Rendering und Hydrieren, daher kein Mismatch). `variant` fällt bei
  * unbekannten Werten auf die große Darstellung zurück.

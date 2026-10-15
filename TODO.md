@@ -125,8 +125,10 @@ markiert.
   Standesamt/Party, Foto zur Erinnerung) noch nicht durchgespielt.
 
 **Entscheidungen offen (?)**
-- **Countdown:** `/?countdown=gross` oder `/?countdown=kacheln`; danach den Umschalter
-  entfernen (`use-countdown-variant.ts`, `TileCountdown`/`VariantSwitcher`).
+- **Countdown:** vier Versionen zum Durchklicken unter `/?countdown=gross`, `kacheln`,
+  `ringe` und `ruhig`; danach den Umschalter und die nicht gewählten Versionen
+  entfernen (`use-countdown-variant.ts`, `countdown-text.ts`, in `Countdown.tsx`
+  `TileCountdown`, `RingCountdown`, `QuietCountdown`, `VariantSwitcher`).
 - **Programm bestätigen:** die zwei „Einzug"-Zeilen (17:15 mit Tortenanschneiden, ca.
   18:30 traditionell) und „ca. 20:00 – 21:00 Uhr" für das Abendessen.
 - **Kategorien:** Gäste wählen jetzt *Standesamt* oder *Party*, der Admin zusätzlich
