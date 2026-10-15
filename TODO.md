@@ -7,8 +7,8 @@ Antwort. Erledigtes steht unten kurz zum Abhaken.
 
 ### A. Brautpaar: entscheiden
 
-Entschieden am 15.10.: Programm, Tageszustände und Kategorien passen; „Wer von uns?"
-und Videos sind zurückgestellt; das Rate-Limit zählt je Gerät statt je Adresse
+Entschieden am 15.10.: Programm, Tageszustände, Kategorien und die neue Info-Seite
+passen; „Wer von uns?" und Videos sind zurückgestellt; das Rate-Limit zählt je Gerät statt je Adresse
 (siehe README „Gäste-Zugang").
 
 1. **Rate Limit:** erledigt (je Gerät, richtiges Kennwort nie abgewiesen). Offen nur,
@@ -49,7 +49,6 @@ und Videos sind zurückgestellt; das Rate-Limit zählt je Gerät statt je Adress
 
 Sobald die Antworten da sind:
 - „Wer von uns?" umbauen und Videos entscheiden, wenn sie nicht mehr zurückgestellt sind.
-- Info-Seite nach eurem Feedback anpassen (Entwurf ist committet, Feedback steht aus).
 - Funde aus dem Gerätetest beheben.
 
 Ohne Antwort möglich:
@@ -78,7 +77,7 @@ Ohne Antwort möglich:
 
 Hero A, Kacheln, Zeitleiste (Uhrzeit unter dem Titel), Anfahrt-Karte, Galerie-Filter und
 Großansicht, Gästebuch rechts ausgerichtet, Quiz-Ergebnis, Memory-Rekord und -Rücken,
-Story-Karten; Polaroid nach Vinith' Beispiel (ohne Blumen) mit Teilen-Menü; Programm
+Story-Karten, neue Info-Seite (Ablauf mit Symbolen, ruhige Dienstleister); Polaroid nach Vinith' Beispiel (ohne Blumen) mit Teilen-Menü; Programm
 eingetragen; Kategorie „Standesamt"; Kennwort `love` ohne Groß-/Kleinschreibung, 20
 Fehlversuche je 15 Minuten, QR-Dateien; Memory-Bilder verkleinert und vorgeladen; Hinweis
 „Nur Fotos, keine Videos"; Vorschau der Zustände; lokaler R2-Ersatz.
