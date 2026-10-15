@@ -188,6 +188,7 @@ export default function GuestbookPage() {
             ))}
             {entries.length > visibleCount && (
               <ShowMoreButton
+                key={visibleCount}
                 label={`${Math.min(PAGE_SIZE, entries.length - visibleCount)} ältere Einträge anzeigen`}
                 onClick={() => setVisibleCount((count) => count + PAGE_SIZE)}
               />

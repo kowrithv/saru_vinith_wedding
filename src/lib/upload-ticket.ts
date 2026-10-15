@@ -28,14 +28,13 @@ export function verifyUploadTicket(
   const encoded = ticket.slice(0, separatorIndex)
   const signature = ticket.slice(separatorIndex + 1)
 
+  // Format strikt prüfen: Buffer.from(x, 'hex') schneidet ab dem ersten
+  // Nicht-Hex-Zeichen ab und ließe Anhänge hinter der Signatur durch.
+  if (!/^[0-9a-f]{64}$/.test(signature)) return null
+
   const expectedSignature = createHmac('sha256', secret).update(encoded).digest('hex')
   const expectedBuffer = Buffer.from(expectedSignature, 'hex')
-  let actualBuffer: Buffer
-  try {
-    actualBuffer = Buffer.from(signature, 'hex')
-  } catch {
-    return null
-  }
+  const actualBuffer = Buffer.from(signature, 'hex')
   if (expectedBuffer.length !== actualBuffer.length) return null
   if (!timingSafeEqual(expectedBuffer, actualBuffer)) return null
 

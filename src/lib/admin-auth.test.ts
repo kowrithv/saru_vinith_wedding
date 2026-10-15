@@ -179,3 +179,36 @@ describe('admin cookie and the admin password', () => {
     expect(adminCookieSecret('geheim')).toBe(adminCookieSecret('geheim'))
   })
 })
+
+// Buffer.from(x, 'hex') schneidet ab dem ersten Nicht-Hex-Zeichen ab: ein
+// Anhang hinter der Signatur darf das Cookie nicht "gültig" lassen (sonst gäbe
+// es unendlich viele gleichwertige Cookie-Werte).
+describe('verifyCookieValue is strict about the format', () => {
+  const secret = 'geheim'
+  const expiresAt = Date.now() + 60_000
+  const good = signCookieValue(expiresAt, secret)
+
+  it('accepts exactly the canonical value', () => {
+    expect(verifyCookieValue(good, secret)).toBe(true)
+  })
+
+  it.each(['zz', 'g1', '00', '.', ' ', '%00'])('rejects the value with the suffix %j', (suffix) => {
+    expect(verifyCookieValue(good + suffix, secret)).toBe(false)
+  })
+
+  it('rejects capital letters in the signature', () => {
+    const [expiry, signature] = good.split('.')
+    expect(verifyCookieValue(`${expiry}.${signature.toUpperCase()}`, secret)).toBe(false)
+  })
+
+  it('rejects a signature that is too short or has the wrong length', () => {
+    const [expiry, signature] = good.split('.')
+    expect(verifyCookieValue(`${expiry}.${signature.slice(0, 62)}`, secret)).toBe(false)
+  })
+
+  it('rejects an expiry that is not a plain number', () => {
+    const signature = good.split('.')[1]
+    expect(verifyCookieValue(`1e9.${signature}`, secret)).toBe(false)
+    expect(verifyCookieValue(`0x10.${signature}`, secret)).toBe(false)
+  })
+})

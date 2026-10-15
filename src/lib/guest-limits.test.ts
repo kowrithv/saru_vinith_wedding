@@ -51,6 +51,18 @@ describe('guest limits', () => {
       expect(guestLimitKey(request({ ip: '10.0.0.7' }), db)).toBe('ip:10.0.0.7')
     })
 
+    // Ein Anhang hinter der Signatur darf keinen frischen Schlüssel ergeben (die
+    // Grenze je Gerät wäre sonst beliebig umgehbar).
+    it.each(['zz', 'g1', 'ab'])('does not turn the suffix %j into a fresh device', (suffix) => {
+      const session = createGallerySessionCookieValue(db, base + 5_000)
+      const canonical = guestLimitKey(request({ session, ip: '10.0.0.8' }), db)
+      expect(canonical.startsWith('s:')).toBe(true)
+
+      const variant = guestLimitKey(request({ session: session + suffix, ip: '10.0.0.8' }), db)
+
+      expect(variant).toBe('ip:10.0.0.8')
+    })
+
     it('ignores a made-up session value (it would be a fresh bucket every time)', () => {
       expect(guestLimitKey(request({ session: 'erfunden.signatur', ip: '10.0.0.7' }), db)).toBe('ip:10.0.0.7')
     })

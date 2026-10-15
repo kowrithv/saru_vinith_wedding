@@ -48,3 +48,30 @@ describe('upload ticket signing', () => {
     expect(verifyUploadTicket('not-a-real-ticket', 'secret')).toBeNull()
   })
 })
+
+describe('verifyUploadTicket is strict about the signature format', () => {
+  const secret = 'geheim'
+  const payload = {
+    photoId: 'p',
+    thumbKey: 't',
+    originalKey: 'o',
+    thumbMaxSize: 10,
+    originalSize: 10,
+    expiresAt: Date.now() + 60_000,
+    category: 'Standesamt',
+    isOfficial: false,
+  }
+
+  it('accepts the canonical ticket', () => {
+    expect(verifyUploadTicket(signUploadTicket(payload, secret), secret)).not.toBeNull()
+  })
+
+  it.each(['zz', 'g1', '.', ' '])('rejects the ticket with the suffix %j', (suffix) => {
+    expect(verifyUploadTicket(signUploadTicket(payload, secret) + suffix, secret)).toBeNull()
+  })
+
+  it('rejects capital letters in the signature', () => {
+    const [encoded, signature] = signUploadTicket(payload, secret).split('.')
+    expect(verifyUploadTicket(`${encoded}.${signature.toUpperCase()}`, secret)).toBeNull()
+  })
+})

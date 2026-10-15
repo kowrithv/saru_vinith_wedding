@@ -309,6 +309,7 @@ export default function MemoriesPage() {
             </div>
             {entries.length > visibleCount && (
               <ShowMoreButton
+                key={visibleCount}
                 label={`${Math.min(PAGE_SIZE, entries.length - visibleCount)} ältere Erinnerungen anzeigen`}
                 onClick={() => setVisibleCount((count) => count + PAGE_SIZE)}
               />

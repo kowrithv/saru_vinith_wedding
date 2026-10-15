@@ -131,6 +131,7 @@ export default function GalleryGrid({ photos, onPhotoDeleted, emptyMessage }: Ga
 
       {filteredPhotos.length > visibleCount && (
         <ShowMoreButton
+          key={visibleCount}
           label={`${filteredPhotos.length - visibleCount > PAGE_SIZE ? PAGE_SIZE : filteredPhotos.length - visibleCount} weitere Fotos anzeigen`}
           onClick={() => setVisibleCount((count) => count + PAGE_SIZE)}
         />

@@ -63,6 +63,9 @@ export function signCookieValue(expiresAt: number, secret: string): string {
   return `${expiresAt}.${signature}`
 }
 
+const COOKIE_EXPIRY_PATTERN = /^\d{1,16}$/
+const HEX_SIGNATURE_PATTERN = /^[0-9a-f]{64}$/
+
 export function verifyCookieValue(
   value: string,
   secret: string,
@@ -75,6 +78,11 @@ export function verifyCookieValue(
 
   const expiresAtPart = value.slice(0, separatorIndex)
   const signaturePart = value.slice(separatorIndex + 1)
+  // Format strikt prüfen: Buffer.from(x, 'hex') schneidet ab dem ersten
+  // Nicht-Hex-Zeichen ab und ließe Anhänge hinter der Signatur durch.
+  if (!COOKIE_EXPIRY_PATTERN.test(expiresAtPart) || !HEX_SIGNATURE_PATTERN.test(signaturePart)) {
+    return false
+  }
   const expiresAt = Number(expiresAtPart)
   if (!Number.isFinite(expiresAt)) {
     return false
