@@ -10,6 +10,14 @@ describe('SectionTitle', () => {
     ).toBeInTheDocument()
   })
 
+  it('has the lotus as its ornament, in gold on light and soft white on dark backgrounds', () => {
+    const { container, rerender } = render(<SectionTitle title="Titel" />)
+    expect(container.querySelector('svg')).toHaveClass('text-gold')
+
+    rerender(<SectionTitle title="Titel" light />)
+    expect(container.querySelector('svg')).toHaveClass('text-white/60')
+  })
+
   it('renders the subtitle when provided', () => {
     render(<SectionTitle title="Titel" subtitle="Ein Untertitel" />)
     expect(screen.getByText('Ein Untertitel')).toBeInTheDocument()

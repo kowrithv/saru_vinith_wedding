@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils'
+import Lotus from '@/components/ui/Lotus'
 
 interface SectionTitleProps {
   title: string
@@ -19,9 +20,7 @@ export default function SectionTitle({
     <div className={cn('mb-10 md:mb-14', centered && 'text-center', className)}>
       <div className={cn('flex items-center gap-3 mb-4', centered && 'justify-center')}>
         <div className={cn('h-px w-8', light ? 'bg-white/30' : 'bg-gold/40')} />
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className={cn(light ? 'text-white/60' : 'text-gold')}>
-          <path d="M8 0L9.5 6.5L16 8L9.5 9.5L8 16L6.5 9.5L0 8L6.5 6.5L8 0Z" fill="currentColor" />
-        </svg>
+        <Lotus size={20} className={cn(light ? 'text-white/60' : 'text-gold')} />
         <div className={cn('h-px w-8', light ? 'bg-white/30' : 'bg-gold/40')} />
       </div>
 

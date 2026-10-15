@@ -71,12 +71,24 @@ describe('Navigation', () => {
     expect(screen.getByRole('button', { name: /Menü öffnen/i })).toBeInTheDocument()
   })
 
-  it('shows the hashtag in the mobile menu in a gold that is readable on white', async () => {
+  // Das Menü ist dunkelblau: dort liest sich das helle Gold (nicht das
+  // Text-Gold für weiße Flächen).
+  it('shows the hashtag in the mobile menu in a gold that is readable on dark blue', async () => {
     mockPathname = '/'
     render(<Navigation />)
     await userEvent.click(screen.getByRole('button', { name: /Menü öffnen/i }))
 
     const hashtags = screen.getAllByText(/^#/)
-    expect(hashtags.some((el) => el.classList.contains('text-gold-text'))).toBe(true)
+    expect(hashtags.some((el) => el.classList.contains('text-gold'))).toBe(true)
+  })
+
+  it('opens the mobile menu as a dark blue full screen with the names of the couple', async () => {
+    mockPathname = '/'
+    render(<Navigation />)
+    await userEvent.click(screen.getByRole('button', { name: /Menü öffnen/i }))
+
+    const names = screen.getAllByText('Saruga & Vinith')
+    const panel = names[0].closest('div.fixed')
+    expect(panel).toHaveClass('bg-dark-blue', 'inset-0')
   })
 })

@@ -10,22 +10,18 @@ export interface HomeFeature {
   /** Handlungsaufforderung der Kachel (statt überall "Mehr erfahren"). */
   cta: string
   href: string
+  /** Große, dunkle Kachel: was Gäste zuerst suchen. */
+  featured?: boolean
 }
 
 export const homeFeatures: HomeFeature[] = [
-  {
-    icon: BookOpen,
-    title: 'Unsere Geschichte',
-    description: 'Von einem zufälligen Treffen zu einer großen Liebe – so begann alles.',
-    cta: 'Geschichte lesen',
-    href: '/story',
-  },
   {
     icon: Calendar,
     title: 'Hochzeitsinfos',
     description: 'Datum, Uhrzeit, Ort und Ablauf des Empfangs auf einen Blick.',
     cta: 'Infos ansehen',
     href: '/info',
+    featured: true,
   },
   {
     icon: Camera,
@@ -33,6 +29,14 @@ export const homeFeatures: HomeFeature[] = [
     description: 'Fotos von uns und von eurem Tag – schaut rein und ladet eure eigenen hoch.',
     cta: 'Fotos ansehen',
     href: '/gallery',
+    featured: true,
+  },
+  {
+    icon: BookOpen,
+    title: 'Unsere Geschichte',
+    description: 'Von einem zufälligen Treffen zu einer großen Liebe – so begann alles.',
+    cta: 'Geschichte lesen',
+    href: '/story',
   },
   {
     icon: Trophy,

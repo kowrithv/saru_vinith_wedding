@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Menu, X, Heart } from 'lucide-react'
+import Lotus from '@/components/ui/Lotus'
 import { couple, navigationItems } from '@/lib/site-content'
 import { cn } from '@/lib/utils'
 
@@ -93,12 +94,13 @@ export default function Navigation() {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: '100%' }}
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-            className="fixed inset-0 z-40 bg-white lg:hidden"
+            className="fixed inset-0 z-40 bg-dark-blue lg:hidden"
           >
             <div className="flex flex-col h-full pt-20 pb-8 px-6">
-              <div className="text-center mb-8">
-                <p className="font-serif text-2xl text-dark-blue">{couple.combinedName}</p>
-                <p className="text-sm text-gold-text mt-1">{couple.hashtag}</p>
+              <div className="mb-6 flex flex-col items-center text-center">
+                <Lotus size={34} className="text-gold" />
+                <p className="mt-2 font-display text-3xl font-semibold text-white">{couple.combinedName}</p>
+                <p className="mt-1 text-sm text-gold">{couple.hashtag}</p>
               </div>
               <nav className="flex-1 overflow-y-auto">
                 <ul className="space-y-1">
@@ -110,12 +112,11 @@ export default function Navigation() {
                           href={item.href}
                           onClick={() => setIsOpen(false)}
                           className={cn(
-                            'flex items-center px-4 py-3.5 rounded-xl text-base font-medium transition-colors duration-200',
-                            isActive
-                              ? 'bg-dark-blue text-white'
-                              : 'text-gray-700 hover:bg-champagne/50 hover:text-dark-blue'
+                            'flex items-center gap-3 border-b border-gold/25 px-1 py-3 font-display text-2xl font-medium transition-colors duration-200',
+                            isActive ? 'text-gold' : 'text-white hover:text-gold'
                           )}
                         >
+                          {isActive && <Lotus size={16} className="text-gold" />}
                           {item.label}
                         </Link>
                       </li>

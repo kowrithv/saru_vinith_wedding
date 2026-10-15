@@ -6,6 +6,19 @@ import FeatureGrid from './FeatureGrid'
 import { homeFeatures } from '@/lib/home-content'
 import { navigationItems } from '@/lib/site-content'
 
+describe('FeatureGrid (ranking)', () => {
+  // Gäste suchen zuerst Infos und Fotos: diese beiden Kacheln führen.
+  it('puts the information and the gallery first and shows them as featured tiles', () => {
+    render(<FeatureGrid />)
+    const links = screen.getAllByRole('link')
+    expect(links[0]).toHaveAttribute('href', '/info')
+    expect(links[1]).toHaveAttribute('href', '/gallery')
+    expect(links[0].firstElementChild).toHaveClass('bg-dark-blue')
+    expect(links[1].firstElementChild).toHaveClass('bg-dark-blue')
+    expect(links[2].firstElementChild).not.toHaveClass('bg-dark-blue')
+  })
+})
+
 describe('FeatureGrid', () => {
   it('renders every feature as a link to its real route', () => {
     render(<FeatureGrid />)

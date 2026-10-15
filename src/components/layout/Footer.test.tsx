@@ -8,6 +8,13 @@ describe('Footer', () => {
     expect(screen.getByText('Saruga & Vinith')).toBeInTheDocument()
   })
 
+  it('closes the page with the lotus, the weekday and the hashtag', () => {
+    const { container } = render(<Footer />)
+    expect(container.querySelector('svg')).toBeInTheDocument()
+    expect(screen.getByText(/samstag/i)).toBeInTheDocument()
+    expect(screen.getByText('#SaruVinith2026')).toBeInTheDocument()
+  })
+
   it('renders the reception date', () => {
     render(<Footer />)
     expect(screen.getByText(/17\. Oktober 2026/)).toBeInTheDocument()
