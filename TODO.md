@@ -9,23 +9,14 @@ markiert.
 ### Eure Punkte
 
 **1. Erinnerungen: Polaroid mit Datum und Anlass, Blumendeko (Beispiel von Vinith)**
-- Das Beispiel (`polariod-example.jpg`, 853 × 1280) zeigt: hochkant (2:3), cremeweißes
-  Papier mit leichter Struktur und runden Ecken, Foto im Format ca. 4:5, darunter
-  eine kleine Zeile in gesperrten Versalen **„STANDESAMTLICHE HOCHZEIT"**, die Namen
-  **„Saruga & Vinith"** in Schreibschrift, das Datum **„17.10.2026"** gesperrt und
-  eine Linie–Herz–Linie. **Keine Blumen, kein Bordeaux-Band.**
-- Heute: quadratisches Foto, Bordeaux-Band mit „Saruga & Vinith" in Cormorant,
-  Blüten in zwei Ecken, darunter der Name des Gasts; weder Datum noch Anlass
-  (`MemoryPolaroid.tsx` für die Anzeige, `polaroid-image.ts` für das PNG).
-- **(?) Blumen:** ihr wolltet Bordeaux und Blumen, das Beispiel hat beides nicht.
-  Entweder dem Beispiel folgen (ruhig, weiß/schwarz) oder dessen Aufbau mit einer
-  Blumenzeichnung kombinieren; dann bräuchte ich die Blumen als Datei (SVG oder
-  PNG mit transparentem Hintergrund) von Vinith.
-- **(?) Gastname:** im Beispiel gibt es keinen Platz dafür; Vorschlag: eine kleine
-  Zeile „Erinnerung von Lena" unter dem Datum.
-- Umsetzung (nach eurer Entscheidung, ca. eine Stunde): Zeilen Anlass, Namen, Datum
-  und Zierlinie in Anzeige und PNG, Papier-Look, hochkant. Der Anlass steht dann
-  als Konstante in `event-info.ts` („Standesamtliche Hochzeit").
+- **Umgesetzt nach dem Beispiel** (`polariod-example.jpg`): hochkant auf cremeweißem
+  Papier mit runden Ecken, Foto, darunter „STANDESAMTLICHE HOCHZEIT", „Saruga & Vinith"
+  in Schreibschrift, „17.10.2026" und Linie–Herz–Linie; der Gast steht in einer kleinen
+  Zeile („Erinnerung von Lena"). Auf der Seite und im gespeicherten PNG gleich.
+- Vorschau-Bilder: `Downloads/hochzeit-vorschau/` (A: wie das Beispiel, B: mit Blüten).
+- **(?) Blumen:** Das Beispiel hat keine, deshalb sind sie aus. Mit Blüten: eine Zeile
+  (`POLAROID_WITH_FLOWERS` in `polaroid-image.ts`); mit Vinith' eigener Zeichnung
+  bräuchte ich sie als SVG oder PNG mit transparentem Hintergrund.
 
 **2. „Wer von uns?": eigene Seite, vorab abstimmen, Auflösung später, DJ-Zugriff**
 - Heute: Umschalter im Quiz (`/quiz`), die Balken erscheinen sofort nach der Stimme.
@@ -68,21 +59,18 @@ markiert.
   `.env.production` brauchen `GUEST_PASSWORD` statt `UPLOAD_PASSWORD_EMPFANG`.
 
 **7. Prüfen mit Videos**
-- Stand: **Videos werden nicht angenommen.** Das Formular zeigt nur Fotos
-  (`accept="image/*"`), der Server nimmt nur JPEG, PNG, WebP, HEIC und HEIF bis
-  20 MB; es gibt keinen Hinweis „nur Fotos". Ein Gast mit einem Video bekommt eine
-  Fehlermeldung ohne Erklärung.
-- **(?)** Bewusst nur Fotos (dann ein Satz im Formular und auf dem Flyer) oder kurze
-  Videos zulassen (größere Grenzen, andere Vorschau, mehr R2-Kosten, Abspielen in der
-  Großansicht). Empfehlung: nur Fotos, bis der Tag vorbei ist.
+- Stand: Videos werden nicht angenommen (nur JPEG, PNG, WebP, HEIC und HEIF bis 20 MB).
+  **Neu:** Im Upload-Formular und bei den Erinnerungen steht jetzt „Nur Fotos, keine
+  Videos." direkt am Auswahlfeld.
+- **(?)** Falls Videos erlaubt sein sollen (größere Grenzen, andere Vorschau, mehr
+  R2-Kosten): Empfehlung bleibt nur Fotos, bis der Tag vorbei ist.
 - Falls „mit Videos prüfen" etwas anderes meint (Bildschirmvideos der Abläufe?),
   bitte kurz sagen.
 
 **8. Memory: Bilder verkleinern**
-- 10 JPEGs, 53–98 KB, zusammen 748 KB, bis 800 px. Gezeigt werden sie in Karten von
-  höchstens ca. 170 px: 400 × 400 px quadratisch genügt (≈ 20 KB je Bild, gesamt ca.
-  200 KB). `scripts/compress-memory-images.mjs` (braucht `sharp`) erledigt das; besser
-  wären Originale von euch als die vorhandenen, schon komprimierten Dateien.
+- **Erledigt:** zehn Bilder 400 × 400 px, zusammen ca. 300 KB statt 748 KB (Gesichter
+  bleiben im Ausschnitt). Mit Originalen von euch ließe es sich noch einmal sauberer
+  machen (`scripts/compress-memory-images.mjs`).
 
 **9. Dienstleister**
 - **(?)** Unklar, was gemeint ist: eine Seite oder Zeile „Dienstleister" (Fotograf,
@@ -103,8 +91,9 @@ markiert.
   Obergrenze je Adresse und Stunde (z. B. 200 Fotos).
 - **(?)** Gemeinsame Adresse des Veranstaltungs-WLANs: 30 Gästebuch-Einträge in 15
   Minuten könnten bei 100 Gästen knapp werden; Zahlen anpassen oder nicht.
-- Kleinigkeit: wird ein QR-Scan durch die Sperre abgewiesen, steht dort „QR-Code nicht
-  mehr gültig" (irreführend; sollte „bitte kurz warten" sagen).
+- Erledigt: Wird ein QR-Scan durch die Sperre abgewiesen, steht dort nicht mehr „QR-Code
+  nicht mehr gültig", sondern die normale Kennwort-Eingabe (mit dem Hinweis, wie lange
+  zu warten ist).
 
 ### Sachen von Claude
 
