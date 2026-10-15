@@ -22,10 +22,13 @@ Feature complete. Zurückgestellt: Videos.
 
 - [ ] R2 laut `docs/ops/heute-abend.md` Schritt 1–3 (Bucket, Foto-Domain, Purge-Token,
       Budget-Alarm), falls noch nicht geschehen
-- [ ] Der Tag `v1.0.0-rc.1` ist gepusht (Commit `949783a` auf `main`). Im Actions-Lauf unter
-      „Extract metadata" prüfen, dass das Image-Tag `1.0.0-rc.1` entstanden ist; erst dann
-      kann der Server das Image holen. Caddy ist v2.8.4 und damit neu genug; nur in der
-      Caddyfile darf kein `trusted_proxies` stehen
+- [ ] Der Image-Build von `v1.0.0-rc.1` ist gescheitert (`npm ci` im Docker-Build wollte
+      `better-sqlite3` kompilieren; behoben mit `--ignore-scripts` im `Dockerfile`). Ein Tag
+      lässt sich nicht erneut verwenden: `develop` pushen, nach `main` mergen und
+      **`v1.0.0-rc.2`** auf den Kopf von `main` setzen. Im Actions-Lauf muss der Job „Build
+      and push Docker image" grün sein und unter „Extract metadata" `1.0.0-rc.2` stehen.
+      Caddy ist v2.8.4 und damit neu genug; nur in der Caddyfile darf kein
+      `trusted_proxies` stehen
 - [ ] `.env.production`: `GUEST_PASSWORD=love` setzen, `UPLOAD_PASSWORD_EMPFANG` entfernen,
       `R2_ENDPOINT` **nicht** setzen; **neues `ADMIN_PASSWORD`** (das alte steht in der
       Git-Historie; ein Wechsel beendet alle Admin-Sitzungen); Bucket-CORS ohne `localhost`
@@ -48,4 +51,7 @@ Feature complete. Zurückgestellt: Videos.
 
 ## Nach der Hochzeit
 
+- [ ] CI: `ubuntu-latest` zeigt ab dem 19.10.2026 auf Ubuntu 26; auf `ubuntu-24.04` festsetzen
+      und die Aktionen anheben (`actions/checkout` läuft noch auf Node 20). **Das endgültige
+      `v1.0.0` deshalb vor dem 19.10. bauen**
 - [ ] Originale exportieren und verwaiste R2-Objekte aufräumen (Runbook §6)
