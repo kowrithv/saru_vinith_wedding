@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import InfoPage from './page'
 import { receptionEvent, receptionSchedule } from '@/lib/event-info'
 
@@ -18,8 +18,10 @@ describe('InfoPage', () => {
     render(<InfoPage />)
     expect(screen.getAllByText(receptionEvent.displayDate).length).toBeGreaterThan(0)
     expect(screen.getAllByText(receptionEvent.time).length).toBeGreaterThan(0)
-    expect(screen.getByText(receptionEvent.venue)).toBeInTheDocument()
-    expect(screen.getByText(receptionEvent.address)).toBeInTheDocument()
+    // Der Ort steht in der Anfahrt-Karte (hier ersetzt) und auch in der Liste der Dienstleister.
+    const venueCard = within(screen.getByTestId('venue-map-stub'))
+    expect(venueCard.getByText(receptionEvent.venue)).toBeInTheDocument()
+    expect(venueCard.getByText(receptionEvent.address)).toBeInTheDocument()
   })
 
   it('renders every schedule item', () => {
@@ -63,5 +65,11 @@ describe('InfoPage', () => {
   it('leaves the calendar button to the venue card instead of showing a second one', () => {
     render(<InfoPage />)
     expect(screen.queryByRole('button', { name: /kalender/i })).not.toBeInTheDocument()
+  })
+
+  it('thanks the service providers at the end of the page', () => {
+    render(<InfoPage />)
+    expect(screen.getByRole('heading', { name: /unsere dienstleister/i })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /dj tastic/i })).toHaveAttribute('href', 'https://www.instagram.com/djtastic_de')
   })
 })

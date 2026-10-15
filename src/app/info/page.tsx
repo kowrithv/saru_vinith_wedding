@@ -4,6 +4,8 @@ import Card from '@/components/ui/Card'
 import VenueMap from '@/components/sections/VenueMap'
 import ProgramTimeline from '@/components/sections/ProgramTimeline'
 import GoodToKnow from '@/components/sections/GoodToKnow'
+import Vendors from '@/components/sections/Vendors'
+import { vendors } from '@/lib/vendors'
 import { goodToKnow, receptionEvent, receptionSchedule } from '@/lib/event-info'
 
 export default function InfoPage() {
@@ -53,6 +55,8 @@ export default function InfoPage() {
           </h3>
           <ProgramTimeline schedule={receptionSchedule} />
         </Card>
+
+        <Vendors vendors={vendors} />
       </div>
     </div>
   )
