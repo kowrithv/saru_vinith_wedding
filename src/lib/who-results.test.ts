@@ -50,10 +50,10 @@ describe('who-results', () => {
   })
 
   describe('results key', () => {
-    it('is a stable 64 character hex string', () => {
+    it('is a stable, short hex string', () => {
       const db = getDb()
       const key = resultsKey(db)
-      expect(key).toMatch(/^[0-9a-f]{64}$/)
+      expect(key).toMatch(/^[0-9a-f]{24}$/)
       expect(resultsKey(db)).toBe(key)
     })
 
@@ -77,14 +77,15 @@ describe('who-results', () => {
       expect(canSeeResults(requestWith({ [RESULTS_KEY_HEADER]: resultsKey(db) }), db)).toBe(true)
     })
 
-    it('rejects a missing, wrong, short or non-hex key', () => {
+    it('rejects a missing, wrong, short, long or non-hex key', () => {
       const db = getDb()
       const key = resultsKey(db)
       expect(canSeeResults(requestWith(), db)).toBe(false)
       expect(canSeeResults(requestWith({ [RESULTS_KEY_HEADER]: 'nope' }), db)).toBe(false)
-      expect(canSeeResults(requestWith({ [RESULTS_KEY_HEADER]: key.slice(0, 63) }), db)).toBe(false)
+      expect(canSeeResults(requestWith({ [RESULTS_KEY_HEADER]: key.slice(0, 23) }), db)).toBe(false)
+      expect(canSeeResults(requestWith({ [RESULTS_KEY_HEADER]: `${key}0` }), db)).toBe(false)
       expect(canSeeResults(requestWith({ [RESULTS_KEY_HEADER]: key.toUpperCase() }), db)).toBe(false)
-      expect(canSeeResults(requestWith({ [RESULTS_KEY_HEADER]: `${key.slice(0, 63)}g` }), db)).toBe(false)
+      expect(canSeeResults(requestWith({ [RESULTS_KEY_HEADER]: `${key.slice(0, 23)}g` }), db)).toBe(false)
     })
 
     it('accepts an admin session without a key', () => {

@@ -15,7 +15,7 @@ Admin-Bereich für das Brautpaar.
 | `/gallery` | Fotogalerie, Upload für Gäste, Kategorien, offizielle Fotos |
 | `/quiz` | Hochzeitsquiz |
 | `/wer-von-uns` | „Wer von uns?“-Abstimmung (Ergebnisse erst nach der Freigabe) |
-| `/wer-von-uns/ergebnisse` | Lese-Link für den DJ (Schlüssel im Fragment, siehe unten) |
+| `/dj` | Lese-Link für den DJ (Schlüssel im Fragment, siehe unten) |
 | `/memory-spiel` | Liebes-Memory mit Rekord aller Gäste |
 | `/memories` | Erinnerungen der Gäste |
 | `/guestbook` | Gästebuch |
@@ -135,8 +135,8 @@ ab (eine Stimme je Frage und Gerät, höchstens 60 Stimmen je Gerät in 15 Minut
 und sehen keine Zwischenstände: `GET /api/who-votes` liefert `questions: null`.
 Im Admin-Bereich gibt das Brautpaar die **Auflösung** frei; dann zeigt die Seite
 die Verteilung, und die Abstimmung ist beendet (423). Der DJ bekommt einen
-Lese-Link `/wer-von-uns/ergebnisse#k=<Schlüssel>` (im Admin zum Kopieren). Der
-Schlüssel ist aus `ADMIN_SECRET` abgeleitet, zeigt nur die Ergebnisse (auch vor
+Lese-Link `/dj#k=<Schlüssel>` (im Admin zum Kopieren). Der
+Schlüssel (24 Zeichen) ist aus `ADMIN_SECRET` abgeleitet, zeigt nur die Ergebnisse (auch vor
 der Freigabe) und steht im Fragment, nie im Log. Die Porträts liegen als
 `public/who/saruga.jpg` und `public/who/vinith.jpg` (zum Tauschen die Datei
 ersetzen).

@@ -1,12 +1,12 @@
 // Der Lese-Link für den DJ trägt den Schlüssel im Fragment
-// (`/wer-von-uns/ergebnisse#k=<Schlüssel>`): Fragmente gehen nicht an den
+// (`/dj#k=<Schlüssel>`): Fragmente gehen nicht an den
 // Server und nicht in den Referer. Wie beim QR-Link wird er sofort aus der
 // Adresszeile entfernt; für ein Neuladen merkt sich der Tab ihn in der
 // Sitzung (sessionStorage, nur dieser Tab).
 
 const KEY_PARAM = 'k'
 const STORAGE_KEY = 'who-results-key'
-const KEY_PATTERN = /^[0-9a-f]{64}$/
+const KEY_PATTERN = /^[0-9a-f]{24}$/
 
 function takeFromAddress(): string | null {
   const { hash, pathname, search } = window.location

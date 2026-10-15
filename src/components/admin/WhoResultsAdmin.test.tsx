@@ -3,7 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import WhoResultsAdmin from './WhoResultsAdmin'
 
-const KEY = 'ef'.repeat(32)
+const KEY = 'ef'.repeat(12)
 
 function stubFetch(
   initial: { released: boolean } = { released: false },
@@ -38,7 +38,24 @@ describe('WhoResultsAdmin', () => {
     expect(await screen.findByText(/verborgen/i)).toBeInTheDocument()
     expect(screen.getByRole('switch', { name: /auflösung für gäste freigeben/i })).not.toBeChecked()
     const link = screen.getByLabelText(/link für den dj/i) as HTMLInputElement
-    expect(link.value).toBe(`${window.location.origin}/wer-von-uns/ergebnisse#k=${KEY}`)
+    expect(link.value).toBe(`${window.location.origin}/dj#k=${KEY}`)
+  })
+
+  it('anchors the switch knob to the left edge so it can slide', async () => {
+    stubFetch()
+    render(<WhoResultsAdmin />)
+
+    const knob = (await screen.findByRole('switch')).firstElementChild
+    expect(knob).toHaveClass('left-0')
+  })
+
+  it('shows a short link for the DJ', async () => {
+    stubFetch()
+    render(<WhoResultsAdmin />)
+
+    const link = (await screen.findByLabelText(/link für den dj/i)) as HTMLInputElement
+    expect(link.value).toBe(`${window.location.origin}/dj#k=${KEY}`)
+    expect(link.value.length - window.location.origin.length).toBeLessThan(40)
   })
 
   it('releases the results after a confirmation', async () => {

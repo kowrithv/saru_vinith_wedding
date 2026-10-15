@@ -350,7 +350,7 @@ export default function AdminDashboard({ initialLocks, initialGalleryMode }: Adm
                   >
                     <span
                       className={cn(
-                        'absolute top-1 w-5 h-5 rounded-full bg-white transition-transform',
+                        'absolute left-0 top-1 w-5 h-5 rounded-full bg-white transition-transform',
                         isLocked ? 'translate-x-6' : 'translate-x-1'
                       )}
                     />

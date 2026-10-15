@@ -122,6 +122,18 @@ describe('AdminDashboard', () => {
     expect(screen.getByRole('switch', { name: /wer-von-uns/i })).toHaveAttribute('aria-checked', 'false')
   })
 
+  it('anchors every switch knob to the left edge so it sits and slides inside the switch', async () => {
+    const fetchMock = mockFetchSequence([{ body: { entries: [] } }, { body: { entries: [] } }, noGalleryPhotos])
+    render(<AdminDashboard initialLocks={noLocks} initialGalleryMode="public" />)
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3))
+
+    const switches = screen.getAllByRole('switch')
+    expect(switches.length).toBeGreaterThanOrEqual(5)
+    for (const toggle of switches) {
+      expect(toggle.firstElementChild).toHaveClass('left-0')
+    }
+  })
+
   it('applies each answer only to its own switch, even when answers arrive in the wrong order', async () => {
     const fetchMock = mockFetchSequence([{ body: { entries: [] } }, { body: { entries: [] } }, noGalleryPhotos])
     let answerGuestbook!: (value: unknown) => void

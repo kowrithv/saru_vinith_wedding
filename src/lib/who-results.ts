@@ -11,7 +11,9 @@ const RELEASED_CONFIG_KEY = 'who_results_released'
 /** Header, mit dem die DJ-Seite den Schlüssel aus dem Link mitschickt. */
 export const RESULTS_KEY_HEADER = 'x-results-key'
 
-const HEX_KEY_PATTERN = /^[0-9a-f]{64}$/
+// 24 Hex-Zeichen = 96 Bit: nicht zu erraten, und der Link bleibt kurz.
+const KEY_LENGTH = 24
+const HEX_KEY_PATTERN = /^[0-9a-f]{24}$/
 
 export function areResultsReleased(db: Database.Database): boolean {
   return getConfigValue(db, RELEASED_CONFIG_KEY) === 'true'
@@ -27,7 +29,10 @@ export function setResultsReleased(db: Database.Database, released: boolean): vo
  * als Admin-Cookie noch als Gäste-Sitzung und gibt nur die Ergebnisse frei.
  */
 export function resultsKey(db: Database.Database): string {
-  return createHmac('sha256', getOrCreateAdminSecret(db)).update('who-results-link').digest('hex')
+  return createHmac('sha256', getOrCreateAdminSecret(db))
+    .update('who-results-link')
+    .digest('hex')
+    .slice(0, KEY_LENGTH)
 }
 
 function isValidResultsKey(db: Database.Database, candidate: string | null): boolean {

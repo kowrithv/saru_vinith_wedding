@@ -67,7 +67,7 @@ export default function WhoResultsAdmin() {
     }
   }
 
-  const link = state ? `${window.location.origin}/wer-von-uns/ergebnisse#k=${state.key}` : ''
+  const link = state ? `${window.location.origin}/dj#k=${state.key}` : ''
 
   const copyLink = async () => {
     try {
@@ -115,7 +115,7 @@ export default function WhoResultsAdmin() {
         >
           <span
             className={cn(
-              'absolute top-1 w-5 h-5 rounded-full bg-white transition-transform',
+              'absolute left-0 top-1 w-5 h-5 rounded-full bg-white transition-transform',
               released ? 'translate-x-6' : 'translate-x-1'
             )}
           />

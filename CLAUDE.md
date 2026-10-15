@@ -60,7 +60,7 @@ einer Route meldet `tsc` ggf. veraltete Dateien in `.next/types` – dann
 - „Wer von uns?" (`/wer-von-uns`): Abstimmen mit Gäste-Kennwort (`gateGuest`, Limit je
   Gerät in `guest-limits.ts`); Zähler bleiben verborgen, bis der Admin freigibt
   (`who-results.ts`, Schalter `who_results_released`; Freigabe beendet die
-  Abstimmung). DJ-Link `/wer-von-uns/ergebnisse#k=`: Schlüssel = HMAC aus dem
+  Abstimmung). DJ-Link `/dj#k=`: Schlüssel = HMAC aus dem
   Admin-Schlüssel, Header `x-results-key`. Porträts: `public/who/*.jpg`,
   `whoPortraits` in `site-images.ts`.
 - Tailwind v4, Farb-Tokens `dark-blue`, `champagne(-light/-dark)`, `gold`,

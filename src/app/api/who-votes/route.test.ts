@@ -70,7 +70,7 @@ describe('GET /api/who-votes', () => {
   })
 
   it('keeps hiding the results from a wrong key', async () => {
-    const body = await (await GET(getRequest({ [RESULTS_KEY_HEADER]: 'a'.repeat(64) }))).json()
+    const body = await (await GET(getRequest({ [RESULTS_KEY_HEADER]: 'a'.repeat(24) }))).json()
     expect(body.questions).toBeNull()
   })
 

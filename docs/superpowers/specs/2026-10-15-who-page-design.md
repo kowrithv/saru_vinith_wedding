@@ -9,8 +9,8 @@ Buchstaben-Marken (S, V) werden Porträts.
 ## Entscheidungen (Vorgaben, jederzeit änderbar)
 
 - **Eine Stimme je Frage und Gerät** (wie bisher, kein Ändern, kein Mehrfach-Abstimmen).
-- **DJ-Zugang:** eigener Lese-Link `/wer-von-uns/ergebnisse#k=<Schlüssel>`. Der Schlüssel
-  ist `HMAC(Admin-Schlüssel, 'who-results-link')` (hex, 64 Zeichen): nichts zu speichern,
+- **DJ-Zugang:** eigener Lese-Link `/dj#k=<Schlüssel>`. Der Schlüssel
+  ist `HMAC(Admin-Schlüssel, 'who-results-link')` (hex, 24 Zeichen = 96 Bit, damit der Link kurz bleibt): nichts zu speichern,
   stabil, ungültig erst bei einem Wechsel von `ADMIN_SECRET`. Er steht im Fragment (nie im
   Server-Log, nie im Referer) und wird per Header `x-results-key` gesendet. Er gibt nur
   die Ergebnisse frei, sonst nichts; vom Admin-Cookie und vom Gäste-Cookie ist er getrennt
@@ -42,7 +42,7 @@ Buchstaben-Marken (S, V) werden Porträts.
   Frage beginnen; Kennwortfeld nur wenn nicht entsperrt; nach der Stimme „Gespeichert"
   statt der Ergebnisse; am Ende Dank. Nach der Freigabe: Ergebnisse aller Fragen, die
   eigene Stimme markiert.
-- `/wer-von-uns/ergebnisse` (DJ): Ergebnisse aller Fragen, alle 5 s aktualisiert, mit
+- `/dj` (DJ): Ergebnisse aller Fragen, alle 5 s aktualisiert, mit
   Schlüssel aus dem Fragment; ohne gültigen Schlüssel eine Hinweisseite.
 - `/quiz`: nur noch das klassische Quiz, mit Verweis auf die neue Seite.
 

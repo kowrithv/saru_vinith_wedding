@@ -4,7 +4,7 @@ import ResultsPage from './page'
 import { whoQuestions, whoGameOptions } from '@/lib/who-game-content'
 import { forgetResultsKey } from '@/lib/who-results-key'
 
-const KEY = 'cd'.repeat(32)
+const KEY = 'cd'.repeat(12)
 
 function tally() {
   return Object.fromEntries(
@@ -16,7 +16,7 @@ describe('DJ results page', () => {
   beforeEach(() => {
     forgetResultsKey()
     window.sessionStorage.clear()
-    window.history.replaceState(null, '', '/wer-von-uns/ergebnisse')
+    window.history.replaceState(null, '', '/dj')
   })
 
   afterEach(() => {
@@ -36,7 +36,7 @@ describe('DJ results page', () => {
   })
 
   it('sends the key as a header and shows the live counts before the release', async () => {
-    window.history.replaceState(null, '', `/wer-von-uns/ergebnisse#k=${KEY}`)
+    window.history.replaceState(null, '', `/dj#k=${KEY}`)
     const fetchMock = vi.fn(async () => ({
       ok: true,
       json: async () => ({ released: false, questions: tally() }),
@@ -52,7 +52,7 @@ describe('DJ results page', () => {
   })
 
   it('says the key is not valid when the server hides the results from it', async () => {
-    window.history.replaceState(null, '', `/wer-von-uns/ergebnisse#k=${KEY}`)
+    window.history.replaceState(null, '', `/dj#k=${KEY}`)
     vi.stubGlobal(
       'fetch',
       vi.fn(async () => ({ ok: true, json: async () => ({ released: false, questions: null }) }))
@@ -64,7 +64,7 @@ describe('DJ results page', () => {
   })
 
   it('tells when the results are released for the guests', async () => {
-    window.history.replaceState(null, '', `/wer-von-uns/ergebnisse#k=${KEY}`)
+    window.history.replaceState(null, '', `/dj#k=${KEY}`)
     vi.stubGlobal(
       'fetch',
       vi.fn(async () => ({ ok: true, json: async () => ({ released: true, questions: tally() }) }))
