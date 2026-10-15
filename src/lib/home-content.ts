@@ -7,63 +7,61 @@ export interface HomeFeature {
   icon: LucideIcon
   title: string
   description: string
-  /** Handlungsaufforderung der Kachel (statt überall "Mehr erfahren"). */
-  cta: string
   href: string
-  /** Große, dunkle Kachel: was Gäste zuerst suchen. */
-  featured?: boolean
+  /**
+   * Große Kachel für das, was Gäste zuerst suchen; der Wert ist ihre Farbe
+   * (dunkelblau oder champagner). Ohne Angabe ist es eine kompakte Kachel.
+   */
+  featured?: 'navy' | 'champagne'
+  /** Kleine Zeile über dem Titel einer großen Kachel. */
+  eyebrow?: string
 }
 
 export const homeFeatures: HomeFeature[] = [
   {
     icon: Calendar,
     title: 'Hochzeitsinfos',
-    description: 'Datum, Uhrzeit, Ort und Ablauf des Empfangs auf einen Blick.',
-    cta: 'Infos ansehen',
+    description: 'Ort, Anfahrt, Ablauf des Tages',
     href: '/info',
-    featured: true,
+    featured: 'navy',
+    eyebrow: 'Wichtig',
   },
   {
     icon: Camera,
-    title: 'Galerie',
-    description: 'Fotos von uns und von eurem Tag – schaut rein und ladet eure eigenen hoch.',
-    cta: 'Fotos ansehen',
+    title: 'Unsere Fotos',
+    description: 'Schaut rein und ladet eure eigenen Fotos hoch.',
     href: '/gallery',
-    featured: true,
+    featured: 'champagne',
+    eyebrow: 'Galerie',
   },
   {
     icon: BookOpen,
     title: 'Unsere Geschichte',
     description: 'Von einem zufälligen Treffen zu einer großen Liebe – so begann alles.',
-    cta: 'Geschichte lesen',
     href: '/story',
   },
   {
     icon: Trophy,
     title: 'Quiz',
     description: 'Wie gut kennt ihr uns? Testet euer Wissen in unserem Hochzeitsquiz!',
-    cta: 'Quiz starten',
     href: '/quiz',
   },
   {
     icon: Gamepad2,
     title: 'Gästespiel',
     description: 'Spielt unser Liebes-Memory, findet alle Pärchen und schlagt den Rekord aller Gäste!',
-    cta: 'Jetzt spielen',
     href: '/memory-spiel',
   },
   {
     icon: Heart,
     title: 'Erinnerungen',
     description: 'Teilt eure Erinnerungen an uns und diesen Tag.',
-    cta: 'Erinnerung teilen',
     href: '/memories',
   },
   {
     icon: MessageSquare,
     title: 'Gästebuch',
     description: 'Hinterlasst uns eine Nachricht und seid Teil unserer Geschichte.',
-    cta: 'Eintrag schreiben',
     href: '/guestbook',
   },
 ]

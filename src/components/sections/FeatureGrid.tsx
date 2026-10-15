@@ -1,60 +1,105 @@
 import Link from 'next/link'
-import { ArrowRight } from 'lucide-react'
 import SectionTitle from '@/components/ui/SectionTitle'
-import Card from '@/components/ui/Card'
+import Lotus from '@/components/ui/Lotus'
 import { homeFeatures } from '@/lib/home-content'
 import { cn } from '@/lib/utils'
 
+// Farbflächen als Vorschau auf der Galerie-Kachel: bewusst keine echten
+// Fotos, damit die Startseite nichts nachladen muss (und nichts zeigt, was
+// Gäste erst nach dem Kennwort sehen dürfen).
+const PREVIEW_SWATCHES = [
+  'from-dark-blue-light to-dark-blue',
+  'from-gold to-bordeaux',
+  'from-rose-sand to-bordeaux-light',
+  'from-champagne-dark to-gold-dark',
+]
+
 export default function FeatureGrid() {
+  const large = homeFeatures.filter((feature) => feature.featured)
+  const compact = homeFeatures.filter((feature) => !feature.featured)
+
   return (
-    <section className="py-16 md:py-24 bg-champagne-light/30">
+    <section className="py-16 md:py-24 bg-rose-sand-light">
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         <SectionTitle
           title="Entdeckt unsere Website"
           subtitle="Alles, was ihr für unsere Hochzeit wissen müsst – und noch mehr."
         />
 
-        {/* Unterhalb von sm sind die Kacheln kompakte Zeilen (Icon, Titel,
-            Aktion; ohne Beschreibung) - sieben große Kacheln wären auf dem
-            Handy fast drei Bildschirme lang. Bei drei Spalten steht eine
-            einzelne letzte Kachel mittig statt links. */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 lg:[&>:last-child:nth-child(3n+1)]:col-start-2 gap-3 sm:gap-5">
-          {homeFeatures.map((feature) => (
-            <Link key={feature.title} href={feature.href} className="block h-full">
-              <Card
-                hover
-                padding="none"
-                variant={feature.featured ? 'dark' : 'default'}
-                className="h-full group flex items-center gap-4 p-4 sm:block sm:p-6"
+        {/* Zwei große Kacheln für das, was Gäste zuerst suchen, darunter
+            kompakte Kacheln in zwei Spalten (ab sm drei, ab lg fünf). Bleibt
+            auf dem Handy eine einzelne Kachel übrig, geht sie über die ganze
+            Breite. */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-5 mb-3 sm:mb-5">
+          {large.map((feature) => {
+            const navy = feature.featured === 'navy'
+            return (
+              <Link key={feature.href} href={feature.href} className="group block h-full">
+                <div
+                  className={cn(
+                    'relative h-full overflow-hidden rounded-2xl p-5 sm:p-6 shadow-sm transition-shadow group-hover:shadow-md',
+                    navy ? 'bg-dark-blue text-white' : 'bg-champagne text-dark-blue'
+                  )}
+                >
+                  {feature.eyebrow && (
+                    <p
+                      className={cn(
+                        'text-xs font-semibold uppercase tracking-[0.2em]',
+                        navy ? 'text-gold' : 'text-bordeaux'
+                      )}
+                    >
+                      {feature.eyebrow}
+                    </p>
+                  )}
+                  <h3 className="mt-1 font-display text-3xl font-semibold leading-tight">{feature.title}</h3>
+                  <p className={cn('mt-2 text-sm leading-relaxed', navy ? 'text-white/80' : 'text-dark-blue/80')}>
+                    {feature.description}
+                  </p>
+                  {navy ? (
+                    <Lotus size={52} className="absolute bottom-3 right-3 text-gold opacity-55" />
+                  ) : (
+                    <div data-testid="gallery-previews" aria-hidden="true" className="mt-4 flex gap-2">
+                      {PREVIEW_SWATCHES.map((swatch) => (
+                        <span key={swatch} className={cn('h-12 w-12 rounded-xl bg-gradient-to-br', swatch)} />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </Link>
+            )
+          })}
+        </div>
+
+        <div
+          data-testid="feature-grid-small"
+          className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-5"
+        >
+          {compact.map((feature, index) => {
+            const spansRow = compact.length % 2 === 1 && index === compact.length - 1
+            return (
+              <Link
+                key={feature.href}
+                href={feature.href}
+                className={cn('group block h-full', spansRow && 'col-span-2 sm:col-span-1')}
               >
                 <div
                   className={cn(
-                    'w-11 h-11 sm:w-12 sm:h-12 flex-shrink-0 rounded-xl flex items-center justify-center sm:mb-4 transition-transform duration-300 group-hover:scale-110',
-                    feature.featured ? 'bg-white/10' : 'bg-champagne/50'
+                    'h-full rounded-2xl border border-champagne-dark bg-white p-3 sm:p-4 shadow-sm transition-shadow group-hover:shadow-md',
+                    'flex gap-3',
+                    spansRow ? 'flex-row items-center sm:flex-col sm:items-start' : 'flex-col'
                   )}
                 >
-                  <feature.icon size={22} className={feature.featured ? 'text-gold' : 'text-dark-blue'} />
-                </div>
-                <div className="min-w-0">
-                  <h3 className={cn('font-serif text-lg font-semibold sm:mb-2', feature.featured ? 'text-white' : 'text-dark-blue')}>
-                    {feature.title}
-                  </h3>
-                  <p
-                    className={cn(
-                      'hidden sm:block text-sm leading-relaxed mb-4',
-                      feature.featured ? 'text-white/80' : 'text-gray-600'
-                    )}
-                  >
-                    {feature.description}
-                  </p>
-                  <div className={cn('flex items-center gap-1 text-sm font-medium', feature.featured ? 'text-gold' : 'text-dark-blue')}>
-                    <span>{feature.cta}</span>
-                    <ArrowRight size={14} className="transition-transform duration-200 group-hover:translate-x-1" />
+                  <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-t-full rounded-b-lg bg-bordeaux text-white">
+                    <feature.icon size={16} />
+                  </span>
+                  <div className="min-w-0">
+                    <h3 className="font-serif text-base font-semibold text-dark-blue">{feature.title}</h3>
+                    <p className="hidden sm:block mt-1 text-sm leading-relaxed text-gray-600">{feature.description}</p>
                   </div>
                 </div>
-              </Card>
-            </Link>
-          ))}
+              </Link>
+            )
+          })}
         </div>
       </div>
     </section>

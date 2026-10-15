@@ -6,19 +6,6 @@ import FeatureGrid from './FeatureGrid'
 import { homeFeatures } from '@/lib/home-content'
 import { navigationItems } from '@/lib/site-content'
 
-describe('FeatureGrid (ranking)', () => {
-  // Gäste suchen zuerst Infos und Fotos: diese beiden Kacheln führen.
-  it('puts the information and the gallery first and shows them as featured tiles', () => {
-    render(<FeatureGrid />)
-    const links = screen.getAllByRole('link')
-    expect(links[0]).toHaveAttribute('href', '/info')
-    expect(links[1]).toHaveAttribute('href', '/gallery')
-    expect(links[0].firstElementChild).toHaveClass('bg-dark-blue')
-    expect(links[1].firstElementChild).toHaveClass('bg-dark-blue')
-    expect(links[2].firstElementChild).not.toHaveClass('bg-dark-blue')
-  })
-})
-
 describe('FeatureGrid', () => {
   it('renders every feature as a link to its real route', () => {
     render(<FeatureGrid />)
@@ -40,38 +27,86 @@ describe('FeatureGrid', () => {
     expect(homeFeatures.map((feature) => feature.href).sort()).toEqual([...navigationHrefs].sort())
   })
 
-  it('gives every tile its own action text instead of the same "Mehr erfahren"', () => {
-    const ctas = homeFeatures.map((feature) => feature.cta)
-    expect(new Set(ctas).size).toBe(homeFeatures.length)
-    expect(ctas).not.toContain('Mehr erfahren')
-
-    render(<FeatureGrid />)
-    homeFeatures.forEach((feature) => {
-      expect(screen.getByText(feature.cta)).toBeInTheDocument()
-    })
-  })
-
-  it('turns the tiles into compact rows on small screens by hiding the description below sm', () => {
-    render(<FeatureGrid />)
-
-    homeFeatures.forEach((feature) => {
-      expect(screen.getByText(feature.description)).toHaveClass('hidden', 'sm:block')
-      const card = screen.getByRole('link', { name: new RegExp(feature.title) }).firstElementChild
-      expect(card).toHaveClass('flex', 'sm:block')
-    })
-  })
-
-  it('keeps the action text and the title visible on every screen size', () => {
-    render(<FeatureGrid />)
-
-    homeFeatures.forEach((feature) => {
-      expect(screen.getByText(feature.title)).not.toHaveClass('hidden')
-      expect(screen.getByText(feature.cta).parentElement).not.toHaveClass('hidden')
-    })
-  })
-
   it('advertises the shared record instead of a personal best on the memory tile', () => {
     const memory = homeFeatures.find((feature) => feature.href === '/memory-spiel')
     expect(memory?.description).toMatch(/rekord aller gäste/i)
+  })
+
+  // Gäste suchen zuerst Infos und Fotos: zwei große Kacheln führen, die übrigen
+  // stehen darunter als kompakte Kacheln in zwei Spalten (Vorschlag C4).
+  describe('ranking', () => {
+    it('puts the information and the gallery first as large tiles', () => {
+      render(<FeatureGrid />)
+      const links = screen.getAllByRole('link')
+      expect(links[0]).toHaveAttribute('href', '/info')
+      expect(links[1]).toHaveAttribute('href', '/gallery')
+      expect(links[0].firstElementChild).toHaveClass('bg-dark-blue', 'text-white')
+      expect(links[1].firstElementChild).toHaveClass('bg-champagne')
+    })
+
+    it('labels the large tiles with a small eyebrow above the title', () => {
+      render(<FeatureGrid />)
+      expect(screen.getByText('Wichtig')).toBeInTheDocument()
+      const info = screen.getAllByRole('link')[0]
+      expect(info.querySelector('h3')).toHaveTextContent('Hochzeitsinfos')
+    })
+
+    it('shows the description on the large tiles at every screen size', () => {
+      render(<FeatureGrid />)
+      homeFeatures
+        .filter((feature) => feature.featured)
+        .forEach((feature) => {
+          expect(screen.getByText(feature.description)).not.toHaveClass('hidden')
+        })
+    })
+
+    it('gives the gallery tile a row of small decorative previews', () => {
+      render(<FeatureGrid />)
+      const gallery = screen.getAllByRole('link')[1]
+      const previews = gallery.querySelector('[data-testid="gallery-previews"]')
+      expect(previews).toHaveAttribute('aria-hidden', 'true')
+      expect(previews?.children).toHaveLength(4)
+    })
+
+    it('keeps the other tiles compact: two columns, description only from sm upwards', () => {
+      render(<FeatureGrid />)
+      homeFeatures
+        .filter((feature) => !feature.featured)
+        .forEach((feature) => {
+          expect(screen.getByText(feature.description)).toHaveClass('hidden', 'sm:block')
+          const tile = screen.getByRole('link', { name: new RegExp(feature.title) }).firstElementChild
+          expect(tile).toHaveClass('bg-white')
+        })
+      expect(screen.getByTestId('feature-grid-small')).toHaveClass('grid-cols-2')
+    })
+
+    it('marks the icon of a compact tile with the bordeaux arch', () => {
+      render(<FeatureGrid />)
+      const small = homeFeatures.find((feature) => !feature.featured)!
+      const tile = screen.getByRole('link', { name: new RegExp(small.title) })
+      const arch = tile.querySelector('.bg-bordeaux')
+      expect(arch).not.toBeNull()
+      expect(arch).toHaveClass('rounded-t-full')
+    })
+
+    it('lets an odd last compact tile span both columns instead of leaving a gap', () => {
+      render(<FeatureGrid />)
+      const smallCount = homeFeatures.filter((feature) => !feature.featured).length
+      const links = screen.getByTestId('feature-grid-small').children
+      expect(links).toHaveLength(smallCount)
+      const last = links[links.length - 1]
+      if (smallCount % 2 === 1) {
+        expect(last).toHaveClass('col-span-2')
+      } else {
+        expect(last).not.toHaveClass('col-span-2')
+      }
+    })
+  })
+
+  it('keeps the title visible on every screen size', () => {
+    render(<FeatureGrid />)
+    homeFeatures.forEach((feature) => {
+      expect(screen.getByText(feature.title)).not.toHaveClass('hidden')
+    })
   })
 })
