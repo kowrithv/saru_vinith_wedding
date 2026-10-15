@@ -3,8 +3,8 @@
 import { useState } from 'react'
 import { Download } from 'lucide-react'
 import FloralSpray from '@/components/ui/FloralSpray'
-import Lotus from '@/components/ui/Lotus'
-import { createPolaroidBlob, polaroidFileName } from '@/lib/polaroid-image'
+import { POLAROID_WITH_FLOWERS, createPolaroidBlob, polaroidFileName } from '@/lib/polaroid-image'
+import { polaroidCaption } from '@/lib/event-info'
 import { couple } from '@/lib/site-content'
 
 interface MemoryPolaroidProps {
@@ -12,9 +12,10 @@ interface MemoryPolaroidProps {
   photo: { thumbUrl: string; originalUrl: string }
 }
 
-// Das Foto einer Erinnerung als Polaroid: Bordeaux-Banner mit den Namen des
-// Brautpaars, Unterschrift des Gastes, Blüten in den Ecken. "Als Polaroid
-// speichern" erzeugt dasselbe als Bilddatei zum Teilen.
+// Das Foto einer Erinnerung als Polaroid nach dem Beispiel von Vinith: Foto,
+// darunter der Anlass, die Namen des Brautpaars, das Datum und eine Zierlinie
+// mit Herz; der Gast steht in einer kleinen Zeile. "Als Polaroid speichern"
+// erzeugt dasselbe als Bilddatei zum Teilen (siehe polaroid-image.ts).
 export default function MemoryPolaroid({ guestName, photo }: MemoryPolaroidProps) {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -23,7 +24,14 @@ export default function MemoryPolaroid({ guestName, photo }: MemoryPolaroidProps
     setError(null)
     setSaving(true)
     try {
-      const blob = await createPolaroidBlob(photo.thumbUrl, guestName, couple.combinedName)
+      const blob = await createPolaroidBlob({
+        photoUrl: photo.thumbUrl,
+        guestName,
+        coupleName: couple.combinedName,
+        occasion: polaroidCaption.occasion,
+        date: polaroidCaption.date,
+        withFlowers: POLAROID_WITH_FLOWERS,
+      })
       // Ein <a download> mit Blob-Adresse (dieselbe Herkunft) wird auch von
       // iPhone-Safari und Android-Chrome als Speichern behandelt.
       const url = URL.createObjectURL(blob)
@@ -41,9 +49,13 @@ export default function MemoryPolaroid({ guestName, photo }: MemoryPolaroidProps
 
   return (
     <div className="mt-4">
-      <figure className="relative mx-auto max-w-xs rounded-sm bg-white p-3 pb-4 shadow-[0_8px_22px_rgba(30,58,95,0.18)] ring-1 ring-gold/50 -rotate-1 motion-reduce:rotate-0">
-        <FloralSpray className="absolute -left-3 -top-3 h-16 w-16 text-bordeaux" />
-        <FloralSpray className="absolute -bottom-3 -right-3 h-16 w-16 rotate-180 text-bordeaux" />
+      <figure className="relative mx-auto max-w-[17rem] rounded-2xl bg-[#f7f5f0] px-[6%] pb-[5%] pt-[7%] text-center shadow-[0_8px_22px_rgba(30,58,95,0.18)] ring-1 ring-black/5 -rotate-1 motion-reduce:rotate-0">
+        {POLAROID_WITH_FLOWERS && (
+          <div data-testid="polaroid-flowers" aria-hidden="true">
+            <FloralSpray className="absolute -left-3 -top-3 h-16 w-16 text-bordeaux" />
+            <FloralSpray className="absolute -bottom-3 -right-3 h-16 w-16 rotate-180 text-bordeaux" />
+          </div>
+        )}
 
         <a href={photo.originalUrl} target="_blank" rel="noopener noreferrer" className="block overflow-hidden">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -51,23 +63,34 @@ export default function MemoryPolaroid({ guestName, photo }: MemoryPolaroidProps
             src={photo.thumbUrl}
             alt={`Foto von ${guestName}`}
             loading="lazy"
-            className="aspect-square w-full object-cover object-[50%_35%]"
+            className="aspect-[876/1000] w-full object-cover object-[50%_30%]"
           />
         </a>
 
-        <div className="mt-3 flex items-center justify-center gap-2 bg-bordeaux px-2 py-2 text-champagne-light outline outline-1 -outline-offset-4 outline-gold/70">
-          <Lotus size={14} className="text-gold" />
-          <span className="font-display text-lg font-semibold tracking-wide">{couple.combinedName}</span>
-          <Lotus size={14} className="text-gold" />
+        <p className="mt-4 text-[0.6rem] font-semibold uppercase tracking-[0.32em] text-[#3a3a3a]">
+          {polaroidCaption.occasion}
+        </p>
+        <p className="mt-1 font-script text-[2.1rem] leading-tight text-[#1c1c1c]">{couple.combinedName}</p>
+        <p className="mt-1 font-serif text-[0.8rem] font-semibold tracking-[0.28em] text-[#3a3a3a]">
+          {polaroidCaption.date}
+        </p>
+
+        <div className="mt-3 flex items-center justify-center gap-3" aria-hidden="true">
+          <span className="h-px w-10 bg-[#1c1c1c]" />
+          <svg data-testid="polaroid-heart" viewBox="0 0 24 24" width={14} height={14} fill="none" stroke="#1c1c1c" strokeWidth={2}>
+            <path d="M12 21S4.5 16.4 2.5 11.8C1 8.2 3.3 5 6.5 5c2 0 3.7 1.1 5.5 3.2C13.8 6.1 15.5 5 17.5 5c3.2 0 5.5 3.2 4 6.8C19.5 16.4 12 21 12 21Z" />
+          </svg>
+          <span className="h-px w-10 bg-[#1c1c1c]" />
         </div>
 
-        <figcaption className="flex items-baseline justify-between gap-3 px-1 pt-3">
-          <span className="font-script text-3xl leading-none text-dark-blue">{guestName}</span>
-          <span className="text-xs text-gray-600">auch in der Galerie</span>
+        <figcaption className="mt-3 text-[0.55rem] font-semibold uppercase tracking-[0.2em] text-gray-600">
+          Erinnerung von {guestName}
         </figcaption>
       </figure>
 
-      <div className="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
+      <p className="mt-3 text-center text-xs text-gray-600">Das Foto steht auch in der Galerie.</p>
+
+      <div className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
         <button
           type="button"
           onClick={savePolaroid}

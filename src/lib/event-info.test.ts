@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { receptionEvent } from './event-info'
+import { polaroidCaption, receptionEvent } from './event-info'
 
 describe('receptionEvent', () => {
   it('starts at 16:30 German summer time as one absolute instant', () => {
@@ -12,5 +12,11 @@ describe('receptionEvent', () => {
   it('shows the same start time as the display strings', () => {
     expect(receptionEvent.time).toBe('16:30 Uhr')
     expect(receptionEvent.displayDate).toBe('17. Oktober 2026')
+  })
+})
+
+describe('polaroidCaption', () => {
+  it('names the occasion and writes the date like the example of the polaroid', () => {
+    expect(polaroidCaption).toEqual({ occasion: 'Standesamtliche Hochzeit', date: '17.10.2026' })
   })
 })

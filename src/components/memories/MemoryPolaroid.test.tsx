@@ -25,18 +25,33 @@ describe('MemoryPolaroid', () => {
     vi.restoreAllMocks()
   })
 
-  it('shows the photo, opening the original, with the names of the couple on a banner', () => {
+  it('shows the photo, opening the original', () => {
     render(<MemoryPolaroid guestName="Lena" photo={photo} />)
 
     const image = screen.getByAltText('Foto von Lena')
     expect(image).toHaveAttribute('src', photo.thumbUrl)
     expect(image.closest('a')).toHaveAttribute('href', photo.originalUrl)
-    expect(screen.getByText('Saruga & Vinith')).toBeInTheDocument()
   })
 
-  it('signs the polaroid with the name of the guest', () => {
+  // Aufbau nach dem Beispiel von Vinith: Anlass, Namen, Datum, Zierlinie.
+  it('writes the occasion, the names of the couple and the date below the photo', () => {
     render(<MemoryPolaroid guestName="Lena" photo={photo} />)
-    expect(screen.getByText('Lena')).toBeInTheDocument()
+
+    expect(screen.getByText('Standesamtliche Hochzeit')).toBeInTheDocument()
+    expect(screen.getByText('Saruga & Vinith')).toHaveClass('font-script')
+    expect(screen.getByText('17.10.2026')).toBeInTheDocument()
+    expect(screen.getByTestId('polaroid-heart')).toBeInTheDocument()
+  })
+
+  it('has no bordeaux banner and no flowers, like the example', () => {
+    const { container } = render(<MemoryPolaroid guestName="Lena" photo={photo} />)
+    expect(container.querySelector('.bg-bordeaux')).toBeNull()
+    expect(screen.queryByTestId('polaroid-flowers')).not.toBeInTheDocument()
+  })
+
+  it('names the guest in a small line', () => {
+    render(<MemoryPolaroid guestName="Lena" photo={photo} />)
+    expect(screen.getByText('Erinnerung von Lena')).toBeInTheDocument()
   })
 
   it('says that the photo is also in the gallery', () => {
@@ -52,7 +67,14 @@ describe('MemoryPolaroid', () => {
     await userEvent.click(screen.getByRole('button', { name: /als polaroid speichern/i }))
 
     await waitFor(() => expect(click).toHaveBeenCalledTimes(1))
-    expect(createPolaroidBlob).toHaveBeenCalledWith(photo.thumbUrl, 'Lena Müller', 'Saruga & Vinith')
+    expect(createPolaroidBlob).toHaveBeenCalledWith({
+      photoUrl: photo.thumbUrl,
+      guestName: 'Lena Müller',
+      coupleName: 'Saruga & Vinith',
+      occasion: 'Standesamtliche Hochzeit',
+      date: '17.10.2026',
+      withFlowers: false,
+    })
     expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:polaroid')
   })
 

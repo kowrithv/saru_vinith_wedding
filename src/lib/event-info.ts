@@ -16,6 +16,13 @@ export const receptionEvent = {
   lng: 6.213148,
 }
 
+// Aufschrift des Polaroids (Beispiel von Vinith): der Anlass und das Datum in
+// der Schreibweise "17.10.2026" - aus dem Datum der Feier abgeleitet.
+export const polaroidCaption = {
+  occasion: 'Standesamtliche Hochzeit',
+  date: receptionEvent.date.split('-').reverse().join('.'),
+}
+
 export interface ScheduleItem {
   time: string
   event: string
