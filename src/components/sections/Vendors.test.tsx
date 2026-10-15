@@ -35,6 +35,15 @@ describe('Vendors', () => {
     expect(screen.getByText('Location')).toBeInTheDocument()
   })
 
+  it('lists the names in one wrapping row instead of a card each', () => {
+    const { container } = render(<Vendors vendors={vendors} />)
+    expect(container.querySelector('ul')).toHaveClass('flex-wrap')
+    screen.getAllByRole('link').forEach((link) => {
+      expect(link.className).not.toMatch(/\bborder\b/)
+      expect(link.className).not.toMatch(/\bbg-white\b/)
+    })
+  })
+
   it('shows nothing for an empty list', () => {
     const { container } = render(<Vendors vendors={[]} />)
     expect(container).toBeEmptyDOMElement()

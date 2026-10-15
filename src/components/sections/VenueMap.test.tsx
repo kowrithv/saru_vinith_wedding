@@ -5,6 +5,7 @@ import VenueMap from './VenueMap'
 vi.mock('@/lib/calendar', () => ({ downloadEventIcs: vi.fn() }))
 
 const mergeOptions = vi.fn()
+const openPopup = vi.fn()
 
 vi.mock('leaflet', () => ({
   default: {
@@ -12,7 +13,7 @@ vi.mock('leaflet', () => ({
     map: vi.fn(() => ({ remove: vi.fn() })),
     tileLayer: vi.fn(() => ({ addTo: vi.fn() })),
     marker: vi.fn(() => ({
-      addTo: vi.fn(() => ({ bindPopup: vi.fn(() => ({ openPopup: vi.fn() })) })),
+      addTo: vi.fn(() => ({ bindPopup: vi.fn(() => ({ openPopup })) })),
     })),
   },
 }))
@@ -53,6 +54,15 @@ describe('VenueMap', () => {
     ;[options.iconUrl, options.iconRetinaUrl, options.shadowUrl].forEach((url) => {
       expect(url.startsWith('http')).toBe(false)
     })
+  })
+
+  // Das geöffnete Infofenster verdeckte Kartenausschnitt und Zoom-Knöpfe, und
+  // der Name steht ohnehin direkt unter der Karte.
+  it('does not open the marker popup by itself', async () => {
+    openPopup.mockClear()
+    render(<VenueMap {...props} />)
+    await waitFor(() => expect(mergeOptions).toHaveBeenCalled())
+    expect(openPopup).not.toHaveBeenCalled()
   })
 
   // Leaflet vergibt intern z-index bis 1000: ohne eigenen Stapelkontext liegt

@@ -23,19 +23,23 @@ export const polaroidCaption = {
   date: receptionEvent.date.split('-').reverse().join('.'),
 }
 
+/** Symbol des Programmpunkts in der Zeitleiste (siehe ProgramTimeline). */
+export type ScheduleIcon = 'door' | 'cake' | 'flower' | 'dinner' | 'music'
+
 export interface ScheduleItem {
   time: string
   event: string
+  icon?: ScheduleIcon
 }
 
 // Stand der Brautleute vom 15.10.: ungefähre Zeiten mit "ca."; für "Als
 // Nächstes" zählt der Beginn (siehe event-phase.ts). Ohne Uhrzeit: 'TBA'.
 export const receptionSchedule: ScheduleItem[] = [
-  { time: '16:30 Uhr', event: 'Einlass & Empfang der Gäste' },
-  { time: '17:15 Uhr', event: 'Einzug des Brautpaares / Tortenanschneiden' },
-  { time: 'ca. 18:30 Uhr', event: 'Traditioneller Einzug des Brautpaares' },
-  { time: 'ca. 20:00 – 21:00 Uhr', event: 'Gemeinsames Abendessen' },
-  { time: 'ca. 22:30 Uhr', event: 'Party & Tanz' },
+  { time: '16:30 Uhr', event: 'Einlass & Empfang der Gäste', icon: 'door' },
+  { time: '17:15 Uhr', event: 'Einzug des Brautpaares / Tortenanschneiden', icon: 'cake' },
+  { time: 'ca. 18:30 Uhr', event: 'Traditioneller Einzug des Brautpaares', icon: 'flower' },
+  { time: 'ca. 20:00 – 21:00 Uhr', event: 'Gemeinsames Abendessen', icon: 'dinner' },
+  { time: 'ca. 22:30 Uhr', event: 'Party & Tanz', icon: 'music' },
 ]
 
 export interface GoodToKnowItem {

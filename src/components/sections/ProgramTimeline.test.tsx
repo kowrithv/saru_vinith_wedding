@@ -129,4 +129,39 @@ describe('ProgramTimeline', () => {
     window.sessionStorage.clear()
     window.history.replaceState(null, '', '/')
   })
+
+  // Jeder Punkt trägt ein Symbol in einem Kreis auf der Linie (Vorschlag: besser
+  // zu überblicken als gleiche Punkte).
+  describe('markers', () => {
+    const withIcons = [
+      { time: '16:30 Uhr', event: 'Einlass', icon: 'door' as const },
+      { time: '17:15 Uhr', event: 'Torte', icon: 'cake' as const },
+      { time: 'TBA', event: 'Essen', icon: 'dinner' as const },
+    ]
+
+    it('shows one marker with an icon per point, skipped by assistive technology', () => {
+      render(<ProgramTimeline schedule={withIcons} />)
+      const markers = screen.getAllByTestId('program-marker')
+      expect(markers).toHaveLength(3)
+      markers.forEach((marker) => {
+        expect(marker).toHaveAttribute('aria-hidden', 'true')
+        expect(marker.querySelector('svg')).not.toBeNull()
+      })
+    })
+
+    it('falls back to a plain dot without an icon', () => {
+      render(<ProgramTimeline schedule={[{ time: '16:30 Uhr', event: 'Einlass' }]} />)
+      const marker = screen.getByTestId('program-marker')
+      expect(marker.querySelector('svg')).toBeNull()
+    })
+
+    it('fills the marker of the next point in bordeaux on the wedding day', () => {
+      vi.useFakeTimers()
+      vi.setSystemTime(new Date('2026-10-17T10:00:00Z'))
+      render(<ProgramTimeline schedule={withIcons} />)
+      const markers = screen.getAllByTestId('program-marker')
+      expect(markers[0]).toHaveClass('bg-bordeaux')
+      expect(markers[1]).not.toHaveClass('bg-bordeaux')
+    })
+  })
 })

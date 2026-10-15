@@ -67,6 +67,23 @@ describe('InfoPage', () => {
     expect(screen.queryByRole('button', { name: /kalender/i })).not.toBeInTheDocument()
   })
 
+  // Aufbau: Kopf mit dem Datum groß, darunter Ablauf und Anfahrt nebeneinander
+  // (auf dem Handy untereinander), die Dienstleister ruhig am Ende.
+  it('shows the weekday and the date as the headline of the day', () => {
+    render(<InfoPage />)
+    expect(screen.getByText('Samstag')).toBeInTheDocument()
+    expect(screen.getByText(receptionEvent.displayDate)).toHaveClass('font-display')
+  })
+
+  it('puts the programme first and the venue next to it', () => {
+    render(<InfoPage />)
+    const columns = screen.getByTestId('info-columns')
+    expect(columns).toHaveClass('lg:grid-cols-2')
+    const [programme, venue] = Array.from(columns.children)
+    expect(programme).toHaveTextContent('Ablauf des Tages')
+    expect(venue).toContainElement(screen.getByTestId('venue-map-stub'))
+  })
+
   it('thanks the service providers at the end of the page', () => {
     render(<InfoPage />)
     expect(screen.getByRole('heading', { name: /unsere dienstleister/i })).toBeInTheDocument()
