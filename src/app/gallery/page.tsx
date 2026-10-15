@@ -45,6 +45,10 @@ export default function GalleryPage() {
   const [uploading, setUploading] = useState(false)
   // Neuere Fotoliste vom Server, die noch nicht gezeigt wird (siehe NEAR_TOP_PX).
   const [pendingPhotos, setPendingPhotos] = useState<GalleryPhotoView[] | null>(null)
+  // Der ETag der Fotoliste, die zuletzt angekommen ist (gezeigt oder wartend):
+  // damit fragt das Neuladen "hat sich etwas geändert?" und bekommt meist nur ein
+  // winziges 304 zurück statt der ganzen Liste.
+  const etagRef = useRef<string | null>(null)
   const access = useGuestAccess()
   // Erst wenn feststeht, ob dieser Browser entsperrt ist (QR-Link wird dabei
   // eingelöst), wird die Liste geladen: sonst käme zuerst die gesperrte Antwort.
@@ -71,6 +75,7 @@ export default function GalleryPage() {
           setData({ status: 'error' })
           return undefined
         }
+        etagRef.current = res.headers?.get('etag') ?? null
         return res.json() as Promise<{ unlocked: boolean; photos: GalleryPhotoView[] | null; uploadsLocked?: boolean }>
       })
       .then((body) => {
@@ -101,11 +106,27 @@ export default function GalleryPage() {
 
     const refresh = () => {
       if (document.hidden) return
-      fetch('/api/gallery', { cache: 'no-store' })
-        .then((res) => (res.ok ? res.json() : null))
-        .then((body: { unlocked?: boolean; photos?: GalleryPhotoView[] | null; uploadsLocked?: boolean } | null) => {
-          if (!active) return
-          if (!body?.unlocked || !body.photos) return
+      const knownEtag = etagRef.current
+      fetch('/api/gallery', {
+        cache: 'no-store',
+        // Mit diesem Kopf kommt bei "nichts geändert" ein 304 ohne Liste zurück.
+        headers: knownEtag ? { 'If-None-Match': knownEtag } : undefined,
+      })
+        .then(async (res) => {
+          if (!active || res.status === 304 || !res.ok) return null
+          const body = (await res.json()) as {
+            unlocked?: boolean
+            photos?: GalleryPhotoView[] | null
+            uploadsLocked?: boolean
+          }
+          return { body, etag: res.headers?.get('etag') ?? null }
+        })
+        .then((answer) => {
+          if (!active || !answer) return
+          const { body, etag } = answer
+          if (!body.unlocked || !body.photos) return
+          // Erst jetzt merken: eine verworfene Antwort darf nicht als "gesehen" gelten.
+          etagRef.current = etag
           const photos = body.photos
           const uploadsLocked = Boolean(body.uploadsLocked)
           setData((prev) =>

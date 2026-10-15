@@ -243,6 +243,54 @@ describe('GalleryUploadForm', () => {
     expect(calls.indexOf(true)).toBeLessThan(calls.lastIndexOf(false))
   })
 
+  describe('progress you can see', () => {
+    it('shows a large tile per photo and a progress bar with the count while sending', async () => {
+      const user = setupUser()
+      let release: () => void = () => {}
+      createFakeBackend({ holdComplete: new Promise<void>((resolve) => (release = resolve)) })
+      render(<GalleryUploadForm hasAccess onUploaded={vi.fn()} />)
+      await user.type(screen.getByLabelText(/dein name/i), 'Anna')
+      await user.upload(screen.getByLabelText(/fotos ausw/i), [makeFile('a.jpg'), makeFile('b.jpg')])
+      expect(screen.queryByRole('progressbar')).not.toBeInTheDocument()
+
+      await user.click(screen.getByRole('button', { name: /hochladen/i }))
+
+      const bar = await screen.findByRole('progressbar', { name: 'Fortschritt' })
+      expect(bar).toHaveAttribute('aria-valuemax', '2')
+      expect(bar).toHaveAttribute('aria-valuenow', '0')
+      expect(screen.getByText('0 von 2 fertig')).toBeInTheDocument()
+      expect(screen.getAllByText('Sendet …').length).toBeGreaterThan(0)
+      expect(screen.getAllByRole('listitem')).toHaveLength(2)
+
+      release()
+      await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent(/2 fotos hochgeladen/i))
+      expect(screen.queryByRole('progressbar')).not.toBeInTheDocument()
+    })
+
+    it('confirms a finished upload in large green type', async () => {
+      const user = setupUser()
+      createFakeBackend()
+      render(<GalleryUploadForm hasAccess onUploaded={vi.fn()} />)
+      await user.type(screen.getByLabelText(/dein name/i), 'Anna')
+      await user.upload(screen.getByLabelText(/fotos ausw/i), makeFile())
+      await user.click(screen.getByRole('button', { name: /hochladen/i }))
+
+      const status = await screen.findByText(/1 foto hochgeladen – danke/i)
+      expect(status).toHaveClass('text-base', 'font-semibold', 'text-green-700')
+    })
+
+    it('does not count files that cannot be uploaded towards the progress', async () => {
+      const user = setupUser()
+      createFakeBackend({ holdComplete: new Promise<void>(() => {}) })
+      render(<GalleryUploadForm hasAccess onUploaded={vi.fn()} />)
+      await user.type(screen.getByLabelText(/dein name/i), 'Anna')
+      await user.upload(screen.getByLabelText(/fotos ausw/i), [makeFile('gut.jpg'), makeFile('doc.pdf', 'application/pdf')])
+      await user.click(screen.getByRole('button', { name: /hochladen/i }))
+
+      expect(await screen.findByText('0 von 1 fertig')).toBeInTheDocument()
+    })
+  })
+
   it('prefills the name this device remembered from another form', () => {
     window.localStorage.setItem('wedding-guest-name', 'Anna')
     render(<GalleryUploadForm hasAccess onUploaded={vi.fn()} />)
@@ -821,7 +869,7 @@ describe('GalleryUploadForm', () => {
     render(<GalleryUploadForm isAdmin onUploaded={vi.fn()} />)
     await user.upload(screen.getByLabelText(/fotos ausw/i), files)
 
-    expect(screen.getByRole('list')).toHaveClass('max-h-72', 'overflow-y-auto')
+    expect(screen.getByRole('list')).toHaveClass('max-h-[28rem]', 'overflow-y-auto')
   })
 
   it('tells an admin whose session expired to log in again instead of asking for a password', async () => {

@@ -17,6 +17,7 @@ import {
 import type { GalleryPhotoView } from '@/lib/gallery-photo-view'
 import { textFieldClassName } from '@/lib/form-styles'
 import { useGuestName } from '@/lib/use-guest-name'
+import { cn } from '@/lib/utils'
 
 interface GalleryUploadFormProps {
   isAdmin?: boolean
@@ -421,6 +422,8 @@ export default function GalleryUploadForm({
   }
 
   const doneCount = selectedFiles.filter((f) => f.status === 'done').length
+  // Was tatsächlich gesendet werden soll (nicht hochladbare Dateien zählen nicht mit).
+  const totalCount = selectedFiles.filter((f) => !f.invalid).length
   const failedCount = selectedFiles.filter((f) => f.status === 'error' && !f.invalid).length
   // Nach "Abbrechen" zählt jedes gültige, nicht fertige Foto als abgebrochen -
   // auch die Gruppen, die gar nicht mehr gestartet wurden.
@@ -503,35 +506,91 @@ export default function GalleryUploadForm({
       </div>
 
       {selectedFiles.length > 0 && (
-        <ul className="space-y-1 max-h-72 overflow-y-auto">
+        // Große Kacheln statt einer Textliste: man sieht auf einen Blick, welches
+        // Foto gerade gesendet wird, welches fertig ist und welches nicht klappte.
+        <ul className="grid max-h-[28rem] grid-cols-3 gap-2 overflow-y-auto sm:grid-cols-4">
           {selectedFiles.map(({ file, status, message, previewUrl }, index) => (
-            <li key={index} className="flex flex-wrap items-center gap-x-2 text-xs text-gray-600">
-              {status === 'uploading' && <Loader2 size={14} className="animate-spin text-gray-400" />}
-              {status === 'done' && <CheckCircle2 size={14} className="text-green-600" />}
-              {status === 'error' && <XCircle size={14} className="text-red-600" />}
-              {status === 'pending' && <span className="w-3.5" />}
-              {previewUrl !== undefined && (
-                <span className="w-10 h-10 rounded-lg overflow-hidden bg-champagne/50 flex items-center justify-center flex-shrink-0">
-                  {previewUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={previewUrl} alt="" className="w-full h-full object-cover" />
-                  ) : (
-                    <span data-testid="upload-preview-fallback" className="text-gray-500">
-                      <ImageIcon size={16} />
-                    </span>
-                  )}
-                </span>
+            <li key={index} className="min-w-0 text-xs text-gray-600">
+              <div className="relative aspect-square overflow-hidden rounded-xl bg-champagne/60">
+                {previewUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={previewUrl} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  <span
+                    data-testid={previewUrl === null ? 'upload-preview-fallback' : undefined}
+                    className="flex h-full w-full items-center justify-center text-gray-400"
+                  >
+                    <ImageIcon size={28} />
+                  </span>
+                )}
+                {status === 'uploading' && (
+                  <span className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-dark-blue/60 text-white">
+                    <Loader2 size={28} className="animate-spin" />
+                    <span className="text-xs font-medium">Sendet …</span>
+                  </span>
+                )}
+                {status === 'done' && (
+                  <span className="absolute right-1.5 top-1.5 flex h-7 w-7 items-center justify-center rounded-full bg-green-600 text-white shadow">
+                    <CheckCircle2 size={18} />
+                  </span>
+                )}
+                {status === 'error' && (
+                  <span className="absolute inset-0 flex items-center justify-center bg-red-700/60 text-white">
+                    <XCircle size={32} />
+                  </span>
+                )}
+                {status === 'pending' && submitting && (
+                  <span className="absolute inset-x-0 bottom-0 bg-dark-blue/50 px-1 py-0.5 text-center text-[11px] font-medium text-white">
+                    Wartet
+                  </span>
+                )}
+              </div>
+              <span className="mt-1 block truncate" title={file.name}>
+                {file.name}
+              </span>
+              {status === 'pending' && message && <span className="block break-words text-gray-500">{message}</span>}
+              {status === 'error' && (
+                <span className="block break-words text-red-600">{message ?? GENERIC_UPLOAD_ERROR}</span>
               )}
-              <span className="break-all">{file.name}</span>
-              {status === 'pending' && message && <span className="text-gray-500">{message}</span>}
-              {status === 'error' && <span className="text-red-600">{message ?? GENERIC_UPLOAD_ERROR}</span>}
             </li>
           ))}
         </ul>
       )}
 
+      {submitting && totalCount > 0 && (
+        // Groß und direkt über dem Knopf: dort schaut man nach dem Tippen hin.
+        <div>
+          <div className="mb-1.5 flex items-baseline justify-between gap-3 text-sm font-semibold text-dark-blue">
+            <span>Fotos werden gesendet …</span>
+            <span className="tabular-nums">
+              {doneCount} von {totalCount} fertig
+            </span>
+          </div>
+          <div
+            role="progressbar"
+            aria-label="Fortschritt"
+            aria-valuemin={0}
+            aria-valuemax={totalCount}
+            aria-valuenow={doneCount}
+            className="h-3 overflow-hidden rounded-full bg-champagne-dark/40"
+          >
+            <div
+              className="h-full animate-pulse rounded-full bg-gold transition-all duration-500"
+              style={{ width: `${Math.max(6, Math.round((doneCount / totalCount) * 100))}%` }}
+            />
+          </div>
+        </div>
+      )}
+
       {statusText && (
-        <p role="status" className="text-sm text-gray-700">
+        <p
+          role="status"
+          className={cn(
+            'text-sm text-gray-700',
+            // Alles hochgeladen: deutlich bestätigen.
+            !submitting && doneCount > 0 && failedCount === 0 && cancelledCount === 0 && 'text-base font-semibold text-green-700'
+          )}
+        >
           {statusText}
         </p>
       )}

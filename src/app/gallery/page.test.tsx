@@ -346,6 +346,75 @@ describe('GalleryPage', () => {
       expect(callsTo(fetchMock, '/api/gallery')).toHaveLength(2)
     })
 
+    describe('asking cheaply whether anything changed', () => {
+      const tagged = (photos: unknown[], etag: string) => ({ ...body(photos), headers: { etag } })
+      const sentTags = (fetchMock: ReturnType<typeof mockApi>) =>
+        callsTo(fetchMock, '/api/gallery').map(
+          ([, init]) => ((init as RequestInit | undefined)?.headers as Record<string, string> | undefined)?.['If-None-Match']
+        )
+
+      it('sends the ETag of the last list along and keeps everything when the answer is 304', async () => {
+        const fetchMock = mockApi([tagged([samplePhoto], '"v1"'), { status: 304, body: null, headers: { etag: '"v1"' } }])
+        render(<GalleryPage />)
+        const before = await screen.findByRole('img')
+
+        await tick(30_000)
+        await tick(30_000)
+
+        expect(sentTags(fetchMock).slice(0, 2)).toEqual([undefined, '"v1"'])
+        expect(screen.getByRole('img')).toBe(before)
+        expect(screen.queryByText(/konnte nicht geladen werden/i)).not.toBeInTheDocument()
+        expect(screen.queryByRole('button', { name: /neue.*foto.*anzeigen/i })).not.toBeInTheDocument()
+      })
+
+      it('uses the newer ETag after a changed list came in', async () => {
+        const fetchMock = mockApi([
+          tagged([samplePhoto], '"v1"'),
+          tagged([newPhoto, samplePhoto], '"v2"'),
+          { status: 304, body: null, headers: { etag: '"v2"' } },
+        ])
+        render(<GalleryPage />)
+        await waitFor(() => expect(screen.getAllByRole('img')).toHaveLength(1))
+
+        await tick(30_000)
+        await waitFor(() => expect(screen.getAllByRole('img')).toHaveLength(2))
+        await tick(30_000)
+
+        expect(sentTags(fetchMock).slice(0, 3)).toEqual([undefined, '"v1"', '"v2"'])
+        expect(screen.getAllByRole('img')).toHaveLength(2)
+      })
+
+      it('keeps asking with the same ETag while a newer list waits behind the button', async () => {
+        window.scrollY = 900
+        window.scrollTo = vi.fn()
+        const fetchMock = mockApi([
+          tagged([samplePhoto], '"v1"'),
+          tagged([newPhoto, samplePhoto], '"v2"'),
+          { status: 304, body: null, headers: { etag: '"v2"' } },
+        ])
+        render(<GalleryPage />)
+        await waitFor(() => expect(screen.getAllByRole('img')).toHaveLength(1))
+
+        await tick(30_000)
+        await screen.findByRole('button', { name: '1 neues Foto anzeigen' })
+        await tick(30_000)
+
+        expect(sentTags(fetchMock).slice(0, 3)).toEqual([undefined, '"v1"', '"v2"'])
+        expect(screen.getByRole('button', { name: '1 neues Foto anzeigen' })).toBeInTheDocument()
+      })
+
+      it('works without any ETag (older server answers)', async () => {
+        const fetchMock = mockApi([body([samplePhoto]), body([newPhoto, samplePhoto])])
+        render(<GalleryPage />)
+        await waitFor(() => expect(screen.getAllByRole('img')).toHaveLength(1))
+
+        await tick(30_000)
+
+        await waitFor(() => expect(screen.getAllByRole('img')).toHaveLength(2))
+        expect(sentTags(fetchMock)).toEqual([undefined, undefined])
+      })
+    })
+
     it('looks again every 30 seconds, not more often', async () => {
       const fetchMock = mockApi(body([samplePhoto]))
       render(<GalleryPage />)
