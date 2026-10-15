@@ -182,4 +182,12 @@ describe('GalleryLightbox', () => {
     vi.unstubAllGlobals()
     vi.restoreAllMocks()
   })
+
+  it('captions the photo with the uploader, the category and the time it was taken', () => {
+    render(<GalleryLightbox photos={[photo()]} index={0} onClose={() => {}} onNavigate={() => {}} onDeleted={() => {}} />)
+
+    const caption = screen.getByText(/von anna/i).closest('p') as HTMLElement
+    expect(caption).toHaveTextContent('Hochzeit')
+    expect(caption).toHaveTextContent('12.10. um 12:00 Uhr')
+  })
 })

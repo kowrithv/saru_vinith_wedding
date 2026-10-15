@@ -418,4 +418,10 @@ describe('MemoryGame', () => {
     expect(screen.getByText(/rekord aller gäste: 5 züge/i)).toBeInTheDocument()
     expect(screen.queryByText(/neuer rekord/i)).not.toBeInTheDocument()
   })
+
+  it('shows the lotus on the back of every card instead of a plain heart', () => {
+    render(<MemoryGame />)
+    const backs = screen.getAllByRole('button', { name: 'Karte umdrehen' })
+    backs.forEach((card) => expect(card.querySelector('svg.text-gold')).toBeInTheDocument())
+  })
 })

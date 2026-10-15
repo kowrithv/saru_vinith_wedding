@@ -4,7 +4,8 @@ import Card from '@/components/ui/Card'
 import VenueMap from '@/components/sections/VenueMap'
 import ProgramTimeline from '@/components/sections/ProgramTimeline'
 import SaveToCalendarButton from '@/components/sections/SaveToCalendarButton'
-import { receptionEvent, receptionSchedule } from '@/lib/event-info'
+import GoodToKnow from '@/components/sections/GoodToKnow'
+import { goodToKnow, receptionEvent, receptionSchedule } from '@/lib/event-info'
 
 interface InfoCardProps {
   icon: LucideIcon
@@ -73,6 +74,8 @@ export default function InfoPage() {
             address={receptionEvent.address}
           />
         </div>
+
+        <GoodToKnow items={goodToKnow} />
 
         <Card variant="ornate" padding="lg">
           <h3 className="font-serif text-xl font-semibold text-dark-blue mb-5 flex items-center gap-2">

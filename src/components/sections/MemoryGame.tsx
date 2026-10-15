@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
-import { Heart, Timer, MousePointerClick, Trophy } from 'lucide-react'
+import { Timer, MousePointerClick, Trophy } from 'lucide-react'
+import Lotus from '@/components/ui/Lotus'
 import Button from '@/components/ui/Button'
 import { memoryImages, MEMORY_PAIRS_COUNT } from '@/lib/memory-content'
 import { formatTime } from '@/lib/format-time'
@@ -262,8 +263,8 @@ export default function MemoryGame() {
                 animate={{ rotateY: visible ? 180 : 0 }}
                 transition={{ duration: 0.4 }}
               >
-                <div className="absolute inset-0 rounded-xl bg-dark-blue flex items-center justify-center [backface-visibility:hidden] shadow-sm">
-                  <Heart size={18} className="text-white/30" />
+                <div className="absolute inset-0 rounded-xl bg-dark-blue flex items-center justify-center [backface-visibility:hidden] shadow-sm border border-gold/70 shadow-[inset_0_0_0_3px_var(--color-dark-blue),inset_0_0_0_4px_rgba(201,168,76,0.5)]">
+                  <Lotus size={24} className="text-gold" />
                 </div>
                 <div
                   className={`absolute inset-0 rounded-xl overflow-hidden flex items-center justify-center [backface-visibility:hidden] [transform:rotateY(180deg)] border-2 ${

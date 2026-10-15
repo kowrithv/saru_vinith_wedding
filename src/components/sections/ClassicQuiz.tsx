@@ -2,8 +2,9 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Trophy } from 'lucide-react'
+import { Check } from 'lucide-react'
 import Button from '@/components/ui/Button'
+import Lotus from '@/components/ui/Lotus'
 import { quizQuestions } from '@/lib/quiz-content'
 import { cn } from '@/lib/utils'
 
@@ -67,13 +68,13 @@ export default function ClassicQuiz() {
 
   const getOptionStyle = (optionIndex: number) => {
     if (!isAnswered) {
-      return 'border-gray-200 bg-white text-gray-700 hover:border-dark-blue hover:bg-champagne/30'
+      return 'border-champagne-dark bg-white text-gray-700 hover:border-dark-blue hover:bg-champagne/30'
     }
     if (optionIndex === currentQuestion.correctIndex) {
-      return 'border-green-400 bg-green-50 text-green-800'
+      return 'border-green-600 bg-green-50 text-green-900'
     }
     if (optionIndex === selectedOption) {
-      return 'border-red-400 bg-red-50 text-red-800'
+      return 'border-bordeaux bg-rose-sand-light text-bordeaux'
     }
     return 'border-gray-100 bg-gray-50 text-gray-400 opacity-60'
   }
@@ -85,10 +86,10 @@ export default function ClassicQuiz() {
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.5 }}
-        className="text-center bg-white rounded-3xl shadow-sm border border-gray-100 p-8 md:p-12"
+        className="card-ornate text-center rounded-3xl p-8 md:p-12"
       >
-        <Trophy size={36} className="text-gold mx-auto mb-4" />
-        <p className="font-serif text-3xl font-bold text-dark-blue mb-1">
+        <Lotus size={44} className="text-gold mx-auto mb-4" />
+        <p className="font-display text-4xl font-semibold text-dark-blue mb-1">
           {score} von {quizQuestions.length}
         </p>
         <h3 className="font-serif text-xl font-semibold text-dark-blue mb-3">{result.title}</h3>
@@ -105,12 +106,21 @@ export default function ClassicQuiz() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 md:p-8"
+        className="card-ornate rounded-3xl p-6 md:p-8"
       >
-        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
+        <div data-testid="quiz-progress" className="mb-4 flex justify-center gap-1.5" aria-hidden="true">
+          {quizQuestions.map((question, index) => (
+            <Lotus
+              key={question.id}
+              size={18}
+              className={index <= currentIndex ? 'text-gold' : 'text-champagne-dark'}
+            />
+          ))}
+        </div>
+        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2 text-center">
           Frage {currentIndex + 1} von {quizQuestions.length}
         </p>
-        <h3 className="font-serif text-lg md:text-xl font-semibold text-dark-blue mb-6">
+        <h3 className="font-display text-2xl md:text-3xl font-semibold leading-tight text-dark-blue mb-6 text-center">
           {currentQuestion.question}
         </h3>
 
@@ -121,11 +131,20 @@ export default function ClassicQuiz() {
               type="button"
               onClick={() => handleSelectOption(optionIndex)}
               className={cn(
-                'px-5 py-3 rounded-xl border text-sm font-medium text-left transition-colors',
+                'flex items-center gap-3 px-3 py-2.5 rounded-xl border-[1.5px] text-sm font-medium text-left transition-colors',
                 getOptionStyle(optionIndex)
               )}
             >
-              {option}
+              <span
+                aria-hidden="true"
+                className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-champagne text-xs font-bold text-dark-blue"
+              >
+                {String.fromCharCode(65 + optionIndex)}
+              </span>
+              <span className="flex-1">{option}</span>
+              {isAnswered && optionIndex === currentQuestion.correctIndex && (
+                <Check size={18} className="flex-shrink-0 text-green-700" />
+              )}
             </button>
           ))}
         </div>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import ClassicQuiz from './ClassicQuiz'
 import { quizQuestions } from '@/lib/quiz-content'
@@ -53,5 +53,35 @@ describe('ClassicQuiz', () => {
     }
     await userEvent.click(screen.getByRole('button', { name: /nochmal/i }))
     expect(screen.getByText(quizQuestions[0].question)).toBeInTheDocument()
+  })
+
+  it('shows the progress as one lotus per question, filled up to the current one', async () => {
+    render(<ClassicQuiz />)
+    const progress = screen.getByTestId('quiz-progress')
+    expect(progress.querySelectorAll('svg')).toHaveLength(quizQuestions.length)
+    expect(progress.querySelectorAll('svg.text-gold')).toHaveLength(1)
+
+    await answerCurrentQuestion(0, true)
+    await userEvent.click(screen.getByRole('button', { name: /weiter/i }))
+
+    // Die nächste Frage ersetzt die Karte: den Fortschritt neu abfragen.
+    await waitFor(() =>
+      expect(screen.getByTestId('quiz-progress').querySelectorAll('svg.text-gold')).toHaveLength(2)
+    )
+  })
+
+  it('marks the options with letters that assistive technology skips', () => {
+    render(<ClassicQuiz />)
+    const first = screen.getByRole('button', { name: quizQuestions[0].options[0] })
+    expect(first.querySelector('[aria-hidden="true"]')).toHaveTextContent('A')
+  })
+
+  it('shows a checkmark next to the correct answer, not only a color', async () => {
+    render(<ClassicQuiz />)
+    const correct = quizQuestions[0].correctIndex
+    await answerCurrentQuestion(0, false)
+
+    const correctButton = screen.getByRole('button', { name: quizQuestions[0].options[correct] })
+    expect(correctButton.querySelector('svg')).toBeInTheDocument()
   })
 })

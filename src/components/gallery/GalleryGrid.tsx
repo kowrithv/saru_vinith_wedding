@@ -41,8 +41,8 @@ export default function GalleryGrid({ photos, onPhotoDeleted, emptyMessage }: Ga
           className={cn(
             'px-5 py-2 rounded-full text-sm font-medium transition-all duration-200',
             activeCategory === 'Alle'
-              ? 'bg-dark-blue text-white shadow-md'
-              : 'bg-gray-100 text-gray-600 hover:bg-champagne hover:text-dark-blue'
+              ? 'bg-dark-blue text-white shadow-md shadow-[inset_0_-3px_0_var(--color-gold)]'
+              : 'bg-champagne text-dark-blue hover:bg-champagne-dark'
           )}
         >
           Alle
@@ -56,8 +56,8 @@ export default function GalleryGrid({ photos, onPhotoDeleted, emptyMessage }: Ga
             className={cn(
               'px-5 py-2 rounded-full text-sm font-medium transition-all duration-200',
               activeCategory === category
-                ? 'bg-dark-blue text-white shadow-md'
-                : 'bg-gray-100 text-gray-600 hover:bg-champagne hover:text-dark-blue'
+                ? 'bg-dark-blue text-white shadow-md shadow-[inset_0_-3px_0_var(--color-gold)]'
+                : 'bg-champagne text-dark-blue hover:bg-champagne-dark'
             )}
           >
             {category}
@@ -93,7 +93,12 @@ export default function GalleryGrid({ photos, onPhotoDeleted, emptyMessage }: Ga
                   group-hover: hover gibt es auf Touch-Geräten nicht, und
                   die meisten Gäste öffnen die Galerie am Handy. */}
               <div className="absolute bottom-2 left-2 right-2">
-                <span className="inline-block bg-white/90 text-dark-blue text-xs font-medium px-2 py-1 rounded-full">
+                <span
+                  className={cn(
+                    'inline-block text-xs font-medium px-2 py-1 rounded-full',
+                    photo.isOfficial ? 'bg-dark-blue text-gold' : 'bg-white/90 text-dark-blue'
+                  )}
+                >
                   {photo.isOfficial ? photo.category : `Von ${photo.uploaderName}`}
                 </span>
               </div>

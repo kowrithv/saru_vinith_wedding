@@ -173,4 +173,12 @@ describe('WhoKnowsUsGame', () => {
     capturedPoll?.()
     await waitFor(() => expect(screen.getByText('5')).toBeInTheDocument())
   })
+
+  it('marks each person with a round badge that screen readers skip', async () => {
+    render(<WhoKnowsUsGame />)
+    const saruga = await screen.findByRole('button', { name: 'Saruga' })
+    expect(saruga.querySelector('[aria-hidden="true"]')).toHaveTextContent('S')
+    const vinith = screen.getByRole('button', { name: 'Vinith' })
+    expect(vinith.querySelector('[aria-hidden="true"]')).toHaveTextContent('V')
+  })
 })

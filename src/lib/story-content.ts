@@ -13,6 +13,8 @@ export interface TimelineItem {
   description: string
   icon: TimelineIcon
   align: 'left' | 'right'
+  /** Optionales Foto (Pfad unter public/, z. B. '/story/2023.jpg'); ohne Foto bleibt die Karte reiner Text. */
+  photo?: string
 }
 
 export const storyTimeline: TimelineItem[] = [

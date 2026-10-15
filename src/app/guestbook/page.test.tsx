@@ -213,4 +213,21 @@ describe('GuestbookPage', () => {
     const { container } = render(<GuestbookPage />)
     await waitFor(() => expect(container.firstChild).toHaveClass('pt-24'))
   })
+
+  it('shows each entry as a letter card: the message first, the name as a signature, the initial as a seal', async () => {
+    mockFetchRoutes({
+      '/api/access': { body: { unlocked: true } },
+      '/api/guestbook': {
+        body: {
+          entries: [{ id: 1, name: 'Anna Schmidt', message: 'Wir freuen uns so für euch!', createdAt: '2026-10-11T10:00:00.000Z' }],
+        },
+      },
+    })
+    render(<GuestbookPage />)
+
+    const message = await screen.findByText('Wir freuen uns so für euch!')
+    expect(message).toHaveClass('font-display', 'italic')
+    expect(screen.getByText('Anna Schmidt')).toHaveClass('font-script')
+    expect(screen.getByText('AS')).toBeInTheDocument()
+  })
 })

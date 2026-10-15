@@ -1,5 +1,7 @@
 'use client'
 
+import { useState } from 'react'
+import Link from 'next/link'
 import { motion } from 'framer-motion'
 import {
   Heart,
@@ -11,6 +13,9 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import SectionTitle from '@/components/ui/SectionTitle'
+import Card from '@/components/ui/Card'
+import Lotus from '@/components/ui/Lotus'
+import { cn } from '@/lib/utils'
 import { storyTimeline, type TimelineIcon } from '@/lib/story-content'
 
 const iconMap: Record<TimelineIcon, LucideIcon> = {
@@ -20,6 +25,29 @@ const iconMap: Record<TimelineIcon, LucideIcon> = {
   flower: Flower2,
   ring: Gem,
   certificate: FileText,
+}
+
+// Lange Absätze sind auf dem Handy eine Wand: erst vier Zeilen, der Rest auf Wunsch.
+function StoryText({ text }: { text: string }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <>
+      <p className={cn('text-gray-600 leading-relaxed text-sm md:text-base', !open && 'line-clamp-4')}>{text}</p>
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => setOpen((value) => !value)}
+        className="mt-2 text-sm font-semibold text-bordeaux underline-offset-4 hover:underline"
+      >
+        {open ? 'Weniger anzeigen' : 'Weiterlesen'}
+      </button>
+    </>
+  )
+}
+
+/** "15.11.2023" -> "2023" (die Jahreszahl als Blickfang); sonst der ganze Text. */
+function yearOf(date: string): string {
+  return /\d{4}$/.exec(date)?.[0] ?? date
 }
 
 export default function StoryPage() {
@@ -49,23 +77,33 @@ export default function StoryPage() {
                   className={`relative md:flex md:items-center ${isLeft ? 'md:flex-row' : 'md:flex-row-reverse'} md:gap-8 mb-12`}
                 >
                   <div className={`md:w-[calc(50%-3rem)] ${isLeft ? 'md:text-right' : 'md:text-left'}`}>
-                    <div
-                      className={`bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:p-8 ${
-                        isLeft ? 'md:ml-auto' : 'md:mr-auto'
-                      }`}
+                    <Card
+                      variant="ornate"
+                      padding="none"
+                      className={`p-6 md:p-8 ${isLeft ? 'md:ml-auto' : 'md:mr-auto'}`}
                     >
-                      <div className={`flex items-center gap-2 mb-3 ${isLeft ? 'md:justify-end' : 'justify-start'}`}>
-                        <span className="inline-block px-3 py-1 bg-champagne text-dark-blue text-xs font-semibold rounded-full uppercase tracking-wider">
+                      <div className={`mb-3 ${isLeft ? 'md:text-right' : 'text-left'}`}>
+                        <p className="font-display text-6xl font-semibold leading-none text-gold-text">
+                          {yearOf(item.year)}
+                        </p>
+                        <p className="mt-1 text-xs font-semibold uppercase tracking-wider text-bordeaux">
                           {item.year}
-                        </span>
+                        </p>
                       </div>
-                      <h3 className="font-serif text-xl md:text-2xl font-semibold text-dark-blue mb-3">
+                      {item.photo && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={item.photo}
+                          alt={item.title}
+                          loading="lazy"
+                          className="mb-4 h-48 w-full rounded-t-3xl rounded-b-md object-cover"
+                        />
+                      )}
+                      <h3 className="font-display text-2xl md:text-3xl font-semibold leading-tight text-dark-blue mb-3">
                         {item.title}
                       </h3>
-                      <p className="text-gray-600 leading-relaxed text-sm md:text-base">
-                        {item.description}
-                      </p>
-                    </div>
+                      <StoryText text={item.description} />
+                    </Card>
                   </div>
 
                   <div className="hidden md:flex absolute left-1/2 -translate-x-1/2 w-14 h-14 bg-white border-4 border-champagne rounded-full items-center justify-center shadow-md z-10">
@@ -93,14 +131,20 @@ export default function StoryPage() {
           transition={{ duration: 0.5 }}
           className="text-center mt-16"
         >
-          <div className="inline-block bg-dark-blue text-white rounded-2xl px-8 py-8 max-w-lg mx-auto">
-            <Heart size={28} className="text-gold fill-gold mx-auto mb-4" />
-            <p className="font-serif text-xl font-semibold mb-3">Das Beste kommt noch</p>
-            <p className="text-white/70 text-sm leading-relaxed">
+          <Card variant="ornate" padding="lg" className="mx-auto flex max-w-lg flex-col items-center">
+            <Lotus size={36} className="text-bordeaux" />
+            <p className="mt-3 font-display text-3xl font-semibold text-dark-blue">Das Beste kommt noch</p>
+            <p className="mt-3 text-sm leading-relaxed text-gray-600">
               Unsere Geschichte ist noch nicht zu Ende – sie fängt gerade erst an.
               Wir freuen uns darauf, sie gemeinsam mit euch zu schreiben.
             </p>
-          </div>
+            <Link
+              href="/memories"
+              className="mt-5 inline-flex items-center justify-center rounded-full bg-bordeaux px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-bordeaux-light"
+            >
+              Erinnerung teilen
+            </Link>
+          </Card>
         </motion.div>
       </div>
     </div>

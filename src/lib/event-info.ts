@@ -26,3 +26,14 @@ export const receptionSchedule: ScheduleItem[] = [
   { time: 'TBA', event: 'Gemeinsames Abendessen' },
   { time: 'TBA', event: 'Party & Tanz' },
 ]
+
+export interface GoodToKnowItem {
+  title: string
+  text: string
+}
+
+// Kurze Hinweise für Gäste (Kleidung, Kinder, Geschenke, Übernachtung ...).
+// Solange die Liste leer ist, erscheint der Abschnitt "Gut zu wissen" auf
+// /info gar nicht. Beispiel:
+//   { title: 'Kleidung', text: 'Festlich, gern mit Farbe.' },
+export const goodToKnow: GoodToKnowItem[] = []

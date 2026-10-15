@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { X, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react'
 import type { GalleryPhotoView } from '@/lib/gallery-photo-view'
+import { formatPhotoMoment } from '@/lib/format-time'
 import { getDeleteToken, removeDeleteToken } from '@/lib/gallery-delete-tokens'
 
 interface GalleryLightboxProps {
@@ -164,11 +165,22 @@ export default function GalleryLightbox({ photos, index, onClose, onNavigate, on
           onError={() => setFailedPhotoId(photo.id)}
           className="max-h-[80vh] w-auto h-auto object-contain rounded-lg mx-auto"
         />
+        <p className="mt-3 text-center text-sm text-champagne-light">
+          <span>Von {photo.uploaderName}</span>
+          <span aria-hidden="true"> · </span>
+          <span>{photo.category}</span>
+          {formatPhotoMoment(photo.createdAt) && (
+            <>
+              <span aria-hidden="true"> · </span>
+              <span>{formatPhotoMoment(photo.createdAt)}</span>
+            </>
+          )}
+        </p>
         <div className="text-center mt-3 flex items-center justify-center gap-4">
           <button
             type="button"
             onClick={handleDownload}
-            className="text-white/70 text-sm hover:text-white transition-colors"
+            className="rounded-full bg-gold px-4 py-1.5 text-sm font-semibold text-dark-blue-dark transition-colors hover:bg-gold-light"
           >
             Original herunterladen
           </button>
