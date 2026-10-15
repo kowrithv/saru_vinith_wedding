@@ -134,7 +134,7 @@ export default function Countdown() {
               {pad(timeLeft.days)}
             </p>
             <p className="mt-3 font-display text-2xl">
-              <span>Tage</span> bis zu unserem Empfang
+              <span>{timeLeft.days === 1 ? 'Tag' : 'Tage'}</span> bis zu unserem Empfang
             </p>
             <div data-testid="countdown-small" className="mt-6 flex flex-wrap items-end justify-center gap-x-8 gap-y-4">
               <Unit value={timeLeft.hours} label="Stunden" />

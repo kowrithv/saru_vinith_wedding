@@ -89,6 +89,15 @@ describe('Countdown', () => {
     expect(row).toHaveClass('flex', 'flex-wrap')
   })
 
+  it('says "Tag" for exactly one day left', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-10-16T10:00:00Z'))
+    render(<Countdown />)
+
+    expect(screen.getByText('Tag')).toBeInTheDocument()
+    expect(screen.queryByText('Tage')).not.toBeInTheDocument()
+  })
+
   it('makes the days the main number and the rest companions', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-10-15T08:00:00Z'))

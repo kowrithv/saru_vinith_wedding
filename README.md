@@ -157,7 +157,7 @@ Danach `npm run dev` neu starten. `data/fake-r2/` ist ignoriert.
   200 KB).
 - **Zustände:** vor dem 17.10. Countdown mit großen Tagen und Kalender-Knopf;
   am 17.10. "Heute ist es so weit" mit Fotos hochladen, Ablauf und Gästebuch;
-  ab 18.10. "Wir sind verheiratet!" mit Danke. Die Grenzen sind feste Zeitpunkte
+  ab 18.10., 5 Uhr morgens (die Feier geht über Mitternacht), "Wir sind verheiratet!" mit Danke. Die Grenzen sind feste Zeitpunkte
   (MESZ), nicht die Zeit des Geräts (`src/lib/event-phase.ts`).
 - **Vorschau der Zustände:** `?zeit=heute` (17.10. vor dem Empfang, 12:00),
   `?zeit=feier` (17.10., 18:00, die Feier läuft) und `?zeit=danach` (18.10.)

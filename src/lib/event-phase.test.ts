@@ -16,8 +16,16 @@ describe('eventPhase', () => {
     expect(eventPhase(at('2026-10-17T23:59:59+02:00'))).toBe('today')
   })
 
-  it('is "after" from the next German midnight', () => {
-    expect(eventPhase(at('2026-10-18T00:00:00+02:00'))).toBe('after')
+  // Die Feier geht über Mitternacht hinaus: wer um halb eins die Seite öffnet,
+  // soll nicht "Danke, dass ihr gefeiert habt" lesen, während getanzt wird.
+  it('is still "today" after midnight, until the morning', () => {
+    expect(eventPhase(at('2026-10-18T00:00:00+02:00'))).toBe('today')
+    expect(eventPhase(at('2026-10-18T01:30:00+02:00'))).toBe('today')
+    expect(eventPhase(at('2026-10-18T04:59:59+02:00'))).toBe('today')
+  })
+
+  it('is "after" from five in the morning after the wedding', () => {
+    expect(eventPhase(at('2026-10-18T05:00:00+02:00'))).toBe('after')
     expect(eventPhase(at('2026-11-01T12:00:00+01:00'))).toBe('after')
   })
 

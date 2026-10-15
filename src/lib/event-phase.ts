@@ -6,7 +6,8 @@ import type { ScheduleItem } from './event-info'
 export type EventPhase = 'before' | 'today' | 'after'
 
 const DAY_START_MS = Date.parse('2026-10-17T00:00:00+02:00')
-const DAY_END_MS = Date.parse('2026-10-18T00:00:00+02:00')
+// Die Feier läuft über Mitternacht hinaus: "danach" beginnt erst am Morgen.
+const DAY_END_MS = Date.parse('2026-10-18T05:00:00+02:00')
 
 export function eventPhase(nowMs: number): EventPhase {
   if (nowMs < DAY_START_MS) return 'before'
