@@ -2,6 +2,8 @@ import { Calendar, Clock, MapPin, Car, Info as InfoIcon, type LucideIcon } from 
 import SectionTitle from '@/components/ui/SectionTitle'
 import Card from '@/components/ui/Card'
 import VenueMap from '@/components/sections/VenueMap'
+import ProgramTimeline from '@/components/sections/ProgramTimeline'
+import SaveToCalendarButton from '@/components/sections/SaveToCalendarButton'
 import { receptionEvent, receptionSchedule } from '@/lib/event-info'
 
 interface InfoCardProps {
@@ -59,6 +61,10 @@ export default function InfoPage() {
           <InfoCard icon={Car} label="Parken" value="Parkplätze direkt an der Begegnungsstätte" />
         </div>
 
+        <div className="mb-4 flex justify-center">
+          <SaveToCalendarButton />
+        </div>
+
         <div className="mb-8">
           <VenueMap
             lat={receptionEvent.lat}
@@ -73,21 +79,7 @@ export default function InfoPage() {
             <InfoIcon size={18} className="text-gold" />
             Ablauf des Tages
           </h3>
-          <div className="space-y-4">
-            {receptionSchedule.map((item, index) => (
-              <div key={index} className="flex items-start gap-4">
-                <div className="flex-shrink-0 w-24 text-right">
-                  <span className="text-xs font-semibold text-gold-text bg-champagne px-2 py-1 rounded-full">
-                    {item.time}
-                  </span>
-                </div>
-                <div className="flex items-center gap-3 flex-1">
-                  <div className="w-2 h-2 bg-dark-blue rounded-full flex-shrink-0" />
-                  <p className="text-sm text-gray-700">{item.event}</p>
-                </div>
-              </div>
-            ))}
-          </div>
+          <ProgramTimeline schedule={receptionSchedule} />
         </Card>
       </div>
     </div>

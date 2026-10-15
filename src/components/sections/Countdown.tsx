@@ -1,103 +1,166 @@
 'use client'
 
-import { Clock } from 'lucide-react'
-import Button from '@/components/ui/Button'
+import Link from 'next/link'
+import { CalendarPlus, Camera, CalendarDays, MessageSquare, Heart } from 'lucide-react'
+import Lotus from '@/components/ui/Lotus'
 import { calculateTimeUntil } from '@/lib/utils'
 import { receptionEvent } from '@/lib/event-info'
+import { eventPhase, type EventPhase } from '@/lib/event-phase'
+import { downloadEventIcs } from '@/lib/calendar'
 import { useNowSecond } from '@/lib/use-now-second'
+import { cn } from '@/lib/utils'
 
 const EVENT_START_MS = Date.parse(receptionEvent.startsAt)
 
-interface CountdownUnitProps {
+const pad = (value: number) => String(value).padStart(2, '0')
+
+interface UnitProps {
   value: number
   label: string
-  delay?: number
+  large?: boolean
 }
 
-function CountdownUnit({ value, label, delay = 0 }: CountdownUnitProps) {
-  const displayValue = String(value).padStart(2, '0')
-
+function Unit({ value, label, large = false }: UnitProps) {
   return (
-    <div
-      className="flex flex-col items-center animate-fade-up motion-reduce:animate-none"
-      style={{ animationDelay: `${delay}s` }}
-    >
-      {/* 4 x w-16 + 3 x gap-2 = 280 px: passt auch auf ein 320-px-Handy. */}
-      <div className="w-16 h-16 sm:w-24 sm:h-24 md:w-28 md:h-28 bg-white rounded-2xl shadow-md border border-champagne-dark/20 flex items-center justify-center">
-        <span className="font-serif text-2xl sm:text-4xl md:text-5xl font-semibold text-dark-blue tabular-nums">
-          {displayValue}
-        </span>
-      </div>
-      <span className="mt-3 text-xs sm:text-sm font-medium text-gray-500 uppercase tracking-wide sm:tracking-wider">
-        {label}
-      </span>
+    <div className="flex flex-col items-center">
+      <b
+        className={cn(
+          'font-display font-semibold leading-none tabular-nums',
+          large ? 'text-5xl sm:text-6xl' : 'text-3xl sm:text-4xl'
+        )}
+      >
+        {pad(value)}
+      </b>
+      <span className="mt-1.5 text-[11px] uppercase tracking-[0.14em] text-white/75">{label}</span>
     </div>
   )
 }
 
-function Separator() {
+interface ActionLinkProps {
+  href: string
+  icon: typeof Camera
+  children: string
+  primary?: boolean
+}
+
+function ActionLink({ href, icon: Icon, children, primary = false }: ActionLinkProps) {
   return (
-    <div
-      data-testid="countdown-separator"
-      className="hidden sm:flex flex-col items-center gap-1.5 mb-7 opacity-40"
+    <Link
+      href={href}
+      className={cn(
+        'flex w-full items-center gap-3 rounded-2xl px-5 py-3.5 text-left font-semibold transition-colors',
+        primary
+          ? 'bg-bordeaux text-white hover:bg-bordeaux-light'
+          : 'border border-champagne-dark/60 bg-champagne-light text-dark-blue hover:bg-champagne'
+      )}
     >
-      <div className="w-1 h-1 bg-dark-blue rounded-full" />
-      <div className="w-1 h-1 bg-dark-blue rounded-full" />
+      <Icon size={20} className="flex-shrink-0" />
+      <span>{children}</span>
+    </Link>
+  )
+}
+
+// Am Hochzeitstag und danach stehen die Wege nach vorn, die Gäste dann brauchen.
+function DayActions({ phase }: { phase: EventPhase }) {
+  if (phase === 'after') {
+    return (
+      <div className="mt-6 flex w-full max-w-sm flex-col gap-3">
+        <ActionLink href="/gallery" icon={Camera} primary>
+          Fotos ansehen
+        </ActionLink>
+        <ActionLink href="/memories" icon={Heart}>
+          Erinnerung teilen
+        </ActionLink>
+        <ActionLink href="/guestbook" icon={MessageSquare}>
+          Ins Gästebuch schreiben
+        </ActionLink>
+      </div>
+    )
+  }
+  return (
+    <div className="mt-6 flex w-full max-w-sm flex-col gap-3">
+      <ActionLink href="/gallery" icon={Camera} primary>
+        Fotos hochladen
+      </ActionLink>
+      <ActionLink href="/info" icon={CalendarDays}>
+        Ablauf des Tages
+      </ActionLink>
+      <ActionLink href="/guestbook" icon={MessageSquare}>
+        Ins Gästebuch schreiben
+      </ActionLink>
     </div>
   )
 }
 
 export default function Countdown() {
   const nowSecond = useNowSecond(EVENT_START_MS)
-  const timeLeft = nowSecond === null ? null : calculateTimeUntil(receptionEvent.startsAt, nowSecond * 1000)
+  const nowMs = nowSecond === null ? null : nowSecond * 1000
+  const timeLeft = nowMs === null ? null : calculateTimeUntil(receptionEvent.startsAt, nowMs)
   const isPast = timeLeft?.isPast ?? false
+  const phase: EventPhase = nowMs === null ? 'before' : eventPhase(nowMs)
 
   return (
-    <section id="countdown" className="py-16 md:py-20 bg-gradient-to-b from-white to-champagne-light/30">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
-        {!isPast && (
-          <div className="mb-10">
-            <div className="inline-flex items-center gap-2 text-gold-text text-sm font-medium mb-3">
-              <Clock size={16} />
-              <span>Noch so lange bis zum großen Tag</span>
+    <section id="countdown" className="bg-dark-blue py-16 text-white md:py-20">
+      <div className="mx-auto flex max-w-3xl flex-col items-center px-4 text-center sm:px-6">
+        {timeLeft === null ? (
+          <div className="h-48 w-full max-w-md rounded-2xl bg-white/10 motion-safe:animate-pulse" />
+        ) : isPast || phase === 'after' ? (
+          <>
+            <Lotus size={44} className="text-gold" />
+            <h2 className="mt-3 font-display text-4xl font-semibold md:text-5xl">Wir sind verheiratet!</h2>
+            <p className="mt-3 max-w-md text-champagne-light/90">
+              {phase === 'after'
+                ? 'Danke, dass ihr mit uns gefeiert habt. Schaut euch die Fotos an und lasst uns eure Erinnerungen und Wünsche da.'
+                : 'Danke, dass ihr mit uns feiert. Teilt eure Fotos und eure Wünsche mit uns.'}
+            </p>
+            <DayActions phase={phase} />
+          </>
+        ) : phase === 'today' ? (
+          <>
+            <Lotus size={44} className="text-gold" />
+            <h2 className="mt-3 font-display text-4xl font-semibold md:text-5xl">Heute ist es so weit</h2>
+            <p className="mt-2 text-champagne-light/90">Noch bis zum Empfang um {receptionEvent.time}</p>
+            <div data-testid="countdown-small" className="mt-6 flex flex-wrap items-end justify-center gap-x-8 gap-y-4">
+              <Unit value={timeLeft.hours} label="Stunden" large />
+              <Unit value={timeLeft.minutes} label="Minuten" large />
+              <Unit value={timeLeft.seconds} label="Sekunden" large />
             </div>
-            <h2 className="font-serif text-3xl md:text-4xl font-semibold text-dark-blue">Countdown zum Empfang</h2>
-            <p className="mt-2 text-gray-600 text-sm">
+            <DayActions phase={phase} />
+          </>
+        ) : (
+          <>
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gold">Noch</p>
+            <p className="mt-2 font-display text-7xl font-semibold leading-none tabular-nums text-gold sm:text-8xl">
+              {pad(timeLeft.days)}
+            </p>
+            <p className="mt-3 font-display text-2xl">
+              <span>Tage</span> bis zu unserem Empfang
+            </p>
+            <div data-testid="countdown-small" className="mt-6 flex flex-wrap items-end justify-center gap-x-8 gap-y-4">
+              <Unit value={timeLeft.hours} label="Stunden" />
+              <Unit value={timeLeft.minutes} label="Minuten" />
+              <Unit value={timeLeft.seconds} label="Sekunden" />
+            </div>
+            <div className="mt-6 flex items-center gap-3 text-gold" aria-hidden="true">
+              <span className="h-px w-12 bg-gold/50" />
+              <Lotus size={18} />
+              <span className="h-px w-12 bg-gold/50" />
+            </div>
+            <p className="mt-4 text-sm text-champagne-light/90">
               {receptionEvent.displayDate} um {receptionEvent.time} (deutscher Zeit)
             </p>
-          </div>
+            <button
+              type="button"
+              onClick={downloadEventIcs}
+              className="mt-5 inline-flex items-center gap-2 rounded-full bg-gold px-5 py-2.5 text-sm font-semibold text-dark-blue-dark transition-colors hover:bg-gold-light"
+            >
+              <CalendarPlus size={16} />
+              In meinen Kalender
+            </button>
+          </>
         )}
 
-        {timeLeft === null ? (
-          <div className="h-28 sm:h-36 md:h-40 motion-safe:animate-pulse bg-champagne/30 rounded-2xl" />
-        ) : timeLeft.isPast ? (
-          <div className="py-4">
-            <h2 className="font-serif text-3xl md:text-4xl text-dark-blue font-semibold">Wir sind verheiratet!</h2>
-            <p className="mt-4 text-gray-600">
-              Danke, dass ihr mit uns gefeiert habt – teilt eure Fotos und eure Wünsche mit uns.
-            </p>
-            <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Button href="/gallery" variant="primary" size="lg">
-                Fotos hochladen
-              </Button>
-              <Button href="/guestbook" variant="secondary" size="lg">
-                Ins Gästebuch schreiben
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <div className="flex items-center justify-center gap-2 sm:gap-6 md:gap-8">
-            <CountdownUnit value={timeLeft.days} label="Tage" delay={0} />
-            <Separator />
-            <CountdownUnit value={timeLeft.hours} label="Stunden" delay={0.1} />
-            <Separator />
-            <CountdownUnit value={timeLeft.minutes} label="Minuten" delay={0.2} />
-            <Separator />
-            <CountdownUnit value={timeLeft.seconds} label="Sekunden" delay={0.3} />
-          </div>
-        )}
-
-        <p className="mt-10 text-xs text-gray-600 font-medium tracking-wide">
+        <p className="mt-10 text-xs font-medium tracking-wide text-champagne-light/80">
           {receptionEvent.venue} · {receptionEvent.address}
         </p>
       </div>

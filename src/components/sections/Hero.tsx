@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react'
 import { ChevronDown } from 'lucide-react'
-import Button from '@/components/ui/Button'
+import HeroActions from '@/components/sections/HeroActions'
 import Lotus from '@/components/ui/Lotus'
 import { couple } from '@/lib/site-content'
 import { receptionEvent } from '@/lib/event-info'
@@ -96,12 +96,7 @@ export default function Hero() {
           className={cn(enter, 'flex flex-col sm:flex-row items-center justify-center gap-3 flex-wrap')}
           style={stagger(6)}
         >
-          <Button href="/info" variant="primary" size="lg">
-            Hochzeitsinfos
-          </Button>
-          <Button href="/story" variant="secondary" size="lg">
-            Unsere Geschichte
-          </Button>
+          <HeroActions />
         </div>
       </div>
 

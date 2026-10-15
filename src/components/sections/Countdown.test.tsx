@@ -4,6 +4,9 @@ import { render, screen } from '@testing-library/react'
 import { hydrateRoot } from 'react-dom/client'
 import { renderToString } from 'react-dom/server'
 import Countdown from './Countdown'
+import { downloadEventIcs } from '@/lib/calendar'
+
+vi.mock('@/lib/calendar', () => ({ downloadEventIcs: vi.fn() }))
 
 // Alle Zeitpunkte absolut (Z): 16:30 Uhr deutscher Zeit am 17.10. = 14:30 UTC.
 describe('Countdown', () => {
@@ -26,13 +29,13 @@ describe('Countdown', () => {
     vi.setSystemTime(new Date('2026-10-17T14:29:59Z'))
     render(<Countdown />)
 
-    expect(screen.getByText('Tage')).toBeInTheDocument()
+    expect(screen.getByText('Sekunden')).toBeInTheDocument()
     expect(screen.queryByText(/verheiratet/i)).not.toBeInTheDocument()
 
     await vi.advanceTimersByTimeAsync(1000)
 
     expect(screen.getByText(/verheiratet/i)).toBeInTheDocument()
-    expect(screen.queryByText('Tage')).not.toBeInTheDocument()
+    expect(screen.queryByText('Sekunden')).not.toBeInTheDocument()
   })
 
   it('ticks every second', async () => {
@@ -76,17 +79,68 @@ describe('Countdown', () => {
     expect(screen.getByText(/16:30 Uhr \(deutscher Zeit\)/)).toBeInTheDocument()
   })
 
-  it('fits a 320 px phone: small boxes and no separator dots below the sm breakpoint', () => {
+  it('fits a 320 px phone: the small digits wrap instead of overflowing', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-10-15T08:00:00Z'))
     render(<Countdown />)
 
-    // 4 x w-16 (64 px) + 3 x gap-2 (8 px) = 280 px.
-    const box = screen.getByText('02').parentElement
-    expect(box).toHaveClass('w-16', 'h-16')
-    const separators = screen.getAllByTestId('countdown-separator')
-    expect(separators).toHaveLength(3)
-    separators.forEach((separator) => expect(separator).toHaveClass('hidden', 'sm:flex'))
+    const hours = screen.getByText('06')
+    const row = hours.closest('[data-testid="countdown-small"]')
+    expect(row).toHaveClass('flex', 'flex-wrap')
+  })
+
+  it('makes the days the main number and the rest companions', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-10-15T08:00:00Z'))
+    render(<Countdown />)
+
+    expect(screen.getByText('02')).toHaveClass('text-7xl')
+    expect(screen.getByText(/bis zu unserem empfang/i)).toBeInTheDocument()
+    expect(screen.getByText('Stunden')).toBeInTheDocument()
+    expect(screen.getByText('Minuten')).toBeInTheDocument()
+    expect(screen.getByText('Sekunden')).toBeInTheDocument()
+  })
+
+  it('offers to save the date in the calendar before the wedding', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    vi.setSystemTime(new Date('2026-10-15T08:00:00Z'))
+    render(<Countdown />)
+
+    const button = screen.getByRole('button', { name: /in meinen kalender/i })
+    button.click()
+
+    expect(downloadEventIcs).toHaveBeenCalledTimes(1)
+  })
+
+  it('on the wedding day, before the start, says so and puts the three useful links first', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-10-17T09:00:00Z'))
+    render(<Countdown />)
+
+    expect(screen.getByRole('heading', { name: /heute ist es so weit/i })).toBeInTheDocument()
+    expect(screen.queryByText('Tage')).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /fotos hochladen/i })).toHaveAttribute('href', '/gallery')
+    expect(screen.getByRole('link', { name: /ablauf des tages/i })).toHaveAttribute('href', '/info')
+    expect(screen.getByRole('link', { name: /ins gästebuch schreiben/i })).toHaveAttribute('href', '/guestbook')
+  })
+
+  it('the day after the wedding says thank you and points to photos, memories and the guestbook', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-10-18T10:00:00Z'))
+    render(<Countdown />)
+
+    expect(screen.getByText(/verheiratet/i)).toBeInTheDocument()
+    expect(screen.getByText(/danke/i)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /fotos ansehen/i })).toHaveAttribute('href', '/gallery')
+    expect(screen.getByRole('link', { name: /erinnerung teilen/i })).toHaveAttribute('href', '/memories')
+    expect(screen.getByRole('link', { name: /gästebuch/i })).toHaveAttribute('href', '/guestbook')
+  })
+
+  it('has no emoji', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-10-17T15:00:00Z'))
+    const { container } = render(<Countdown />)
+    expect(container.textContent).not.toMatch(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u)
   })
 
   it('switches to the celebration state with links to the photo gallery and the guestbook', () => {

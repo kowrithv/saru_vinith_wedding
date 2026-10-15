@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { renderToString } from 'react-dom/server'
 import Hero from './Hero'
@@ -6,6 +6,10 @@ import { couple } from '@/lib/site-content'
 import { receptionEvent } from '@/lib/event-info'
 
 describe('Hero', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   it('renders both names and the hashtag', () => {
     render(<Hero />)
     expect(screen.getByText(couple.bride)).toBeInTheDocument()
@@ -80,5 +84,24 @@ describe('Hero', () => {
   it('names the weekday next to the date', () => {
     render(<Hero />)
     expect(screen.getByText(/samstag/i)).toBeInTheDocument()
+  })
+
+  // A4: Am Hochzeitstag stehen die Wege nach vorn, die Gäste dann brauchen.
+  it('on the wedding day offers photos and the programme instead of the introduction links', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-10-17T09:00:00Z'))
+    render(<Hero />)
+
+    expect(screen.getByRole('link', { name: /fotos hochladen/i })).toHaveAttribute('href', '/gallery')
+    expect(screen.getByRole('link', { name: /ablauf des tages/i })).toHaveAttribute('href', '/info')
+    expect(screen.queryByRole('link', { name: /unsere geschichte/i })).not.toBeInTheDocument()
+  })
+
+  it('the day after offers the photos to look at', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-10-18T09:00:00Z'))
+    render(<Hero />)
+
+    expect(screen.getByRole('link', { name: /fotos ansehen/i })).toHaveAttribute('href', '/gallery')
   })
 })
