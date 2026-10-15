@@ -7,7 +7,7 @@ import { getOrCreateAdminSecret } from '@/lib/admin-auth'
 import { hasGuestAccess, setGallerySessionCookie } from '@/lib/gallery-auth'
 import { isFeatureLocked } from '@/lib/app-config'
 import { verifyUploadTicket, type TicketPayload } from '@/lib/upload-ticket'
-import { checkUploadedObjects, storeUploadedPhoto } from '@/lib/gallery-upload-complete'
+import { checkUploadedObjects, isTicketAlreadyUsed, storeUploadedPhoto } from '@/lib/gallery-upload-complete'
 import { MEMORY_PHOTO_CATEGORY } from '@/lib/gallery-categories'
 import { UPLOADS_PAUSED_MESSAGE } from '@/lib/gallery-upload-limits'
 import { GuestRateLimiter, gateGuest } from '@/lib/guest-limits'
@@ -98,6 +98,10 @@ export async function POST(request: Request): Promise<Response> {
     // Ein Galerie-Ticket (andere Kategorie) ist kein Erinnerungs-Foto.
     if (!ticket || ticket.category !== MEMORY_PHOTO_CATEGORY) {
       return NextResponse.json({ error: 'Ticket ungültig oder abgelaufen.' }, { status: 400 })
+    }
+    // Eine Wiederholung kostet keine R2-Abfragen: zuerst die Datenbank fragen.
+    if (isTicketAlreadyUsed(db, ticket)) {
+      return NextResponse.json({ error: 'Dieses Foto wurde schon gespeichert.' }, { status: 409 })
     }
     const check = await checkUploadedObjects(ticket)
     if (!check.ok) {

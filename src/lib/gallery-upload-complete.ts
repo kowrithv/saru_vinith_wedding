@@ -10,6 +10,11 @@ import type { TicketPayload } from './upload-ticket'
 
 export type UploadFailure = { ok: false; status: number; error: string }
 
+/** Ein Ticket gilt nur einmal: gibt es das Foto schon, ist es eine Wiederholung. */
+export function isTicketAlreadyUsed(db: Database.Database, payload: TicketPayload): boolean {
+  return Boolean(getGalleryPhotoById(db, payload.photoId))
+}
+
 /** Prüft per HeadObject, dass Vorschau und Original hochgeladen wurden. */
 export async function checkUploadedObjects(payload: TicketPayload): Promise<{ ok: true } | UploadFailure> {
   const [thumbInfo, originalInfo] = await Promise.all([

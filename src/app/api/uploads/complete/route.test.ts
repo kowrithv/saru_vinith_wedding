@@ -65,6 +65,21 @@ describe('POST /api/uploads/complete', () => {
     expect(body.deleteToken.length).toBeGreaterThan(10)
   })
 
+  it('does not ask R2 again when a ticket is replayed', async () => {
+    const secret = getOrCreateAdminSecret(getDb())
+    const ticket = signUploadTicket(validPayload(), secret)
+    mockHeadObject.mockImplementation(async (key: string) =>
+      key.endsWith('thumb.jpg') ? { size: 40_000 } : { size: 4_000_000 }
+    )
+    expect((await POST(completeRequest({ ticket, uploaderName: 'Anna' }))).status).toBe(201)
+    mockHeadObject.mockClear()
+
+    const second = await POST(completeRequest({ ticket, uploaderName: 'Anna' }))
+
+    expect(second.status).toBe(409)
+    expect(mockHeadObject).not.toHaveBeenCalled()
+  })
+
   it('answers 409, not a server error, when the same ticket is completed twice', async () => {
     const db = getDb()
     const secret = getOrCreateAdminSecret(db)

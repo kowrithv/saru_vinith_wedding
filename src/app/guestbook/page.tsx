@@ -30,6 +30,9 @@ function formatDate(iso: string): string {
 export default function GuestbookPage() {
   const [entries, setEntries] = useState<GuestbookEntry[]>([])
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
+  // Laden fehlgeschlagen (Netz, Server): sonst stünde "Noch keine Einträge" da.
+  const [loadFailed, setLoadFailed] = useState(false)
+  const [reloadKey, setReloadKey] = useState(0)
   // Der Name wird in allen Formularen nur einmal getippt.
   const { name, setName, remember } = useGuestName()
   const [message, setMessage] = useState('')
@@ -41,11 +44,24 @@ export default function GuestbookPage() {
   const needsPassword = access.status === 'locked'
 
   useEffect(() => {
+    let active = true
     fetch('/api/guestbook')
-      .then((res) => (res.ok ? res.json() : { entries: [] }))
-      .then((data: { entries: GuestbookEntry[] }) => setEntries(data.entries))
-      .catch(() => {})
-  }, [])
+      .then((res) => {
+        if (!res.ok) throw new Error('Laden fehlgeschlagen')
+        return res.json()
+      })
+      .then((data: { entries: GuestbookEntry[] }) => {
+        if (!active) return
+        setEntries(data.entries)
+        setLoadFailed(false)
+      })
+      .catch(() => {
+        if (active) setLoadFailed(true)
+      })
+    return () => {
+      active = false
+    }
+  }, [reloadKey])
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -174,7 +190,22 @@ export default function GuestbookPage() {
           </div>
 
           <div className="lg:col-span-3 space-y-4">
-            {entries.length === 0 && (
+            {loadFailed && entries.length === 0 && (
+              <EmptyState
+                title="Die Einträge konnten nicht geladen werden"
+                description="Bitte versuch es noch einmal."
+                action={
+                  <button
+                    type="button"
+                    onClick={() => setReloadKey((key) => key + 1)}
+                    className="rounded-full border-2 border-dark-blue px-6 py-2.5 text-sm font-medium text-dark-blue transition-colors hover:bg-dark-blue hover:text-white"
+                  >
+                    Erneut versuchen
+                  </button>
+                }
+              />
+            )}
+            {!loadFailed && entries.length === 0 && (
               <EmptyState title="Noch keine Einträge" description="Sei der oder die Erste, die dem Brautpaar schreibt." />
             )}
             {entries.slice(0, visibleCount).map((entry) => (

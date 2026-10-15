@@ -130,4 +130,10 @@ describe('GET /api/gallery', () => {
     setFeatureLocked(db, 'gallery_upload', true)
     expect((await (await GET(requestWithCookies({}))).json()).uploadsLocked).toBe(true)
   })
+
+  // Die Antwort hängt vom Cookie ab und darf nie zwischengespeichert werden.
+  it('marks the answer as not cacheable', async () => {
+    const response = await GET(new Request('http://localhost/api/gallery'))
+    expect(response.headers.get('cache-control')).toMatch(/no-store/)
+  })
 })

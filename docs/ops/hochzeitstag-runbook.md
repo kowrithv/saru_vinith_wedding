@@ -131,6 +131,11 @@ privater Bucket mit `rclone copy` geht genauso):
 - Einmal probeweise ausführen und im Ziel nachsehen, dass `wedding-*.db`
   angekommen ist.
 
+**Admin-Login gesperrt?** Fünf falsche Versuche von derselben Adresse sperren den
+Login für 15 Minuten, auch für das richtige Kennwort (Schutz vor Raten). Sitzt ihr im
+selben WLAN wie ein Scherzbold: über Mobilfunk anmelden (andere Adresse). Der Notaus
+„Foto-Upload sperren" und die Löschfunktionen brauchen diese Anmeldung.
+
 **Neustart bei hängendem Prozess** (`restart: unless-stopped` startet nur neu, wenn der
 Prozess endet; ein hängender bleibt "running (unhealthy)"):
 

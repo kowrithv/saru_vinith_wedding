@@ -4,7 +4,8 @@ const TITLE = 'Saruga & Vinith'
 const DESCRIPTION = 'Alles rund um unsere Hochzeit am 17. Oktober 2026.'
 
 // Absolute Adresse für das Vorschaubild (opengraph-image.png in src/app).
-const SITE_URL = process.env.SITE_URL ?? 'https://vsjourney.de'
+// Ein leerer Wert (SITE_URL=) zählt als nicht gesetzt: new URL('') würde werfen.
+const SITE_URL = process.env.SITE_URL?.trim() || 'https://vsjourney.de'
 
 export const siteMetadata: Metadata = {
   metadataBase: new URL(SITE_URL),

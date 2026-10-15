@@ -32,3 +32,9 @@ Gesammelt, damit `TODO.md` nur das enthält, was jetzt ansteht.
   abgesendet): kein Aufräum-Job; per Skript mit Abgleich zur Datenbank oder per
   Lifecycle-Regel.
 - `www.vsjourney.de` hat in der Caddyfile keinen Block.
+- **„Wer von uns?" – Stimmen:** `/api/who-votes/vote` hat kein Limit und kein Kennwort; mit
+  beliebigen `voterId` lassen sich Stimmen stopfen, und die Ergebnisse stehen live da. Beim
+  Umbau der Seite (siehe oben) mit angehen: Kennwort/Sitzung und Limit je Gerät.
+- **Client-Adresse:** Die Limits nehmen den ersten `X-Forwarded-For`-Eintrag (Caddy ≥ 2.5
+  überschreibt den Header). Hängt die Seite einmal hinter einem Proxy, der anhängt, muss
+  der Eintrag angepasst werden (`src/lib/client-ip.ts`).

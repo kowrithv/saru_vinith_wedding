@@ -271,4 +271,28 @@ describe('GuestbookPage', () => {
     expect(screen.getAllByText(/^Eine Nachricht von Gast/)).toHaveLength(70)
     expect(screen.queryByRole('button', { name: /ältere/i })).not.toBeInTheDocument()
   })
+
+  // Bei einem Netzfehler stand "Noch keine Einträge": Gäste schließen daraus, ihre
+  // Nachricht sei weg. Stattdessen eine ehrliche Meldung mit neuem Versuch.
+  it('says the entries could not be loaded instead of claiming the book is empty', async () => {
+    let attempt = 0
+    mockFetchRoutes({
+      '/api/access': { body: { unlocked: true } },
+      '/api/guestbook': () => {
+        attempt += 1
+        return attempt === 1
+          ? { status: 502, body: { error: 'Bad Gateway' } }
+          : { body: { entries: [{ id: 1, name: 'Anna', message: 'Alles Liebe für euch beide!', createdAt: '2026-10-11T10:00:00.000Z' }] } }
+      },
+    })
+    render(<GuestbookPage />)
+
+    expect(await screen.findByText(/konnten nicht geladen werden/i)).toBeInTheDocument()
+    expect(screen.queryByText(/noch keine einträge/i)).not.toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: /erneut versuchen/i }))
+
+    expect(await screen.findByText('Alles Liebe für euch beide!')).toBeInTheDocument()
+    expect(screen.queryByText(/konnten nicht geladen werden/i)).not.toBeInTheDocument()
+  })
 })

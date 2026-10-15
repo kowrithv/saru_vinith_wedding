@@ -39,6 +39,9 @@ const PAGE_SIZE = 20
 export default function MemoriesPage() {
   const [entries, setEntries] = useState<MemoryEntry[]>([])
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
+  // Laden fehlgeschlagen (Netz, Server): sonst stünde "Noch keine Erinnerungen" da.
+  const [loadFailed, setLoadFailed] = useState(false)
+  const [reloadKey, setReloadKey] = useState(0)
   // Der Name wird in allen Formularen nur einmal getippt.
   const { name, setName, remember } = useGuestName()
   const [message, setMessage] = useState('')
@@ -65,17 +68,23 @@ export default function MemoriesPage() {
     if (!accessResolved) return
     let active = true
     fetch('/api/memories')
-      .then((res) => (res.ok ? res.json() : { entries: [], photosEnabled: false }))
+      .then((res) => {
+        if (!res.ok) throw new Error('Laden fehlgeschlagen')
+        return res.json()
+      })
       .then((data: { entries: MemoryEntry[]; photosEnabled?: boolean }) => {
         if (!active) return
         setEntries(data.entries)
         setPhotosEnabled(Boolean(data.photosEnabled))
+        setLoadFailed(false)
       })
-      .catch(() => {})
+      .catch(() => {
+        if (active) setLoadFailed(true)
+      })
     return () => {
       active = false
     }
-  }, [accessResolved, unlocked])
+  }, [accessResolved, unlocked, reloadKey])
 
   const handlePhotoChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] ?? null
@@ -282,7 +291,21 @@ export default function MemoriesPage() {
           </form>
         </Card>
 
-        {entries.length === 0 ? (
+        {entries.length === 0 && loadFailed ? (
+          <EmptyState
+            title="Die Erinnerungen konnten nicht geladen werden"
+            description="Bitte versuch es noch einmal."
+            action={
+              <button
+                type="button"
+                onClick={() => setReloadKey((key) => key + 1)}
+                className="rounded-full border-2 border-dark-blue px-6 py-2.5 text-sm font-medium text-dark-blue transition-colors hover:bg-dark-blue hover:text-white"
+              >
+                Erneut versuchen
+              </button>
+            }
+          />
+        ) : entries.length === 0 ? (
           <EmptyState title="Noch keine Erinnerungen" description="Teilt eure erste." />
         ) : (
           <>

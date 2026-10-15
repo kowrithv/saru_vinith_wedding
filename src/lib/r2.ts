@@ -81,10 +81,19 @@ export async function headObject(key: string): Promise<HeadObjectResult | null> 
 
 export async function deleteObjects(keys: string[]): Promise<void> {
   if (keys.length === 0) return
-  await getClient().send(
+  const result = await getClient().send(
     new DeleteObjectsCommand({
       Bucket: process.env.R2_BUCKET_NAME,
       Delete: { Objects: keys.map((Key) => ({ Key })) },
     })
   )
+  // DeleteObjects meldet einzelne Fehler in der Antwort, nicht als Ausnahme.
+  // Ohne Prüfung würde die Datenbankzeile trotzdem gelöscht, und das Foto bliebe
+  // über seine Adresse erreichbar; so bleibt der Löschvorgang wiederholbar.
+  const errors = result?.Errors ?? []
+  if (errors.length > 0) {
+    throw new Error(
+      `R2 konnte nicht löschen: ${errors.map((error) => `${error.Key} (${error.Code ?? 'Fehler'})`).join(', ')}`
+    )
+  }
 }

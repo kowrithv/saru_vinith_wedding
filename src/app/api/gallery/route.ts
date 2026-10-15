@@ -11,6 +11,9 @@ import { toGalleryPhotoView } from '@/lib/gallery-photo-view'
 // einige Tausend Fotos zusammen, die Seite zeigt davon stückweise.
 const MAX_PHOTOS = 10_000
 
+// Die Antwort hängt vom Cookie ab und darf nie zwischengespeichert werden.
+const NO_STORE = { 'Cache-Control': 'no-store' }
+
 export async function GET(request: Request): Promise<Response> {
   const db = getDb()
   const mode = getGalleryMode(db)
@@ -18,13 +21,16 @@ export async function GET(request: Request): Promise<Response> {
 
   const canSeePhotos = mode === 'public' || isAdminRequest(request, db) || isGalleryUnlocked(request, db)
   if (!canSeePhotos) {
-    return NextResponse.json({ mode, unlocked: false, uploadsLocked, photos: null })
+    return NextResponse.json({ mode, unlocked: false, uploadsLocked, photos: null }, { headers: NO_STORE })
   }
 
-  return NextResponse.json({
-    mode,
-    unlocked: true,
-    uploadsLocked,
-    photos: listGalleryPhotos(db, MAX_PHOTOS).map(toGalleryPhotoView),
-  })
+  return NextResponse.json(
+    {
+      mode,
+      unlocked: true,
+      uploadsLocked,
+      photos: listGalleryPhotos(db, MAX_PHOTOS).map(toGalleryPhotoView),
+    },
+    { headers: NO_STORE }
+  )
 }

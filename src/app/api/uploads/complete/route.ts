@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { getDb } from '@/lib/db'
 import { getOrCreateAdminSecret } from '@/lib/admin-auth'
 import { verifyUploadTicket } from '@/lib/upload-ticket'
-import { checkUploadedObjects, storeUploadedPhoto } from '@/lib/gallery-upload-complete'
+import { checkUploadedObjects, isTicketAlreadyUsed, storeUploadedPhoto } from '@/lib/gallery-upload-complete'
 import { toGalleryPhotoView } from '@/lib/gallery-photo-view'
 import { isFeatureLocked } from '@/lib/app-config'
 import { UPLOADS_PAUSED_MESSAGE } from '@/lib/gallery-upload-limits'
@@ -32,6 +32,11 @@ export async function POST(request: Request): Promise<Response> {
   // weiter. Admin-Tickets (offizielle Fotos) bleiben davon unberührt.
   if (!payload.isOfficial && isFeatureLocked(db, 'gallery_upload')) {
     return NextResponse.json({ error: UPLOADS_PAUSED_MESSAGE }, { status: 423 })
+  }
+
+  // Eine Wiederholung kostet keine R2-Abfragen: zuerst die Datenbank fragen.
+  if (isTicketAlreadyUsed(db, payload)) {
+    return NextResponse.json({ error: 'Dieses Foto wurde schon gespeichert.' }, { status: 409 })
   }
 
   const check = await checkUploadedObjects(payload)

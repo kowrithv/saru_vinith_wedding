@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { buildEventIcs, escapeIcsText, foldIcsLine } from './calendar'
 
 describe('escapeIcsText', () => {
-  it('escapes commas, semicolons, backslashes and line breaks', () => {
-    expect(escapeIcsText('a, b; c\\d\ne')).toBe('a\\, b\; c\\\\d\\ne')
+  it('escapes commas, semicolons, backslashes and line breaks (RFC 5545)', () => {
+    expect(escapeIcsText('a, b; c\\d\ne')).toBe('a\\, b\\; c\\\\d\\ne')
   })
 })
 

@@ -106,6 +106,19 @@ describe('deleteObjects', () => {
     })
   })
 
+  // DeleteObjects meldet einzelne Fehler in der Antwort, nicht als Ausnahme:
+  // ohne Prüfung würde die Zeile in der Datenbank trotzdem gelöscht, und das
+  // Foto bliebe über seine Adresse erreichbar.
+  it('throws when R2 reports that a key could not be deleted', async () => {
+    mockSend.mockResolvedValue({
+      Errors: [{ Key: 'gallery/abc/original.jpg', Code: 'AccessDenied', Message: 'Access Denied' }],
+    })
+
+    await expect(deleteObjects(['gallery/abc/thumb.jpg', 'gallery/abc/original.jpg'])).rejects.toThrow(
+      /gallery\/abc\/original\.jpg/
+    )
+  })
+
   it('does nothing when given an empty list', async () => {
     await deleteObjects([])
     expect(mockSend).not.toHaveBeenCalled()

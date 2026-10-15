@@ -478,4 +478,32 @@ describe('MemoriesPage', () => {
     await userEvent.click(screen.getByRole('button', { name: /5 ältere/i }))
     expect(screen.getAllByText(/Erinnerung Nummer \d+ an diesen Tag/)).toHaveLength(45)
   })
+
+  it('says the memories could not be loaded instead of claiming there are none', async () => {
+    let attempt = 0
+    mockFetchRoutes({
+      '/api/access': { body: { unlocked: true } },
+      '/api/memories': () => {
+        attempt += 1
+        return attempt === 1
+          ? { status: 500, body: { error: 'x' } }
+          : {
+              body: {
+                photosEnabled: true,
+                entries: [
+                  { id: 1, name: 'Anna', message: 'Ich erinnere mich an den schönen Abend.', createdAt: '2026-10-11T10:00:00.000Z', hasPhoto: false, photo: null },
+                ],
+              },
+            }
+      },
+    })
+    render(<MemoriesPage />)
+
+    expect(await screen.findByText(/konnten nicht geladen werden/i)).toBeInTheDocument()
+    expect(screen.queryByText(/noch keine erinnerungen/i)).not.toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: /erneut versuchen/i }))
+
+    expect(await screen.findByText(/Ich erinnere mich an den schönen Abend/)).toBeInTheDocument()
+  })
 })
