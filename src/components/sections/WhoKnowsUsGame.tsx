@@ -268,15 +268,21 @@ export default function WhoKnowsUsGame() {
         </p>
       )}
 
-      {hasVoted && (
-        <button
-          type="button"
-          onClick={handleNext}
-          className="mt-6 w-full px-5 py-3 rounded-xl bg-dark-blue text-white text-sm font-medium hover:bg-dark-blue-light transition-colors"
-        >
-          {isLastQuestion ? 'Fertig' : 'Weiter'}
-        </button>
-      )}
+      {/* Der Platz für "Weiter" ist von Anfang an da (unsichtbar, solange nicht
+          abgestimmt ist): die Karte wächst nicht, wenn der Knopf erscheint. */}
+      <button
+        type="button"
+        onClick={handleNext}
+        disabled={!hasVoted}
+        tabIndex={hasVoted ? undefined : -1}
+        aria-hidden={hasVoted ? undefined : true}
+        className={cn(
+          'mt-6 w-full px-5 py-3 rounded-xl bg-dark-blue text-white text-sm font-medium hover:bg-dark-blue-light transition-colors',
+          !hasVoted && 'invisible'
+        )}
+      >
+        {isLastQuestion ? 'Fertig' : 'Weiter'}
+      </button>
     </div>
   )
 }

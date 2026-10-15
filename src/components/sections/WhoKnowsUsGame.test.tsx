@@ -115,6 +115,27 @@ describe('WhoKnowsUsGame', () => {
     after.forEach((image, position) => expect(image).toBe(before[position]))
   })
 
+  it('reserves the place of the Weiter button before the vote so the card does not grow', async () => {
+    stubApi()
+    const { container } = render(<WhoKnowsUsGame />)
+    await screen.findByText(whoQuestions[0].question)
+
+    // Vor der Stimme ist der Knopf da, aber unsichtbar und für niemanden bedienbar.
+    const button = container.querySelector('button.invisible') as HTMLButtonElement
+    expect(button).not.toBeNull()
+    expect(button).toBeDisabled()
+    expect(button).toHaveAttribute('aria-hidden', 'true')
+    expect(button).toHaveAttribute('tabindex', '-1')
+    expect(screen.queryByRole('button', { name: 'Weiter' })).not.toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: whoGameOptions[0] }))
+
+    const same = await screen.findByRole('button', { name: 'Weiter' })
+    expect(same).toBe(button)
+    expect(same).toBeEnabled()
+    expect(same).not.toHaveClass('invisible')
+  })
+
   it('marks the chosen photo and lets the others step back', async () => {
     stubApi()
     render(<WhoKnowsUsGame />)
