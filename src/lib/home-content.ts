@@ -1,5 +1,5 @@
 import {
-  BookOpen, Calendar, Camera, Gamepad2, MessageSquare, Heart, Trophy,
+  BookOpen, Calendar, Camera, Gamepad2, MessageSquare, Heart, Trophy, Users2,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -45,6 +45,12 @@ export const homeFeatures: HomeFeature[] = [
     title: 'Quiz',
     description: 'Wie gut kennt ihr uns? Testet euer Wissen in unserem Hochzeitsquiz!',
     href: '/quiz',
+  },
+  {
+    icon: Users2,
+    title: 'Wer von uns?',
+    description: 'Stimmt ab, wer von uns beiden eher zutrifft. Die Auflösung gibt es bei der Feier.',
+    href: '/wer-von-uns',
   },
   {
     icon: Gamepad2,

@@ -52,7 +52,9 @@ Geräte: ☐ iPhone (Safari) ☐ Android (Chrome) ☐ ältere Hardware ☐ Deskt
 - [ ] Anfahrt-Karte: „Route planen" öffnet die Karten-App, „In Kalender speichern" legt den Termin an.
 
 ## Spiele und Einträge
-- [ ] Quiz klassisch und „Wer von uns?": Abstimmen, Ergebnis aktualisiert sich.
+- [ ] Quiz (klassisch): alle Fragen durchspielen, Auswertung am Ende.
+- [ ] „Wer von uns?" (`/wer-von-uns`): Porträts neben den Antworten; Kennwortfeld nur, wenn der Browser nicht entsperrt ist; nach der Stimme „Deine Stimme ist gespeichert" **ohne** Zahlen; Seite schließen und öffnen: es geht bei der ersten offenen Frage weiter.
+- [ ] Admin: „Auflösung freigeben" (mit Rückfrage) → Gäste-Handy zeigt die Verteilung, weitere Stimmen werden abgewiesen; zurücknehmen → Abstimmen geht wieder. Der Link für den DJ zeigt die Ergebnisse schon vorher und aktualisiert sich alle paar Sekunden.
 - [ ] Memory: komplettes Spiel, „Neuer Rekord"-Meldung, Rekord aller Gäste wird angezeigt; Brett springt nicht.
 - [ ] Memory: zwei Runden hintereinander („Neues Spiel"): keine leere Karte beim Umdrehen, auch im schwachen WLAN.
 - [ ] Gästebuch und Erinnerungen: Eintrag schreiben (Kennwort nur, wenn der Browser noch nicht entsperrt ist), erscheint in der Liste.

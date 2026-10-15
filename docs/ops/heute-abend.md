@@ -88,7 +88,7 @@ scp <server>:~/who-votes-alt.json ./who-votes-alt.json
 # 1. Probelauf (sendet nichts, zeigt nur, was übernommen würde):
 node scripts/import-old-votes.mjs ./who-votes-alt.json https://vsjourney.de
 # 2. Wirklich übernehmen:
-node scripts/import-old-votes.mjs ./who-votes-alt.json https://vsjourney.de --apply
+node scripts/import-old-votes.mjs ./who-votes-alt.json https://vsjourney.de --apply --password=<Gäste-Kennwort>
 # 3. Die Kopie mit den Namen löschen (lokal und auf dem Server):
 rm ./who-votes-alt.json && ssh <server> rm ~/who-votes-alt.json
 ```
@@ -101,7 +101,13 @@ Datei waren unbrauchbar (die Hinweise stehen darüber).
 - Ein zweiter Lauf legt nichts doppelt an; Wiederholen ist also gefahrlos.
 - Ist „Wer von uns?" im Admin gesperrt, meldet das Skript „abgewiesen (HTTP 423)":
   kurz entsperren, importieren, wieder sperren.
-- Danach auf der Seite „Quiz" prüfen, dass die Zähler stimmen.
+- Die Abstimm-Route verlangt das Gäste-Kennwort (`--password=...`, oder die
+  Umgebungsvariable `GUEST_PASSWORD`). Bei „zu viele Anfragen" wartet das Skript
+  und versucht es erneut.
+- Danach im Admin den Link für den DJ öffnen (Abschnitt „Wer von uns?") und
+  prüfen, dass die Zähler stimmen: Gäste sehen sie bis zur Auflösung nicht.
+- Ist die Auflösung schon freigegeben, meldet das Skript „abgewiesen (HTTP 423)":
+  im Admin die Freigabe zurücknehmen.
 
 ## Gerätetest (Schritt 7)
 

@@ -2,7 +2,7 @@
 // Seiteneffekte auf Daten: nur Lesezugriffe, ein Upload-Ticket mit falschem
 // Kennwort (wird abgewiesen) und - nur mit Passwort - Admin-Login/-Logout.
 
-const PAGES = ['/story', '/info', '/gallery', '/quiz', '/memory-spiel', '/memories', '/guestbook', '/admin']
+const PAGES = ['/story', '/info', '/gallery', '/quiz', '/wer-von-uns', '/memory-spiel', '/memories', '/guestbook', '/admin']
 const SLOW_MS = 3000
 
 function pass() {
@@ -71,10 +71,15 @@ export function buildSmokeChecks(options = {}) {
     expect: (res) => expectJson(res, (d) => Array.isArray(d.entries), 'entries-Liste erwartet'),
   })
   checks.push({
-    name: 'API: Wer-von-uns-Ergebnisse',
+    name: 'API: Wer-von-uns-Stand',
     path: '/api/who-votes',
+    // Ohne Freigabe bleiben die Zähler verborgen (questions: null).
     expect: (res) =>
-      expectJson(res, (d) => d.questions && typeof d.questions === 'object', 'questions erwartet'),
+      expectJson(
+        res,
+        (d) => typeof d.released === 'boolean' && 'questions' in d,
+        'released und questions erwartet'
+      ),
   })
 
   checks.push({

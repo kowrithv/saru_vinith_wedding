@@ -1,3 +1,5 @@
+import { couple } from './site-content'
+
 // Die Bilder der Startseite liegen als Dateien in public/: zum Tauschen die
 // Datei ersetzen (gleicher Name), im Code ändert sich nichts.
 
@@ -11,3 +13,13 @@ export const homePreviewPhotos: string[] = [
   '/home/foto-3.jpg',
   '/home/foto-4.jpg',
 ]
+
+/**
+ * Porträts für "Wer von uns?" (quadratisch, 192 x 192 px), nach dem Namen der
+ * Antwort. Sie sind Ausschnitte aus dem Paarfoto: zum Tauschen die Datei
+ * ersetzen (gleicher Name). "Beide" zeigt beide Porträts zusammen.
+ */
+export const whoPortraits: ReadonlyMap<string, string> = new Map([
+  [couple.bride, '/who/saruga.jpg'],
+  [couple.groom, '/who/vinith.jpg'],
+])

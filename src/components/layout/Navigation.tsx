@@ -57,7 +57,7 @@ export default function Navigation() {
               <span className="font-serif text-xl font-semibold tracking-wide text-dark-blue">S &amp; V</span>
             </Link>
 
-            <div className="hidden lg:flex items-center gap-1">
+            <div className="hidden xl:flex items-center gap-1">
               {navigationItems.map((item) => {
                 const isActive = pathname === item.href
                 return (
@@ -65,7 +65,7 @@ export default function Navigation() {
                     key={item.href}
                     href={item.href}
                     className={cn(
-                      'px-3 py-2 text-sm font-medium rounded-md transition-colors duration-200',
+                      'whitespace-nowrap px-3 py-2 text-sm font-medium rounded-md transition-colors duration-200',
                       isActive ? 'text-dark-blue font-semibold' : 'text-gray-600 hover:text-dark-blue'
                     )}
                   >
@@ -77,7 +77,7 @@ export default function Navigation() {
 
             <button
               onClick={() => setIsOpen((v) => !v)}
-              className="lg:hidden p-2 rounded-lg text-dark-blue hover:bg-champagne/50 transition-colors"
+              className="xl:hidden p-2 rounded-lg text-dark-blue hover:bg-champagne/50 transition-colors"
               aria-label={isOpen ? 'Menü schließen' : 'Menü öffnen'}
               aria-expanded={isOpen}
             >
@@ -94,7 +94,7 @@ export default function Navigation() {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: '100%' }}
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-            className="fixed inset-0 z-40 bg-dark-blue lg:hidden"
+            className="fixed inset-0 z-40 bg-dark-blue xl:hidden"
           >
             <div className="flex flex-col h-full pt-20 pb-8 px-6">
               <div className="mb-6 flex flex-col items-center text-center">

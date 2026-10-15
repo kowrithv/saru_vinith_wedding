@@ -2,7 +2,10 @@
 // Übernimmt die Stimmen der alten Seite in die neue.
 //
 //   node scripts/import-old-votes.mjs <who-votes.json> <https://vsjourney.de>          # Probelauf
-//   node scripts/import-old-votes.mjs <who-votes.json> <https://vsjourney.de> --apply  # wirklich senden
+//   node scripts/import-old-votes.mjs <who-votes.json> <https://vsjourney.de> --apply --password=<Gäste-Kennwort>
+//
+// Die Abstimm-Route verlangt das Gäste-Kennwort (statt --password geht auch die
+// Umgebungsvariable GUEST_PASSWORD).
 //
 // Ein zweiter Lauf legt nichts doppelt an (feste Kennung je alter Stimme).
 import { readFileSync } from 'node:fs'
@@ -10,10 +13,12 @@ import { importVotes, normalizeBaseUrl, parseOldVotes } from './lib/old-votes.mj
 
 const args = process.argv.slice(2)
 const apply = args.includes('--apply')
+const passwordFlag = args.find((arg) => arg.startsWith('--password='))
+const password = passwordFlag ? passwordFlag.slice('--password='.length) : process.env.GUEST_PASSWORD
 const [file, rawBaseUrl] = args.filter((arg) => !arg.startsWith('--'))
 
 if (!file || !rawBaseUrl) {
-  console.error('Aufruf: node scripts/import-old-votes.mjs <who-votes.json> <basis-url> [--apply]')
+  console.error('Aufruf: node scripts/import-old-votes.mjs <who-votes.json> <basis-url> [--apply --password=<Kennwort>]')
   process.exit(2)
 }
 
@@ -37,7 +42,12 @@ const { votes, problems, skipped } = parseOldVotes(data)
 for (const problem of problems) console.warn(`Hinweis: ${problem}`)
 console.log(`${votes.length} Stimme(n) gefunden. ${apply ? 'Sende an' : 'Probelauf für'} ${baseUrl}`)
 
-const results = await importVotes({ baseUrl, votes, apply })
+if (apply && !password) {
+  console.error('Zum Übernehmen fehlt das Gäste-Kennwort: --password=<Kennwort> oder GUEST_PASSWORD setzen.')
+  process.exit(2)
+}
+
+const results = await importVotes({ baseUrl, votes, apply, password })
 for (const { vote, status, detail } of results) {
   console.log(`  Frage ${vote.questionId} · ${vote.option} · ${status}${detail ? ` (${detail})` : ''}`)
 }

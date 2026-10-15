@@ -118,6 +118,43 @@ describe('importVotes', () => {
     expect(results.map((r) => r.status)).toEqual(['imported', 'already-there'])
   })
 
+  it('sends the guest password with every vote when one is given', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({ alreadyVoted: false }) })
+
+    await importVotes({ baseUrl: 'https://example.de', votes, apply: true, password: 'love', fetchImpl })
+
+    for (const [, init] of fetchImpl.mock.calls) {
+      expect(JSON.parse(init.body).password).toBe('love')
+    }
+  })
+
+  it('waits the announced time on "too many requests" and then tries again', async () => {
+    const tooMany = { ok: false, status: 429, headers: { get: () => '12' }, json: async () => ({ error: 'Zu viele Stimmen.' }) }
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(tooMany)
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ alreadyVoted: false }) })
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ alreadyVoted: false }) })
+    const sleep = vi.fn().mockResolvedValue(undefined)
+
+    const results = await importVotes({ baseUrl: 'https://example.de', votes, apply: true, password: 'love', fetchImpl, sleep })
+
+    expect(sleep).toHaveBeenCalledWith(12_000)
+    expect(fetchImpl).toHaveBeenCalledTimes(3)
+    expect(results.map((r) => r.status)).toEqual(['imported', 'imported'])
+  })
+
+  it('gives up on a vote that stays rate limited', async () => {
+    const tooMany = { ok: false, status: 429, headers: { get: () => null }, json: async () => ({ error: 'Zu viele Stimmen.' }) }
+    const fetchImpl = vi.fn().mockResolvedValue(tooMany)
+    const sleep = vi.fn().mockResolvedValue(undefined)
+
+    const results = await importVotes({ baseUrl: 'https://example.de', votes: [votes[0]], apply: true, password: 'love', fetchImpl, sleep })
+
+    expect(results[0]).toMatchObject({ status: 'rejected', detail: expect.stringContaining('429') })
+    expect(sleep).toHaveBeenCalledTimes(3)
+  })
+
   it('reports a locked vote feature and server errors per vote without stopping', async () => {
     const fetchImpl = vi
       .fn()

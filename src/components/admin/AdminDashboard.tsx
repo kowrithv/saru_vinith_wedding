@@ -8,6 +8,7 @@ import SectionTitle from '@/components/ui/SectionTitle'
 import GalleryUploadForm from '@/components/gallery/GalleryUploadForm'
 import { formatTime } from '@/lib/format-time'
 import CollapsibleSection from '@/components/admin/CollapsibleSection'
+import WhoResultsAdmin from '@/components/admin/WhoResultsAdmin'
 import type { GalleryPhotoView } from '@/lib/gallery-photo-view'
 import { cn } from '@/lib/utils'
 
@@ -410,6 +411,10 @@ export default function AdminDashboard({ initialLocks, initialGalleryMode }: Adm
               {galleryModeError}
             </p>
           )}
+        </Card>
+
+        <Card padding="lg" className="mb-8">
+          <WhoResultsAdmin />
         </Card>
 
         {deleteError && (

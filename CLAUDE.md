@@ -57,6 +57,12 @@ einer Route meldet `tsc` ggf. veraltete Dateien in `.next/types` – dann
   Cookie setzt). Client: `useGuestAccess` (`/api/access`, QR-Link `#k=` einlösen)
   und `GuestPasswordField`. Kennwort-Vergleich ohne Groß-/Kleinschreibung
   (`guest-password.ts`), der Admin bleibt exakt.
+- „Wer von uns?" (`/wer-von-uns`): Abstimmen mit Gäste-Kennwort (`gateGuest`, Limit je
+  Gerät in `guest-limits.ts`); Zähler bleiben verborgen, bis der Admin freigibt
+  (`who-results.ts`, Schalter `who_results_released`; Freigabe beendet die
+  Abstimmung). DJ-Link `/wer-von-uns/ergebnisse#k=`: Schlüssel = HMAC aus dem
+  Admin-Schlüssel, Header `x-results-key`. Porträts: `public/who/*.jpg`,
+  `whoPortraits` in `site-images.ts`.
 - Tailwind v4, Farb-Tokens `dark-blue`, `champagne(-light/-dark)`, `gold`,
   `bordeaux`, `rose-sand`; Schriften `font-serif` (Playfair), `font-display`
   (Cormorant), `font-script` (Great Vibes, nur Namen/Unterschriften). Ornament:

@@ -45,56 +45,78 @@ function totalVotes(tally) {
   )
 }
 
+// Die Zähler sind für Gäste verborgen (bis zur Freigabe): lesen lassen sie sich
+// nur mit dem Schlüssel aus dem DJ-Link (--results-key). Ohne ihn ist das Ergebnis null.
 async function readTally(ctx) {
-  const res = await timed(ctx.fetchImpl, `${ctx.baseUrl}/api/who-votes`, {})
-  return res.data?.questions ?? {}
+  const init = ctx.resultsKey ? { headers: { 'x-results-key': ctx.resultsKey } } : {}
+  const res = await timed(ctx.fetchImpl, `${ctx.baseUrl}/api/who-votes`, init)
+  return res.data?.questions ?? null
+}
+
+// Fragen und Antworten wie in src/lib/who-game-content.ts.
+const WHO_QUESTION_IDS = Array.from({ length: 14 }, (_, i) => String(i + 1))
+const WHO_OPTIONS = ['Saruga', 'Vinith', 'Beide']
+
+function acknowledgedAsNew(outcomes) {
+  return outcomes.filter((o) => o.status === 200 && o.data?.alreadyVoted === false).length
 }
 
 async function votesScenario(ctx) {
   const before = await readTally(ctx)
-  const questionIds = Object.keys(before)
-  const options = Object.keys(before[questionIds[0]] ?? { Saruga: 0 })
-  const beforeTotal = totalVotes(before)
-
-  const outcomes = await runPool(ctx.guests, ctx.concurrency, (i) =>
+  const vote = (voterId, questionId, option, ip) =>
     timed(ctx.fetchImpl, `${ctx.baseUrl}/api/who-votes/vote`, {
       method: 'POST',
-      headers: json(),
-      body: JSON.stringify({
-        questionId: questionIds[i % questionIds.length],
-        option: options[i % options.length],
-        voterId: `load-${ctx.runId}-${i}`,
-      }),
+      headers: json({ 'x-forwarded-for': ip }),
+      body: JSON.stringify({ questionId, voterId, option, password: ctx.uploadPassword }),
     })
+
+  const outcomes = await runPool(ctx.guests, ctx.concurrency, (i) =>
+    vote(
+      `load-${ctx.runId}-${i}`,
+      WHO_QUESTION_IDS[i % WHO_QUESTION_IDS.length],
+      WHO_OPTIONS[i % WHO_OPTIONS.length],
+      guestIp(i)
+    )
   )
-  const after = await readTally(ctx)
-  const counted = totalVotes(after) - beforeTotal
+  const acknowledged = acknowledgedAsNew(outcomes)
   const checks = [
     {
-      name: 'jede Stimme gezählt',
-      ok: counted === ctx.guests,
-      detail: `${ctx.guests} gesendet, ${counted} gezählt${counted < ctx.guests ? ' - Stimmen verloren' : ''}`,
+      name: 'jede Stimme bestätigt',
+      ok: acknowledged === ctx.guests,
+      detail: `${ctx.guests} gesendet, ${acknowledged} als neu bestätigt`,
     },
   ]
 
   // Dasselbe Gerät stimmt gleichzeitig mehrfach ab: es darf nur eine Stimme zählen.
-  const beforeDuplicate = totalVotes(await readTally(ctx))
+  const mid = await readTally(ctx)
   const duplicates = await runPool(50, 50, () =>
-    timed(ctx.fetchImpl, `${ctx.baseUrl}/api/who-votes/vote`, {
-      method: 'POST',
-      headers: json(),
-      body: JSON.stringify({ questionId: questionIds[0], option: options[0], voterId: `load-${ctx.runId}-dup` }),
-    })
+    vote(`load-${ctx.runId}-dup`, WHO_QUESTION_IDS[0], WHO_OPTIONS[0], '10.250.250.249')
   )
-  const duplicateDelta = totalVotes(await readTally(ctx)) - beforeDuplicate
+  const duplicateAcks = acknowledgedAsNew(duplicates)
   checks.push({
     name: 'ein Gerät zählt nur einmal (50 gleichzeitige Stimmen)',
-    ok: duplicateDelta === 1,
-    detail: `${duplicateDelta} gezählt, erwartet 1`,
+    ok: duplicateAcks === 1,
+    detail: `${duplicateAcks} als neu bestätigt, erwartet 1`,
   })
 
-  const all = [...outcomes, ...duplicates]
-  return report('Abstimmungen', all, 200, checks)
+  // Mit dem Schlüssel aus dem DJ-Link lassen sich die Zähler gegenprüfen.
+  const after = await readTally(ctx)
+  if (before && mid && after) {
+    const counted = totalVotes(mid) - totalVotes(before)
+    checks.push({
+      name: 'jede Stimme gezählt',
+      ok: counted === ctx.guests,
+      detail: `${ctx.guests} gesendet, ${counted} gezählt${counted < ctx.guests ? ' - Stimmen verloren' : ''}`,
+    })
+    const duplicateDelta = totalVotes(after) - totalVotes(mid)
+    checks.push({
+      name: 'Zähler: ein Gerät zählt nur einmal',
+      ok: duplicateDelta === 1,
+      detail: `${duplicateDelta} gezählt, erwartet 1`,
+    })
+  }
+
+  return report('Abstimmungen', [...outcomes, ...duplicates], 200, checks)
 }
 
 async function guestbookScenario(ctx) {
@@ -253,11 +275,15 @@ export async function runScenarios(options) {
     concurrency: options.concurrency,
     fetchImpl: options.fetchImpl ?? fetch,
     uploadPassword: options.uploadPassword,
+    resultsKey: options.resultsKey,
     runId: options.runId ?? String(Date.now()),
   }
-  const scenarios = [votesScenario, memoryRecordScenario, galleryScenario, pollingScenario]
-  // Gästebuch, Erinnerungen und Upload brauchen das Kennwort vom Empfang.
-  if (ctx.uploadPassword) scenarios.push(guestbookScenario, uploadTicketsScenario, memoriesScenario)
+  const scenarios = [memoryRecordScenario, galleryScenario, pollingScenario]
+  // Abstimmen, Gästebuch, Erinnerungen und Upload brauchen das Gäste-Kennwort.
+  if (ctx.uploadPassword) {
+    scenarios.unshift(votesScenario)
+    scenarios.push(guestbookScenario, uploadTicketsScenario, memoriesScenario)
+  }
 
   const reports = []
   for (const scenario of scenarios) {

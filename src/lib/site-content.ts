@@ -18,6 +18,7 @@ export const navigationItems: NavigationItem[] = [
   { label: 'Hochzeitsinfos', href: '/info' },
   { label: 'Galerie', href: '/gallery' },
   { label: 'Quiz', href: '/quiz' },
+  { label: 'Wer von uns?', href: '/wer-von-uns' },
   { label: 'Gästespiel', href: '/memory-spiel' },
   { label: 'Erinnerungen', href: '/memories' },
   { label: 'Gästebuch', href: '/guestbook' },

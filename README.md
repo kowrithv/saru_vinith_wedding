@@ -13,7 +13,9 @@ Admin-Bereich für das Brautpaar.
 | `/story` | Unsere Geschichte |
 | `/info` | Hochzeitsinfos (Ort, Zeit, Ablauf, Karte) |
 | `/gallery` | Fotogalerie, Upload für Gäste, Kategorien, offizielle Fotos |
-| `/quiz` | Hochzeitsquiz und „Wer von uns?“-Abstimmung |
+| `/quiz` | Hochzeitsquiz |
+| `/wer-von-uns` | „Wer von uns?“-Abstimmung (Ergebnisse erst nach der Freigabe) |
+| `/wer-von-uns/ergebnisse` | Lese-Link für den DJ (Schlüssel im Fragment, siehe unten) |
 | `/memory-spiel` | Liebes-Memory mit Rekord aller Gäste |
 | `/memories` | Erinnerungen der Gäste |
 | `/guestbook` | Gästebuch |
@@ -127,6 +129,17 @@ einzeln sperren (der Admin lädt auch bei gesperrtem Upload weiter hoch). Die Bu
 `PUT, GET, HEAD`, die Header `content-type, content-length` und die
 Produktions-Domain sowie `http://localhost:3000` erlauben (Einstellung im
 Cloudflare-Dashboard, nicht im Code).
+
+**„Wer von uns?“** (`/wer-von-uns`): Gäste stimmen vorab mit dem Gäste-Kennwort
+ab (eine Stimme je Frage und Gerät, höchstens 60 Stimmen je Gerät in 15 Minuten)
+und sehen keine Zwischenstände: `GET /api/who-votes` liefert `questions: null`.
+Im Admin-Bereich gibt das Brautpaar die **Auflösung** frei; dann zeigt die Seite
+die Verteilung, und die Abstimmung ist beendet (423). Der DJ bekommt einen
+Lese-Link `/wer-von-uns/ergebnisse#k=<Schlüssel>` (im Admin zum Kopieren). Der
+Schlüssel ist aus `ADMIN_SECRET` abgeleitet, zeigt nur die Ergebnisse (auch vor
+der Freigabe) und steht im Fragment, nie im Log. Die Porträts liegen als
+`public/who/saruga.jpg` und `public/who/vinith.jpg` (zum Tauschen die Datei
+ersetzen).
 
 Details: `docs/superpowers/specs/2026-10-12-gallery-design.md`.
 
@@ -361,11 +374,12 @@ zweites System ist noch offen (`TODO.md`).
   ```bash
   npm run build
   DATABASE_PATH=/tmp/lasttest/wedding.db npx next start -p 3124
-  node scripts/load/run.mjs http://localhost:3124 --guests=500 --upload-password=<Kennwort>
+  node scripts/load/run.mjs http://localhost:3124 --guests=500 --upload-password=<Kennwort> [--results-key=<DJ-Schlüssel>]
   ```
 
-  Simuliert Abstimmungen (inkl. „ein Gerät zählt einmal"), Memory-Rekord,
-  Galerie-Liste, Polling und – mit Kennwort – Gästebuch, Upload-Tickets und
+  Simuliert Memory-Rekord, Galerie-Liste, Polling und – mit Kennwort –
+  Abstimmungen (inkl. „ein Gerät zählt einmal"; die verborgenen Zähler prüft
+  nur `--results-key`), Gästebuch, Upload-Tickets und
   Erinnerungen (die Galerie-Liste wird dann mit entsperrter Sitzung gemessen). Prüft, dass nichts verloren geht. Entfernte Adressen werden
   ohne `--allow-remote` abgelehnt.
 - **Hochzeitstag:** `docs/ops/hochzeitstag-runbook.md`,
@@ -375,8 +389,9 @@ zweites System ist noch offen (`TODO.md`).
 
 `scripts/import-old-votes.mjs` übernimmt die Stimmen der „Wer von uns?"-Abstimmung
 der alten Seite (`data/who-votes.json`) in die neue:
-`node scripts/import-old-votes.mjs <datei> <https://vsjourney.de> [--apply]`
-(ohne `--apply` nur ein Probelauf; wiederholbar, legt nichts doppelt an). Es läuft
+`node scripts/import-old-votes.mjs <datei> <https://vsjourney.de> [--apply --password=<Gäste-Kennwort>]`
+(ohne `--apply` nur ein Probelauf; wiederholbar, legt nichts doppelt an; die
+Abstimm-Route verlangt das Gäste-Kennwort). Es läuft
 auf dem Rechner mit dem Repo-Checkout, nicht auf dem Server.
 
 `scripts/compress-memory-images.mjs` verkleinert die Bilder für das

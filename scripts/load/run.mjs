@@ -18,7 +18,7 @@ const flags = Object.fromEntries(
 )
 
 if (!baseUrl || !/^https?:\/\//.test(baseUrl)) {
-  console.error('Aufruf: node scripts/load/run.mjs <http://localhost:3124> [--guests=500] [--concurrency=100] [--upload-password=...]')
+  console.error('Aufruf: node scripts/load/run.mjs <http://localhost:3124> [--guests=500] [--concurrency=100] [--upload-password=...] [--results-key=...]')
   process.exit(2)
 }
 if (!isLocalUrl(baseUrl) && flags['allow-remote'] !== 'true') {
@@ -37,6 +37,8 @@ const reports = await runScenarios({
   guests,
   concurrency,
   uploadPassword: flags['upload-password'],
+  // Schlüssel aus dem DJ-Link: damit lassen sich die verborgenen Zähler gegenprüfen.
+  resultsKey: flags['results-key'],
 })
 console.log(formatLoadReport(reports))
 console.log(`Dauer: ${((Date.now() - started) / 1000).toFixed(1)} s (${guests} Gäste, ${concurrency} gleichzeitig)`)

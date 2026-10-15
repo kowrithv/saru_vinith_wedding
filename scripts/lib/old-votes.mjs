@@ -74,12 +74,19 @@ export function normalizeBaseUrl(input) {
   return `${url.origin}${url.pathname.replace(/\/+$/, '')}`
 }
 
+const MAX_RETRIES_PER_VOTE = 3
+const MAX_WAIT_SECONDS = 15 * 60
+
+const defaultSleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
 /**
- * Schickt die Stimmen an die Abstimm-Route der neuen Seite.
- * @param {{ baseUrl: string, votes: { questionId: string, option: string, voterId: string }[], apply: boolean, fetchImpl?: typeof fetch }} options
+ * Schickt die Stimmen an die Abstimm-Route der neuen Seite. Sie verlangt das
+ * Gäste-Kennwort; bei "zu viele Anfragen" (429) wartet der Import die
+ * genannte Zeit und versucht es erneut.
+ * @param {{ baseUrl: string, votes: { questionId: string, option: string, voterId: string }[], apply: boolean, password?: string, fetchImpl?: typeof fetch, sleep?: (ms: number) => Promise<void> }} options
  * @returns {Promise<{ vote: object, status: 'dry-run' | 'imported' | 'already-there' | 'rejected' | 'failed', detail?: string }[]>}
  */
-export async function importVotes({ baseUrl, votes, apply, fetchImpl = fetch }) {
+export async function importVotes({ baseUrl, votes, apply, password, fetchImpl = fetch, sleep = defaultSleep }) {
   const endpoint = `${baseUrl.replace(/\/+$/, '')}/api/who-votes/vote`
   const results = []
   for (const vote of votes) {
@@ -88,11 +95,24 @@ export async function importVotes({ baseUrl, votes, apply, fetchImpl = fetch }) 
       continue
     }
     try {
-      const response = await fetchImpl(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ questionId: vote.questionId, voterId: vote.voterId, option: vote.option }),
-      })
+      const send = () =>
+        fetchImpl(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            questionId: vote.questionId,
+            voterId: vote.voterId,
+            option: vote.option,
+            ...(password ? { password } : {}),
+          }),
+        })
+      let response = await send()
+      for (let retry = 0; response.status === 429 && retry < MAX_RETRIES_PER_VOTE; retry += 1) {
+        const header = Number(response.headers?.get?.('retry-after'))
+        const seconds = Number.isFinite(header) && header > 0 ? Math.min(header, MAX_WAIT_SECONDS) : 60
+        await sleep(seconds * 1000)
+        response = await send()
+      }
       if (!response.ok) {
         const body = await response.json().catch(() => null)
         results.push({ vote, status: 'rejected', detail: `HTTP ${response.status}${body?.error ? `: ${body.error}` : ''}` })

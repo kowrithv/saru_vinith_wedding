@@ -72,7 +72,7 @@ export default function FeatureGrid() {
 
         <div
           data-testid="feature-grid-small"
-          className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-5"
+          className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-5"
         >
           {compact.map((feature, index) => {
             const spansRow = compact.length % 2 === 1 && index === compact.length - 1

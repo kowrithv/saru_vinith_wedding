@@ -4,181 +4,207 @@ import userEvent from '@testing-library/user-event'
 import WhoKnowsUsGame from './WhoKnowsUsGame'
 import { whoQuestions, whoGameOptions } from '@/lib/who-game-content'
 
-let capturedPoll: (() => void) | undefined
-
-vi.mock('@/lib/use-polling', () => ({
-  usePolling: (fn: () => void) => {
-    capturedPoll = fn
-  },
-}))
-
 vi.mock('@/lib/device-id', () => ({
   getDeviceId: () => 'test-device-id',
 }))
 
-function emptyTallyResponse() {
+interface ApiOptions {
+  released?: boolean
+  questions?: Record<string, Record<string, number>> | null
+  unlocked?: boolean
+  voteResponse?: { status: number; body: unknown }
+}
+
+function tallyWith(counts: Record<string, number>) {
+  return Object.fromEntries(
+    whoQuestions.map((q) => [q.id, Object.fromEntries(whoGameOptions.map((o) => [o, counts[o] ?? 0]))])
+  )
+}
+
+function stubApi({ released = false, questions = null, unlocked = true, voteResponse }: ApiOptions = {}) {
+  const calls: { url: string; init?: RequestInit }[] = []
+  const fn = vi.fn(async (url: string, init?: RequestInit) => {
+    calls.push({ url, init })
+    if (url === '/api/who-votes') {
+      return { ok: true, status: 200, json: async () => ({ released, questions }) }
+    }
+    if (url === '/api/access') {
+      return { ok: true, status: 200, json: async () => ({ unlocked }) }
+    }
+    if (url === '/api/who-votes/vote') {
+      const { status, body } = voteResponse ?? { status: 200, body: { alreadyVoted: false } }
+      return { ok: status < 400, status, json: async () => body }
+    }
+    throw new Error(`unexpected request ${url}`)
+  })
+  vi.stubGlobal('fetch', fn)
   return {
-    questions: Object.fromEntries(
-      whoQuestions.map((q) => [q.id, Object.fromEntries(whoGameOptions.map((o) => [o, 0]))])
-    ),
+    calls,
+    voteBodies: () =>
+      calls
+        .filter((c) => c.url === '/api/who-votes/vote')
+        .map((c) => JSON.parse(String(c.init?.body)) as Record<string, unknown>),
   }
 }
 
 describe('WhoKnowsUsGame', () => {
   beforeEach(() => {
-    capturedPoll = undefined
     window.localStorage.clear()
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({ ok: true, json: async () => emptyTallyResponse() })
-    )
   })
 
   afterEach(() => {
     vi.unstubAllGlobals()
   })
 
-  it('renders the first question with all three options', () => {
+  it('shows a loading state until the server has answered', () => {
+    vi.stubGlobal('fetch', vi.fn(() => new Promise(() => {})))
     render(<WhoKnowsUsGame />)
-    expect(screen.getByText(whoQuestions[0].question)).toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent(/geladen/i)
+    expect(screen.queryByText(whoQuestions[0].question)).not.toBeInTheDocument()
+  })
+
+  it('renders the first question with all three options', async () => {
+    stubApi()
+    render(<WhoKnowsUsGame />)
+
+    expect(await screen.findByText(whoQuestions[0].question)).toBeInTheDocument()
     whoGameOptions.forEach((option) => {
       expect(screen.getByRole('button', { name: option })).toBeInTheDocument()
     })
+    expect(screen.getByText(`Frage 1 von ${whoQuestions.length}`)).toBeInTheDocument()
   })
 
-  it('casts a vote and shows live results for that question', async () => {
-    const voteResponse = {
-      tally: Object.fromEntries(whoGameOptions.map((o, i) => [o, i === 0 ? 1 : 0])),
-      alreadyVoted: false,
-    }
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({ ok: true, json: async () => voteResponse })
+  it('casts a vote with the device id and confirms it without showing any results', async () => {
+    const api = stubApi()
+    render(<WhoKnowsUsGame />)
+    await userEvent.click(await screen.findByRole('button', { name: whoGameOptions[0] }))
+
+    await screen.findByText(/deine stimme ist gespeichert/i)
+    expect(api.voteBodies()).toEqual([
+      { questionId: whoQuestions[0].id, voterId: 'test-device-id', option: whoGameOptions[0] },
+    ])
+    expect(screen.queryByText(/\d+ %/)).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Weiter' })).toBeInTheDocument()
+  })
+
+  it('moves on to the next question with Weiter and cannot vote twice on one', async () => {
+    stubApi()
+    render(<WhoKnowsUsGame />)
+    await userEvent.click(await screen.findByRole('button', { name: whoGameOptions[1] }))
+    expect(screen.getByRole('button', { name: whoGameOptions[0] })).toBeDisabled()
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Weiter' }))
+
+    expect(await screen.findByText(whoQuestions[1].question)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: whoGameOptions[0] })).toBeEnabled()
+  })
+
+  it('continues at the first unanswered question on a later visit', async () => {
+    window.localStorage.setItem(
+      'who-game-votes',
+      JSON.stringify({ [whoQuestions[0].id]: whoGameOptions[0], [whoQuestions[1].id]: whoGameOptions[2] })
     )
-
+    stubApi()
     render(<WhoKnowsUsGame />)
-    await userEvent.click(screen.getByRole('button', { name: whoGameOptions[0] }))
 
-    await waitFor(() => expect(screen.getByText('1')).toBeInTheDocument())
+    expect(await screen.findByText(whoQuestions[2].question)).toBeInTheDocument()
+    expect(screen.getByText(`Frage 3 von ${whoQuestions.length}`)).toBeInTheDocument()
   })
 
-  it('disables voting again on a question that was already answered', async () => {
-    const voteResponse = {
-      tally: Object.fromEntries(whoGameOptions.map((o, i) => [o, i === 0 ? 1 : 0])),
-      alreadyVoted: false,
-    }
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({ ok: true, json: async () => voteResponse })
+  it('thanks the guest after the last question and promises the reveal at the party', async () => {
+    window.localStorage.setItem(
+      'who-game-votes',
+      JSON.stringify(Object.fromEntries(whoQuestions.map((q) => [q.id, whoGameOptions[0]])))
     )
-
+    stubApi()
     render(<WhoKnowsUsGame />)
-    await userEvent.click(screen.getByRole('button', { name: whoGameOptions[0] }))
-    await waitFor(() => expect(screen.getByText('1')).toBeInTheDocument())
 
-    expect(screen.queryByRole('button', { name: whoGameOptions[1] })).not.toBeInTheDocument()
+    expect(await screen.findByText('Danke fürs Mitmachen!')).toBeInTheDocument()
+    expect(screen.getByText(/auflösung gibt es bei der feier/i)).toBeInTheDocument()
   })
 
-  it('does not mark the question as answered when the vote request fails, so the guest can retry', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network down')))
-
+  it('does not record a vote the server did not confirm', async () => {
+    stubApi({ voteResponse: { status: 423, body: { error: 'Abstimmen ist derzeit vorübergehend gesperrt.' } } })
     render(<WhoKnowsUsGame />)
-    await userEvent.click(screen.getByRole('button', { name: whoGameOptions[0] }))
+    await userEvent.click(await screen.findByRole('button', { name: whoGameOptions[0] }))
 
-    // Die Abstimmungs-Buttons müssen weiterhin da sein - kein lokal
-    // vermerktes "schon abgestimmt", wenn der Server es nie bestätigt hat.
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: whoGameOptions[0] })).toBeInTheDocument()
+    expect(await screen.findByRole('alert')).toHaveTextContent('vorübergehend gesperrt')
+    expect(screen.getByRole('button', { name: whoGameOptions[0] })).toBeEnabled()
+    expect(window.localStorage.getItem('who-game-votes')).toBeNull()
+  })
+
+  describe('guest password', () => {
+    it('asks for the password only while the browser is not unlocked', async () => {
+      stubApi({ unlocked: true })
+      const { unmount } = render(<WhoKnowsUsGame />)
+      await screen.findByText(whoQuestions[0].question)
+      expect(screen.queryByLabelText(/kennwort/i)).not.toBeInTheDocument()
+      unmount()
+
+      stubApi({ unlocked: false })
+      render(<WhoKnowsUsGame />)
+      expect(await screen.findByLabelText(/kennwort/i)).toBeInTheDocument()
     })
-    whoGameOptions.forEach((option) => {
-      expect(screen.getByRole('button', { name: option })).toBeInTheDocument()
+
+    it('does not send a vote without the password', async () => {
+      const api = stubApi({ unlocked: false })
+      render(<WhoKnowsUsGame />)
+      await screen.findByLabelText(/kennwort/i)
+
+      await userEvent.click(screen.getByRole('button', { name: whoGameOptions[0] }))
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(/kennwort/i)
+      expect(api.voteBodies()).toHaveLength(0)
+    })
+
+    it('sends the password with the vote and hides the field afterwards', async () => {
+      const api = stubApi({ unlocked: false })
+      render(<WhoKnowsUsGame />)
+      await userEvent.type(await screen.findByLabelText(/kennwort/i), 'love')
+
+      await userEvent.click(screen.getByRole('button', { name: whoGameOptions[0] }))
+
+      await screen.findByText(/deine stimme ist gespeichert/i)
+      expect(api.voteBodies()[0]).toMatchObject({ password: 'love', option: whoGameOptions[0] })
+      expect(screen.queryByLabelText(/kennwort/i)).not.toBeInTheDocument()
+    })
+
+    it('says so when the password is wrong and keeps the question open', async () => {
+      stubApi({ unlocked: false, voteResponse: { status: 401, body: { error: 'Falsches Kennwort.' } } })
+      render(<WhoKnowsUsGame />)
+      await userEvent.type(await screen.findByLabelText(/kennwort/i), 'falsch')
+
+      await userEvent.click(screen.getByRole('button', { name: whoGameOptions[0] }))
+
+      expect(await screen.findByRole('alert')).toHaveTextContent('Falsches Kennwort.')
+      expect(window.localStorage.getItem('who-game-votes')).toBeNull()
+    })
+
+    it('shows the field again when a remembered session is no longer valid', async () => {
+      stubApi({ unlocked: true, voteResponse: { status: 401, body: { error: 'Kennwort erforderlich.' } } })
+      render(<WhoKnowsUsGame />)
+      await userEvent.click(await screen.findByRole('button', { name: whoGameOptions[0] }))
+
+      expect(await screen.findByLabelText(/kennwort/i)).toBeInTheDocument()
+      expect(screen.getByRole('alert')).toHaveTextContent(/kennwort/i)
     })
   })
 
-  it('does not mark the question as answered when the server responds with an error status', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, json: async () => ({}) }))
-
-    render(<WhoKnowsUsGame />)
-    await userEvent.click(screen.getByRole('button', { name: whoGameOptions[0] }))
-
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: whoGameOptions[0] })).toBeInTheDocument()
-    })
-  })
-
-  it('shows the server error message when voting is locked', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({
-        ok: false,
-        status: 423,
-        json: async () => ({ error: 'Abstimmen ist derzeit vorübergehend gesperrt.' }),
+  describe('after the release', () => {
+    it('shows the results of all questions and marks the own vote', async () => {
+      window.localStorage.setItem('who-game-votes', JSON.stringify({ [whoQuestions[0].id]: whoGameOptions[1] }))
+      stubApi({
+        released: true,
+        questions: tallyWith({ [whoGameOptions[0]]: 3, [whoGameOptions[1]]: 1 }),
       })
-    )
+      render(<WhoKnowsUsGame />)
 
-    render(<WhoKnowsUsGame />)
-    await userEvent.click(screen.getByRole('button', { name: whoGameOptions[0] }))
-
-    await waitFor(() =>
-      expect(screen.getByText('Abstimmen ist derzeit vorübergehend gesperrt.')).toBeInTheDocument()
-    )
-  })
-
-  it('shows a generic error message when the vote request fails over the network', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network down')))
-
-    render(<WhoKnowsUsGame />)
-    await userEvent.click(screen.getByRole('button', { name: whoGameOptions[0] }))
-
-    await waitFor(() =>
-      expect(screen.getByText(/abstimmen fehlgeschlagen/i)).toBeInTheDocument()
-    )
-  })
-
-  it('advances to the next question and shows a finish screen after the last one', async () => {
-    render(<WhoKnowsUsGame />)
-    for (let i = 0; i < whoQuestions.length; i++) {
-      await userEvent.click(screen.getByRole('button', { name: /weiter|fertig/i }))
-    }
-    expect(screen.getByText(/danke/i)).toBeInTheDocument()
-  })
-
-  it('updates the shown tally when a poll returns new data', async () => {
-    // Die Ergebnisdarstellung erscheint erst, nachdem abgestimmt wurde
-    // (gleiches Verhalten wie die alte App) - also zuerst abstimmen, dann
-    // einen Poll mit aktualisierten Zahlen simulieren.
-    const voteResponse = {
-      tally: Object.fromEntries(whoGameOptions.map((o, i) => [o, i === 0 ? 1 : 0])),
-      alreadyVoted: false,
-    }
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({ ok: true, json: async () => voteResponse })
-    )
-
-    render(<WhoKnowsUsGame />)
-    await userEvent.click(screen.getByRole('button', { name: whoGameOptions[0] }))
-    await waitFor(() => expect(screen.getByText('1')).toBeInTheDocument())
-
-    const updated = {
-      questions: {
-        ...emptyTallyResponse().questions,
-        [whoQuestions[0].id]: Object.fromEntries(
-          whoGameOptions.map((o, i) => [o, i === 0 ? 5 : 0])
-        ),
-      },
-    }
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => updated }))
-
-    capturedPoll?.()
-    await waitFor(() => expect(screen.getByText('5')).toBeInTheDocument())
-  })
-
-  it('marks each person with a round badge that screen readers skip', async () => {
-    render(<WhoKnowsUsGame />)
-    const saruga = await screen.findByRole('button', { name: 'Saruga' })
-    expect(saruga.querySelector('[aria-hidden="true"]')).toHaveTextContent('S')
-    const vinith = screen.getByRole('button', { name: 'Vinith' })
-    expect(vinith.querySelector('[aria-hidden="true"]')).toHaveTextContent('V')
+      expect(await screen.findByText('Die Auflösung')).toBeInTheDocument()
+      expect(screen.getByText(whoQuestions[0].question)).toBeInTheDocument()
+      expect(screen.getByText(whoQuestions[whoQuestions.length - 1].question)).toBeInTheDocument()
+      expect(screen.getAllByText('3 · 75 %')).toHaveLength(whoQuestions.length)
+      expect(screen.getByText(/\(deine stimme\)/i)).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: whoGameOptions[0] })).not.toBeInTheDocument()
+    })
   })
 })

@@ -63,6 +63,10 @@ function mockFetchSequence(
         json: async () => ({ results, total: options.memoryTotal ?? results.length }),
       })
     }
+    // Der Abschnitt "Wer von uns?" lädt seinen Stand selbst (eigene Tests).
+    if (url === '/api/admin/who-results') {
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({ released: false, key: 'k'.repeat(64) }) })
+    }
     return fn(url, init)
   }
   vi.stubGlobal('fetch', routed)

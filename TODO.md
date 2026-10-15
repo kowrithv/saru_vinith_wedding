@@ -3,19 +3,17 @@
 Stand Do 15.10.2026 abends. Nur, was jetzt ansteht; Späteres steht in `docs/backlog.md`,
 dauerhafte Hinweise in der README („Bekannte Grenzen").
 
-Noch nicht feature complete: „Wer von uns?" fehlt (siehe unten).
+Feature complete bis auf: Videos (zurückgestellt) und das Ansehen von Admin und Desktop.
 
 ## Brautpaar
 
-- [ ] Entscheidungen für „Wer von uns?" als eigene Seite: DJ-Zugriff auf die Ergebnisse
-      (Vorschlag: eigener Lese-Link mit langem Zufallsschlüssel) und mehrfaches Abstimmen
-      (Einzelheiten im Backlog)
+- [ ] „Wer von uns?" ansehen (`/wer-von-uns`) und entscheiden: Vorgaben sind eine Stimme je
+      Frage und Gerät, DJ-Link im Admin, Porträts aus dem Paarfoto (bessere Fotos: Dateien
+      in `public/who/` ersetzen)
 - [ ] Videos bleiben zurückgestellt (Empfehlung: erst nach der Feier)
 
 ## Claude
 
-- [ ] „Wer von uns?" als eigene Seite bauen, sobald die Entscheidungen da sind (mit Limit je
-      Gerät für die Stimmen)
 - [ ] Admin und Desktop-Breite im Browser ansehen
 
 ## Betreiber, vor dem Tag
@@ -29,7 +27,7 @@ Noch nicht feature complete: „Wer von uns?" fehlt (siehe unten).
       sprengen), z. B. `request_body { max_size 64KB }` im Block für `/api/*` (Uploads
       laufen direkt zu R2)
 - [ ] Gerätetest auf iPhone und Android (`docs/ops/geraetetest-checkliste.md`), danach
-      Smoke- und Lasttest gegen die echte Domain
+      Smoke-Test gegen die echte Domain (der Lasttest schreibt Stimmen und läuft nur lokal)
 - [ ] Tag `v1.0.0` und Freeze
 
 ## Betreiber, nach dem Tag (vor Samstag)

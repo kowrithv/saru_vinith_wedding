@@ -8,7 +8,8 @@ function createFakeServer(options = {}) {
   const votes = new Map() // `${question}:${voter}` -> option
   const guestbook = []
   let record = null
-  const questions = ['1', '2', '3']
+  // Die Last-Szenarien nutzen die Fragen 1 bis 14 wie die App.
+  const questions = Array.from({ length: 14 }, (_, i) => String(i + 1))
   const choices = ['Saruga', 'Vinith', 'Beide']
 
   const json = (status, body) =>
@@ -20,21 +21,27 @@ function createFakeServer(options = {}) {
     const body = init.body ? JSON.parse(init.body) : undefined
 
     if (pathname === '/api/who-votes' && method === 'GET') {
+      // Zähler nur mit dem Schlüssel aus dem DJ-Link (bis zur Freigabe verborgen).
+      if (init.headers?.['x-results-key'] !== 'dj-key') return json(200, { released: false, questions: null })
       const tally = {}
       for (const q of questions) {
         tally[q] = Object.fromEntries(choices.map((c) => [c, 0]))
       }
-      for (const [key, option] of votes) tally[key.split(':')[0]][option]++
-      return json(200, { questions: tally })
+      for (const [key, option] of votes) {
+        const question = key.split(':')[0]
+        if (tally[question]) tally[question][option]++
+      }
+      return json(200, { released: false, questions: tally })
     }
     if (pathname === '/api/who-votes/vote') {
+      if (body.password !== 'empfang') return json(401, { error: 'Falsches Kennwort.' })
       if (options.dropEveryNthVote && votes.size % options.dropEveryNthVote === options.dropEveryNthVote - 1) {
-        return json(200, { tally: {}, alreadyVoted: false }) // "bestätigt", aber nicht gespeichert
+        return json(200, { alreadyVoted: false }) // "bestätigt", aber nicht gespeichert
       }
       const key = `${body.questionId}:${body.voterId}`
       const already = votes.has(key)
       if (!already) votes.set(key, body.option)
-      return json(200, { tally: {}, alreadyVoted: already })
+      return json(200, { alreadyVoted: already })
     }
     if (pathname === '/api/guestbook' && method === 'GET') return json(200, { entries: guestbook })
     if (pathname === '/api/guestbook' && method === 'POST') {
@@ -101,11 +108,50 @@ describe('runScenarios', () => {
       guests: 60,
       concurrency: 20,
       fetchImpl: createFakeServer({ dropEveryNthVote: 7 }),
+      uploadPassword: 'empfang',
+      resultsKey: 'dj-key',
       runId: 'lossy',
     })
 
     const votes = reports.find((r) => r.name === 'Abstimmungen')
     expect(votes.checks.some((c) => !c.ok && /verloren|gezählt/i.test(c.detail))).toBe(true)
+  })
+
+  it('checks the hidden counters only when the key from the DJ link is given', async () => {
+    const withoutKey = await runScenarios({
+      baseUrl: 'http://localhost:3000',
+      guests: 20,
+      concurrency: 10,
+      fetchImpl: createFakeServer(),
+      uploadPassword: 'empfang',
+      runId: 'nokey',
+    })
+    const withKey = await runScenarios({
+      baseUrl: 'http://localhost:3000',
+      guests: 20,
+      concurrency: 10,
+      fetchImpl: createFakeServer(),
+      uploadPassword: 'empfang',
+      resultsKey: 'dj-key',
+      runId: 'key',
+    })
+
+    const names = (reports) => reports.find((r) => r.name === 'Abstimmungen').checks.map((c) => c.name)
+    expect(names(withoutKey)).toEqual(['jede Stimme bestätigt', 'ein Gerät zählt nur einmal (50 gleichzeitige Stimmen)'])
+    expect(names(withKey)).toContain('jede Stimme gezählt')
+    expect(withKey.find((r) => r.name === 'Abstimmungen').checks.every((c) => c.ok)).toBe(true)
+  })
+
+  it('reports votes that the server refuses because of a wrong password', async () => {
+    const reports = await runScenarios({
+      baseUrl: 'http://localhost:3000',
+      guests: 10,
+      concurrency: 5,
+      fetchImpl: createFakeServer(),
+      uploadPassword: 'falsch',
+      runId: 'wrongpw',
+    })
+    expect(reports.find((r) => r.name === 'Abstimmungen').failed).toBeGreaterThan(0)
   })
 
   it('counts a server error as a failed request and keeps running', async () => {
@@ -160,6 +206,7 @@ describe('runScenarios', () => {
       fetchImpl: createFakeServer(),
       runId: 'nopw',
     })
+    expect(reports.map((r) => r.name)).not.toContain('Abstimmungen')
     expect(reports.map((r) => r.name)).not.toContain('Upload-Tickets')
     expect(reports.map((r) => r.name)).not.toContain('Erinnerungen')
     expect(reports.map((r) => r.name)).not.toContain('Gästebuch')
