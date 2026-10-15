@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
-import { Timer, MousePointerClick, Trophy } from 'lucide-react'
+import { Timer, MousePointerClick } from 'lucide-react'
 import Lotus from '@/components/ui/Lotus'
 import Button from '@/components/ui/Button'
 import { memoryImages, MEMORY_PAIRS_COUNT } from '@/lib/memory-content'
@@ -215,7 +215,29 @@ export default function MemoryGame() {
 
   return (
     <div>
-      <div className="flex items-center justify-center gap-4 sm:gap-8 mb-3 text-sm">
+      {/* Die Zeile reserviert ihre Höhe von Anfang an: sonst springt das Brett
+          nach unten, sobald der Rekord geladen ist, und Tipps landen daneben. */}
+      <div
+        data-testid="memory-record-row"
+        className="mb-3 flex min-h-11 flex-col items-center justify-center gap-1"
+      >
+        {globalRecord && (
+          <p
+            data-testid="memory-record-banner"
+            className="inline-flex items-center gap-2 rounded-2xl bg-dark-blue px-4 py-2 text-xs text-white sm:text-sm"
+          >
+            <Lotus size={16} className="text-gold" />
+            <span>
+              Rekord aller Gäste:{' '}
+              <b className="font-semibold text-gold">
+                {globalRecord.moves} Züge · {formatTime(globalRecord.seconds)}
+              </b>
+            </span>
+          </p>
+        )}
+      </div>
+
+      <div className="mb-2 flex items-center justify-center gap-4 text-sm sm:gap-8">
         <div className="flex items-center gap-2 text-dark-blue font-medium">
           <MousePointerClick size={16} className="text-gold" />
           {moves} Züge
@@ -225,25 +247,9 @@ export default function MemoryGame() {
           {formatTime(seconds)}
         </div>
       </div>
-      {/* Die Zeile reserviert ihre Höhe von Anfang an: sonst springt das Brett
-          nach unten, sobald der Rekord geladen ist, und Tipps landen daneben. */}
-      <div
-        data-testid="memory-record-row"
-        className="flex flex-wrap items-center justify-center gap-x-6 gap-y-1 mb-6 min-h-11 text-xs sm:text-sm text-gray-600"
-      >
-          {bestScore && (
-            <div className="flex items-center gap-2">
-              <Trophy size={14} className="text-gold" />
-              Dein bestes Ergebnis: {bestScore.moves} Züge · {formatTime(bestScore.seconds)}
-            </div>
-          )}
-          {globalRecord && (
-            <div className="flex items-center gap-2">
-              <Trophy size={14} className="text-gold" />
-              Rekord aller Gäste: {globalRecord.moves} Züge · {formatTime(globalRecord.seconds)}
-            </div>
-          )}
-      </div>
+      <p className="mb-6 min-h-5 text-center text-xs text-gray-600 sm:text-sm">
+        {bestScore && <>Dein bestes Ergebnis: {bestScore.moves} Züge · {formatTime(bestScore.seconds)}</>}
+      </p>
 
       <div className="grid grid-cols-4 gap-2.5 sm:gap-3">
         {cards.map((card) => {
@@ -263,7 +269,7 @@ export default function MemoryGame() {
                 animate={{ rotateY: visible ? 180 : 0 }}
                 transition={{ duration: 0.4 }}
               >
-                <div className="absolute inset-0 rounded-xl bg-dark-blue flex items-center justify-center [backface-visibility:hidden] shadow-sm border border-gold/70 shadow-[inset_0_0_0_3px_var(--color-dark-blue),inset_0_0_0_4px_rgba(201,168,76,0.5)]">
+                <div className="absolute inset-0 rounded-xl bg-dark-blue flex items-center justify-center [backface-visibility:hidden] border border-gold/70 shadow-[inset_0_0_0_3px_var(--color-dark-blue),inset_0_0_0_4px_rgba(201,168,76,0.5)]">
                   <Lotus size={24} className="text-gold" />
                 </div>
                 <div
@@ -284,7 +290,8 @@ export default function MemoryGame() {
 
       {isWon && (
         <div className="text-center mt-8" role="status">
-          <p className="font-serif text-xl font-semibold text-dark-blue mb-4">Geschafft!</p>
+          <Lotus size={36} className="mx-auto mb-2 text-gold" />
+          <p className="font-display text-3xl font-semibold text-dark-blue mb-4">Geschafft!</p>
           {isNewGlobalRecord && (
             <p className="text-gold-text font-medium mb-4">Neuer Rekord aller Gäste!</p>
           )}

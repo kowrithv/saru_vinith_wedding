@@ -193,7 +193,7 @@ describe('MemoryGame', () => {
     serverRecord = { moves: 11, seconds: 42 }
     render(<MemoryGame />)
 
-    expect(await screen.findByText(/rekord aller gäste: 11 züge · 00:42/i)).toBeInTheDocument()
+    expect(await screen.findByTestId('memory-record-banner')).toHaveTextContent(/rekord aller gäste: 11 züge · 00:42/i)
   })
 
   it('shows no record line while no guest has finished a game', async () => {
@@ -286,7 +286,7 @@ describe('MemoryGame', () => {
     await act(async () => {})
 
     expect(screen.getByText(/neuer rekord/i)).toBeInTheDocument()
-    expect(screen.getByText(/rekord aller gäste: 2 züge/i)).toBeInTheDocument()
+    expect(screen.getByTestId('memory-record-banner')).toHaveTextContent(/rekord aller gäste: 2 züge/i)
   })
 
   it('does not announce a record when the server already has a better one', async () => {
@@ -299,7 +299,7 @@ describe('MemoryGame', () => {
     await act(async () => {})
 
     expect(screen.queryByText(/neuer rekord/i)).not.toBeInTheDocument()
-    expect(screen.getByText(/rekord aller gäste: 1 züge/i)).toBeInTheDocument()
+    expect(screen.getByTestId('memory-record-banner')).toHaveTextContent(/rekord aller gäste: 1 züge/i)
   })
 
   it('keeps the game working when the record cannot be loaded or reported', async () => {
@@ -374,7 +374,7 @@ describe('MemoryGame', () => {
 
     expect(screen.queryByText(/neuer rekord/i)).not.toBeInTheDocument()
     // Der gebrochene Rekord selbst wird trotzdem angezeigt.
-    expect(screen.getByText(/rekord aller gäste: 2 züge/i)).toBeInTheDocument()
+    expect(screen.getByTestId('memory-record-banner')).toHaveTextContent(/rekord aller gäste: 2 züge/i)
   })
 
   it('ignores a slow initial record answer that arrives after a newer answer', async () => {
@@ -393,13 +393,13 @@ describe('MemoryGame', () => {
 
     playPerfectGame()
     await act(async () => {})
-    expect(screen.getByText(/rekord aller gäste: 2 züge/i)).toBeInTheDocument()
+    expect(screen.getByTestId('memory-record-banner')).toHaveTextContent(/rekord aller gäste: 2 züge/i)
 
     await act(async () => {
       resolveInitialGet({ ok: true, json: async () => ({ record: null }) })
     })
 
-    expect(screen.getByText(/rekord aller gäste: 2 züge/i)).toBeInTheDocument()
+    expect(screen.getByTestId('memory-record-banner')).toHaveTextContent(/rekord aller gäste: 2 züge/i)
   })
 
   it('keeps the shown record when the server answers a report with an error status', async () => {
@@ -415,7 +415,7 @@ describe('MemoryGame', () => {
     playPerfectGame()
     await act(async () => {})
 
-    expect(screen.getByText(/rekord aller gäste: 5 züge/i)).toBeInTheDocument()
+    expect(screen.getByTestId('memory-record-banner')).toHaveTextContent(/rekord aller gäste: 5 züge/i)
     expect(screen.queryByText(/neuer rekord/i)).not.toBeInTheDocument()
   })
 
@@ -423,5 +423,50 @@ describe('MemoryGame', () => {
     render(<MemoryGame />)
     const backs = screen.getAllByRole('button', { name: 'Karte umdrehen' })
     backs.forEach((card) => expect(card.querySelector('svg.text-gold')).toBeInTheDocument())
+  })
+
+  // Rekord als dunkles Band oben, Zahlen in Gold (Vorschlag C15).
+  describe('record banner', () => {
+    it('shows the record of all guests as a navy band with gold figures above the counters', async () => {
+      serverRecord = { moves: 14, seconds: 58 }
+      render(<MemoryGame />)
+
+      const banner = await screen.findByTestId('memory-record-banner')
+      expect(banner).toHaveClass('bg-dark-blue', 'text-white')
+      expect(banner.querySelector('b')).toHaveClass('text-gold')
+      expect(banner.querySelector('b')).toHaveTextContent('14 Züge · 00:58')
+      expect(banner.querySelector('svg.text-gold')).not.toBeNull()
+
+      const counters = screen.getByText(/0 Züge/)
+      expect(banner.compareDocumentPosition(counters) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    })
+
+    it('shows no band while there is no record yet', async () => {
+      render(<MemoryGame />)
+      await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/memory-record'))
+      expect(screen.queryByTestId('memory-record-banner')).not.toBeInTheDocument()
+    })
+  })
+
+  // Zwei Schatten-Klassen setzen dieselbe Variable: im Stylesheet gewinnt die
+  // später definierte, und der innere Doppelrand der Kartenrücken fehlte.
+  it('draws the double border on the card backs with exactly one shadow utility', () => {
+    render(<MemoryGame />)
+    const card = screen.getAllByRole('button', { name: 'Karte umdrehen' })[0]
+    const back = card.querySelector('svg.text-gold')?.parentElement as HTMLElement
+    expect(back.className).toContain('inset_0_0_0_4px')
+    expect(back.className).not.toMatch(/\bshadow-(sm|md|lg|xl)\b/)
+  })
+
+  it('crowns a finished game with the lotus instead of an emoji', async () => {
+    vi.useFakeTimers()
+    render(<MemoryGame />)
+    await act(async () => {})
+    playPerfectGame()
+    await act(async () => {})
+
+    const finish = screen.getByRole('status')
+    expect(finish).toHaveTextContent('Geschafft!')
+    expect(finish.querySelector('svg.text-gold')).not.toBeNull()
   })
 })

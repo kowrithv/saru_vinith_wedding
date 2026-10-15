@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import ClassicQuiz from './ClassicQuiz'
 import { quizQuestions } from '@/lib/quiz-content'
@@ -83,5 +83,41 @@ describe('ClassicQuiz', () => {
 
     const correctButton = screen.getByRole('button', { name: quizQuestions[0].options[correct] })
     expect(correctButton.querySelector('svg')).toBeInTheDocument()
+  })
+
+  // Ergebnis wie im Vorschlag: Punktzahl im goldenen Ring statt Pokal.
+  describe('result', () => {
+    async function playAll(wrong: number[]) {
+      render(<ClassicQuiz />)
+      for (let i = 0; i < quizQuestions.length; i++) {
+        await answerCurrentQuestion(i, !wrong.includes(i))
+        await userEvent.click(screen.getByRole('button', { name: /weiter|ergebnis/i }))
+      }
+    }
+
+    it('shows the score as "7/8" inside a gold ring and keeps the plain text for screen readers', async () => {
+      await playAll([0])
+      const ring = screen.getByTestId('quiz-score-ring')
+      expect(ring).toHaveTextContent('7/8')
+      expect(ring).toHaveClass('text-gold')
+      expect(within(ring).getByText('7 von 8')).toHaveClass('sr-only')
+    })
+
+    it('says "Fast perfekt!" when exactly one answer was wrong', async () => {
+      await playAll([3])
+      expect(screen.getByRole('heading', { name: 'Fast perfekt!' })).toBeInTheDocument()
+      expect(screen.getByText(/nur eine frage ging daneben/i)).toBeInTheDocument()
+    })
+
+    it('says "Perfekt!" for a flawless run', async () => {
+      await playAll([])
+      expect(screen.getByRole('heading', { name: 'Perfekt!' })).toBeInTheDocument()
+    })
+
+    it('offers to play again or to look at the photos', async () => {
+      await playAll([0])
+      expect(screen.getByRole('button', { name: /nochmal versuchen/i })).toBeInTheDocument()
+      expect(screen.getByRole('link', { name: /zur galerie/i })).toHaveAttribute('href', '/gallery')
+    })
   })
 })

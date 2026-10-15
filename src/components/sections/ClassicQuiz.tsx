@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Check } from 'lucide-react'
 import Button from '@/components/ui/Button'
@@ -14,6 +15,11 @@ function getResultMessage(score: number, total: number): { title: string; messag
     return {
       title: 'Perfekt!',
       message: 'Ihr kennt uns in- und auswendig! Wir freuen uns, euch bei unserer Hochzeit dabei zu haben!',
+    }
+  } else if (total - score === 1) {
+    return {
+      title: 'Fast perfekt!',
+      message: 'Ihr kennt uns richtig gut. Nur eine Frage ging daneben.',
     }
   } else if (percentage >= 75) {
     return {
@@ -30,6 +36,32 @@ function getResultMessage(score: number, total: number): { title: string; messag
     title: 'Noch Luft nach oben!',
     message: 'Lest unsere Geschichte auf der Webseite und versucht es nochmal. Wir freuen uns trotzdem auf euch!',
   }
+}
+
+// Punktzahl im goldenen Ring (zwei feine Kreise, der äußere gepunktet).
+function ScoreRing({ score, total }: { score: number; total: number }) {
+  return (
+    <div data-testid="quiz-score-ring" className="relative mx-auto grid h-28 w-28 place-items-center text-gold">
+      <svg
+        viewBox="-30 -30 60 60"
+        aria-hidden="true"
+        className="absolute inset-0 h-full w-full"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={1.5}
+        opacity={0.85}
+      >
+        <circle r={27} />
+        <circle r={23} strokeDasharray="1 4" strokeLinecap="round" />
+      </svg>
+      <b aria-hidden="true" className="relative font-display text-4xl font-semibold text-dark-blue">
+        {score}/{total}
+      </b>
+      <span className="sr-only">
+        {score} von {total}
+      </span>
+    </div>
+  )
 }
 
 export default function ClassicQuiz() {
@@ -88,13 +120,18 @@ export default function ClassicQuiz() {
         transition={{ duration: 0.5 }}
         className="card-ornate text-center rounded-3xl p-8 md:p-12"
       >
-        <Lotus size={44} className="text-gold mx-auto mb-4" />
-        <p className="font-display text-4xl font-semibold text-dark-blue mb-1">
-          {score} von {quizQuestions.length}
-        </p>
-        <h3 className="font-serif text-xl font-semibold text-dark-blue mb-3">{result.title}</h3>
-        <p className="text-gray-500 text-sm mb-6">{result.message}</p>
-        <Button onClick={handleRestart}>Nochmal versuchen</Button>
+        <ScoreRing score={score} total={quizQuestions.length} />
+        <h3 className="mt-4 mb-2 font-display text-3xl font-semibold text-dark-blue">{result.title}</h3>
+        <p className="mx-auto mb-6 max-w-sm text-sm text-gray-600">{result.message}</p>
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          <Button onClick={handleRestart}>Nochmal versuchen</Button>
+          <Link
+            href="/gallery"
+            className="inline-flex items-center justify-center rounded-full border-2 border-dark-blue px-6 py-2.5 text-sm font-medium text-dark-blue transition-colors hover:bg-dark-blue hover:text-white"
+          >
+            Zur Galerie
+          </Link>
+        </div>
       </motion.div>
     )
   }
