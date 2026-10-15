@@ -7,6 +7,7 @@ import {
   DISK_ALERT_THRESHOLD,
   DISK_CHECK_INTERVAL_MS,
   diskUsageFraction,
+  WAL_CHECKPOINT_INTERVAL_MS,
   startOpsScheduler,
 } from './ops-scheduler'
 
@@ -37,6 +38,7 @@ describe('startOpsScheduler', () => {
     pruneBackups: ReturnType<typeof vi.fn>
     sendAlert: ReturnType<typeof vi.fn>
     diskUsage: ReturnType<typeof vi.fn>
+    checkpoint: ReturnType<typeof vi.fn>
   }
   let running: { stop: () => void } | undefined
 
@@ -50,6 +52,7 @@ describe('startOpsScheduler', () => {
       pruneBackups: vi.fn().mockReturnValue([]),
       sendAlert: vi.fn().mockResolvedValue('sent'),
       diskUsage: vi.fn().mockReturnValue(0.4),
+      checkpoint: vi.fn().mockReturnValue({ busy: 0, log: 0, checkpointed: 0 }),
     }
   })
 
@@ -162,8 +165,9 @@ describe('startOpsScheduler', () => {
     const clearIntervalSpy = vi.spyOn(globalThis, 'clearInterval').mockImplementation((() => {}) as never)
     try {
       start()
-      expect(setIntervalSpy).toHaveBeenCalledTimes(2)
-      expect(unref).toHaveBeenCalledTimes(2)
+      // Sicherung, Platten-Prüfung und WAL-Checkpoint
+      expect(setIntervalSpy).toHaveBeenCalledTimes(3)
+      expect(unref).toHaveBeenCalledTimes(3)
       running?.stop()
       running = undefined
     } finally {
@@ -171,6 +175,29 @@ describe('startOpsScheduler', () => {
       setIntervalSpy.mockRestore()
       clearIntervalSpy.mockRestore()
     }
+  })
+
+  // Bei Dauer-Lesern kommt SQLite nie zum Zurücksetzen des Logs: ein fester Takt
+  // räumt es auf.
+  it('empties the write-ahead log every ten minutes', async () => {
+    start()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(deps.checkpoint).toHaveBeenCalledTimes(1)
+    expect(deps.checkpoint).toHaveBeenCalledWith(fakeDb)
+
+    await vi.advanceTimersByTimeAsync(WAL_CHECKPOINT_INTERVAL_MS)
+    expect(deps.checkpoint).toHaveBeenCalledTimes(2)
+    expect(WAL_CHECKPOINT_INTERVAL_MS).toBe(10 * 60 * 1000)
+  })
+
+  it('keeps running when a checkpoint fails', async () => {
+    deps.checkpoint.mockImplementation(() => {
+      throw new Error('database is locked')
+    })
+    start()
+    await vi.advanceTimersByTimeAsync(WAL_CHECKPOINT_INTERVAL_MS * 2)
+    expect(console.error).toHaveBeenCalledWith(expect.stringContaining('database is locked'))
+    expect(deps.checkpoint.mock.calls.length).toBeGreaterThanOrEqual(2)
   })
 
   it('starts only once per process and stop() clears all timers', async () => {

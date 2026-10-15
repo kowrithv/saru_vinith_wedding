@@ -4,9 +4,11 @@ import type Database from 'better-sqlite3'
 import { getDb } from '@/lib/db'
 import { createBackup, pruneBackups } from '@/lib/backup'
 import { sendAlert } from '@/lib/alerts'
+import { checkpointWal } from '@/lib/wal-checkpoint'
 
 export const BACKUP_INTERVAL_MS = 60 * 60 * 1000
 export const DISK_CHECK_INTERVAL_MS = 10 * 60 * 1000
+export const WAL_CHECKPOINT_INTERVAL_MS = 10 * 60 * 1000
 export const DISK_ALERT_THRESHOLD = 0.85
 const START_NOTICE_COOLDOWN_MS = 15 * 60 * 1000
 
@@ -23,6 +25,7 @@ export interface SchedulerDeps {
   pruneBackups?: typeof pruneBackups
   sendAlert?: typeof sendAlert
   diskUsage?: (dir: string) => number
+  checkpoint?: typeof checkpointWal
   now?: () => Date
 }
 
@@ -57,6 +60,7 @@ export function startOpsScheduler(deps: SchedulerDeps = {}): RunningScheduler {
   const doPrune = deps.pruneBackups ?? pruneBackups
   const alert = deps.sendAlert ?? sendAlert
   const diskUsage = deps.diskUsage ?? diskUsageFraction
+  const checkpoint = deps.checkpoint ?? checkpointWal
   const now = deps.now ?? (() => new Date())
 
   // Zwei Sicherungen gleichzeitig würden sich gegenseitig die Arbeitsdateien
@@ -108,6 +112,15 @@ export function startOpsScheduler(deps: SchedulerDeps = {}): RunningScheduler {
     }
   }
 
+  // Das Write-ahead-Log wächst bei Dauer-Lesern, wenn niemand es zurücksetzt.
+  const runCheckpoint = () => {
+    try {
+      checkpoint(resolveDb())
+    } catch (error) {
+      console.error(`[ops] WAL-Checkpoint fehlgeschlagen: ${error instanceof Error ? error.message : String(error)}`)
+    }
+  }
+
   void alert({
     key: 'app-started',
     subject: 'App gestartet',
@@ -116,16 +129,20 @@ export function startOpsScheduler(deps: SchedulerDeps = {}): RunningScheduler {
   })
   void runBackup()
   runDiskCheck()
+  runCheckpoint()
 
   const backupTimer = setInterval(() => void runBackup(), BACKUP_INTERVAL_MS)
   const diskTimer = setInterval(runDiskCheck, DISK_CHECK_INTERVAL_MS)
+  const checkpointTimer = setInterval(runCheckpoint, WAL_CHECKPOINT_INTERVAL_MS)
   backupTimer.unref?.()
   diskTimer.unref?.()
+  checkpointTimer.unref?.()
 
   const running: RunningScheduler = {
     stop: () => {
       clearInterval(backupTimer)
       clearInterval(diskTimer)
+      clearInterval(checkpointTimer)
       globalThis.__opsScheduler = undefined
     },
   }

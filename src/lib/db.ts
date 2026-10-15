@@ -12,6 +12,9 @@ export function applySchema(db: Database.Database): void {
   db.pragma('synchronous = NORMAL')
   db.pragma('foreign_keys = ON')
   db.pragma('busy_timeout = 5000')
+  // Das Log früher zurückschreiben (Standard 1000 Seiten); bei Dauer-Lesern
+  // räumt zusätzlich der Betriebs-Zeitplan alle zehn Minuten auf (wal-checkpoint.ts).
+  db.pragma('wal_autocheckpoint = 512')
 
   db.exec(`
     CREATE TABLE IF NOT EXISTS who_votes (
