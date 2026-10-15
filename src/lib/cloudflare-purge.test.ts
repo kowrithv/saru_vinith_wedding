@@ -32,6 +32,21 @@ describe('purgeCache', () => {
     )
   })
 
+  it('purges the plain address and the CORS address of every file', async () => {
+    process.env.CLOUDFLARE_API_TOKEN = 'token'
+    process.env.CLOUDFLARE_ZONE_ID = 'zone'
+
+    await purgeCache(['https://fotos.example.de/gallery/p1/thumb.jpg', 'https://fotos.example.de/gallery/p1/original.jpg'])
+
+    const [, init] = vi.mocked(fetch).mock.calls[0]
+    expect(JSON.parse(String(init?.body)).files).toEqual([
+      'https://fotos.example.de/gallery/p1/thumb.jpg',
+      'https://fotos.example.de/gallery/p1/thumb.jpg?cors=1',
+      'https://fotos.example.de/gallery/p1/original.jpg',
+      'https://fotos.example.de/gallery/p1/original.jpg?cors=1',
+    ])
+  })
+
   it('never throws when the purge request itself fails', async () => {
     process.env.CLOUDFLARE_API_TOKEN = 'token'
     process.env.CLOUDFLARE_ZONE_ID = 'zone'
