@@ -1,7 +1,8 @@
 # TODO
 
-Stand Fr 16.10.2026, nachts. Nur offene Punkte; Späteres steht in `docs/backlog.md`,
-dauerhafte Hinweise in der README („Bekannte Grenzen").
+Stand Fr 16.10.2026, nachts. Nur offene Punkte, nach Dringlichkeit geordnet (bis Samstag, nach
+der Hochzeit, später ohne Termin). Dauerhafte Hinweise stehen in der README („Bekannte
+Grenzen").
 
 ## Vor Samstag (in dieser Reihenfolge)
 
@@ -39,8 +40,20 @@ dauerhafte Hinweise in der README („Bekannte Grenzen").
       `scripts/import-old-votes.mjs` übernehmen (nur solange „Abstimmen" aktiv ist) oder
       löschen
 - [ ] `www.vsjourney.de` hat keinen DNS-Eintrag und keinen Caddy-Block: A-Eintrag `www` auf die
-      Server-IP, dann `redir https://vsjourney.de{uri} permanent`
+      Server-IP (derzeit `93.177.65.2`), dann `redir https://vsjourney.de{uri} permanent`
 - [ ] CI: `ubuntu-latest` zeigt ab dem 19.10.2026 auf Ubuntu 26; auf `ubuntu-24.04` festsetzen
       und die Aktionen anheben (`actions/checkout` läuft noch auf Node 20)
-- [ ] Originale exportieren und verwaiste R2-Objekte aufräumen (Runbook §6)
-- [ ] Videos (zurückgestellt; Einzelheiten im Backlog)
+- [ ] Originale exportieren (Runbook §6)
+- [ ] **Verwaiste R2-Objekte** aufräumen (abgebrochene Uploads, Erinnerung nach dem Foto-Upload
+      nicht abgesendet): es gibt keinen Aufräum-Job; per Skript mit Abgleich zur Datenbank oder
+      per Lifecycle-Regel (Runbook §6)
+
+## Später, ohne Termin (nicht blockierend)
+
+- [ ] **Videos:** werden nicht angenommen (nur JPEG, PNG, WebP, HEIC, HEIF bis 20 MB); am
+      Auswahlfeld steht „Nur Fotos, keine Videos." Empfehlung: dabei bleiben, bis der Tag
+      vorbei ist (größere Grenzen, andere Vorschau, mehr R2-Kosten)
+- [ ] **Vorschau-Speicher:** jede Galerie-Kachel hält das 800-px-Thumbnail (ca. 2 MB Bitmap),
+      bei 20 Fotos ca. 40 MB. Nur angehen, falls der Gerätetest Probleme zeigt
+- [ ] **Roter Punkt für neue Fotos** (aus dem Gestaltungsentwurf): bräuchte „zuletzt gesehen" je
+      Gerät
