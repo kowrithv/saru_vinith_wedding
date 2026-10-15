@@ -6,7 +6,11 @@ FROM node:24-alpine AS base
 FROM base AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci
+# --ignore-scripts: better-sqlite3 bringt seine fertigen Binärdateien mit
+# (prebuilds/, auch für Alpine/musl), npm würde aber trotzdem `node-gyp rebuild`
+# starten, und das braucht Python und einen C++-Compiler, die dieses Image nicht
+# hat. Der Build selbst braucht keine Install-Skripte.
+RUN npm ci --ignore-scripts
 
 # --- Build ---
 FROM base AS builder
