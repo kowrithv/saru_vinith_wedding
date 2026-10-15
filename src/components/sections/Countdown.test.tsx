@@ -95,6 +95,9 @@ describe('Countdown', () => {
     render(<Countdown />)
 
     expect(screen.getByText('02')).toHaveClass('text-7xl')
+    // Gerade Ziffern: in Cormorants Mediäval-Ziffern wird "01" zu "OI".
+    expect(screen.getByText('02')).toHaveClass('lining-nums')
+    expect(screen.getByText('06')).toHaveClass('lining-nums')
     expect(screen.getByText(/bis zu unserem empfang/i)).toBeInTheDocument()
     expect(screen.getByText('Stunden')).toBeInTheDocument()
     expect(screen.getByText('Minuten')).toBeInTheDocument()

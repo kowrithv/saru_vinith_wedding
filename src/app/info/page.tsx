@@ -22,7 +22,7 @@ export default function InfoPage() {
             Uhrzeit und Ort. Route und Kalender stehen bei der Anfahrt. */}
         <Card variant="dark" padding="lg" className="mb-8 text-center">
           <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gold">Samstag</p>
-          <p className="mt-2 font-display text-4xl font-semibold leading-none sm:text-5xl md:text-6xl">
+          <p className="mt-2 font-display text-4xl font-semibold leading-none lining-nums sm:text-5xl md:text-6xl">
             {receptionEvent.displayDate}
           </p>
           <div className="mt-5 flex items-center justify-center gap-3 text-gold" aria-hidden="true">

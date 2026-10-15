@@ -25,7 +25,7 @@ function Unit({ value, label, large = false }: UnitProps) {
     <div className="flex flex-col items-center">
       <b
         className={cn(
-          'font-display font-semibold leading-none tabular-nums',
+          'font-display font-semibold leading-none tabular-nums lining-nums',
           large ? 'text-5xl sm:text-6xl' : 'text-3xl sm:text-4xl'
         )}
       >
@@ -130,7 +130,7 @@ export default function Countdown() {
         ) : (
           <>
             <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gold">Noch</p>
-            <p className="mt-2 font-display text-7xl font-semibold leading-none tabular-nums text-gold sm:text-8xl">
+            <p className="mt-2 font-display text-7xl font-semibold leading-none tabular-nums lining-nums text-gold sm:text-8xl">
               {pad(timeLeft.days)}
             </p>
             <p className="mt-3 font-display text-2xl">
@@ -161,7 +161,9 @@ export default function Countdown() {
         )}
 
         <p className="mt-10 text-xs font-medium tracking-wide text-champagne-light/80">
-          {receptionEvent.venue} · {receptionEvent.address}
+          <span className="inline-block">{receptionEvent.venue}</span>
+          <span aria-hidden="true"> · </span>
+          <span className="inline-block">{receptionEvent.address}</span>
         </p>
       </div>
     </section>
