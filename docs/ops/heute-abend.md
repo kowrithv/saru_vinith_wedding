@@ -114,8 +114,8 @@ Startseite am Handy ansehen:
 
 ## Noch offen (nicht heute Abend)
 
-- Uhrzeiten für die drei „TBA"-Zeilen auf `/info`: liegen bei den Brautleuten
-  (Issue-Entwurf, `TODO.md`).
+- Ablauf auf `/info`: eingetragen (15.10.); die Brautleute bestätigen noch die
+  beiden „Einzug"-Zeilen und die Zeit des Abendessens (`TODO.md`).
 - SMTP-Zugang für die Alarm-Mails: kommt vom Betreiber, nicht von den
   Brautleuten (`TODO.md`).
 - Ziel für die Off-Box-Kopie der Sicherungen und ein Uptime-Monitor:

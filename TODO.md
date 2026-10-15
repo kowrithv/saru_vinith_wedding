@@ -5,7 +5,7 @@
 | Wann | Wer | Was |
 |---|---|---|
 | Di 13.10. abends | Betreiber | Domain/R2/Server/Gerätetest/Stimmen-Import nach `docs/ops/heute-abend.md` |
-| bis Mi 14.10. abends | Brautleute | Uhrzeiten der drei „TBA"-Zeilen (Issue-Entwurf); wir tragen sie ein |
+| Do 15.10. | Brautleute | Ablauf des Tages ist eingetragen (Zeiten mit „ca."); bitte bestätigen: die zwei „Einzug"-Zeilen und das „?" nach 21 Uhr |
 | bis Mi 14.10. | Betreiber | SMTP-Zugang in `.env.production`; Ziel für Off-Box-Kopie und Uptime-Monitor (`hochzeitstag-runbook.md` §7) |
 | Mi 14.10. | Betreiber | Gerätetest auswerten; Funde melden |
 | Mi 14.10. (nur falls nötig) | Entwicklung | **Vorschau-Speicher** (nur wenn der Gerätetest bei 20+ Fotos Probleme zeigt) |
@@ -30,10 +30,9 @@ Nicht geplant: ein vom Server verteiltes Memory-Spiel (bewusst clientseitig).
 
 ## Inhalte vor dem Freeze (von euch)
 
-- **Programm auf `/info` hat drei Zeilen mit „TBA":** Sektempfang &
-  Gratulationen, Gemeinsames Abendessen, Party & Tanz
-  (`receptionSchedule` in `src/lib/event-info.ts`). Uhrzeiten eintragen
-  oder die Zeilen entfernen — „TBA" sollte am Hochzeitstag nicht stehen.
+- **Programm auf `/info`:** eingetragen (Stand 15.10., `receptionSchedule` in
+  `src/lib/event-info.ts`). Offen: bestätigen, ob die beiden „Einzug"-Zeilen so
+  gemeint sind und ob das Abendessen „ca. 20:00 – 21:00 Uhr" heißen soll.
 - **SMTP-Zugang für die Alarm-Mails** (`SMTP_*`, `ALERT_EMAIL_TO` in
   `.env.production`): kommt vom Betreiber, nicht von den Brautleuten. Ohne ihn
   laufen Alarme nur ins Log. Werte nie ins Repo oder in ein Issue.
@@ -65,7 +64,6 @@ Nicht geplant: ein vom Server verteiltes Memory-Spiel (bewusst clientseitig).
 - **Geschichte:** Fotos je Meilenstein fehlen noch (`photo` in
   `src/lib/story-content.ts`); ohne Foto bleibt die Karte Text.
 - **„Gut zu wissen":** Texte fehlen (`goodToKnow` in `src/lib/event-info.ts`).
-- **Programm:** die drei „TBA"-Uhrzeiten (zeigt die Seite jetzt als „Uhrzeit folgt").
 - **„Wer von uns?":** statt Porträts stehen Buchstaben-Marken (S, V); echte Fotos
   wären eine kleine Ergänzung.
 - **Lokal:** `rm -rf .next`, wenn der Build `exactly one entry` meldet.

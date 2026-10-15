@@ -160,8 +160,9 @@ Danach `npm run dev` neu starten. `data/fake-r2/` ist ignoriert.
   ab 18.10. "Wir sind verheiratet!" mit Danke. Die Grenzen sind feste Zeitpunkte
   (MESZ), nicht die Zeit des Geräts (`src/lib/event-phase.ts`).
 - **Ablauf:** `receptionSchedule` in `src/lib/event-info.ts`; "TBA" wird als
-  "Uhrzeit folgt" gezeigt, "Als Nächstes" erscheint am Tag für den nächsten Punkt
-  mit Uhrzeit.
+  "Uhrzeit folgt" gezeigt, ungefähre Zeiten ("ca. 18:30 Uhr", "ca. 20:00 – 21:00 Uhr")
+  stehen wie geschrieben da, "Als Nächstes" erscheint am Tag für den nächsten Punkt
+  mit Uhrzeit (bei einem Bereich zählt der Beginn).
 - **Gut zu wissen:** `goodToKnow` in `src/lib/event-info.ts`; solange die Liste
   leer ist, erscheint der Abschnitt nicht.
 - **Geschichte:** optional ein Foto je Meilenstein (`photo` in

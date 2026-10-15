@@ -21,11 +21,14 @@ export interface ScheduleItem {
   event: string
 }
 
+// Stand der Brautleute vom 15.10.: ungefähre Zeiten mit "ca."; für "Als
+// Nächstes" zählt der Beginn (siehe event-phase.ts). Ohne Uhrzeit: 'TBA'.
 export const receptionSchedule: ScheduleItem[] = [
   { time: '16:30 Uhr', event: 'Einlass & Empfang der Gäste' },
-  { time: 'TBA', event: 'Sektempfang & Gratulationen' },
-  { time: 'TBA', event: 'Gemeinsames Abendessen' },
-  { time: 'TBA', event: 'Party & Tanz' },
+  { time: '17:15 Uhr', event: 'Einzug des Brautpaares / Tortenanschneiden' },
+  { time: 'ca. 18:30 Uhr', event: 'Traditioneller Einzug des Brautpaares' },
+  { time: 'ca. 20:00 – 21:00 Uhr', event: 'Gemeinsames Abendessen' },
+  { time: 'ca. 22:30 Uhr', event: 'Party & Tanz' },
 ]
 
 export interface GoodToKnowItem {

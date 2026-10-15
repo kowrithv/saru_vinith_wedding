@@ -14,7 +14,9 @@ export function eventPhase(nowMs: number): EventPhase {
   return 'after'
 }
 
-const TIME_PATTERN = /^(\d{1,2}):(\d{2})/
+// Auch ungefähre Angaben: "ca. 18:30 Uhr", "~ 18:30 Uhr"; bei einem Bereich
+// ("ca. 20:00 – 21:00 Uhr") zählt der Beginn.
+const TIME_PATTERN = /^(?:ca\.?\s*|~\s*)?(\d{1,2}):(\d{2})/i
 
 /** Beginn eines Programmpunkts am Hochzeitstag in ms, oder null ("TBA", Freitext). */
 function itemStartMs(time: string): number | null {

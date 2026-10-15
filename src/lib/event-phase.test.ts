@@ -53,4 +53,27 @@ describe('nextProgramIndex', () => {
     const open = [{ time: 'TBA', event: 'A' }, { time: 'TBA', event: 'B' }]
     expect(nextProgramIndex(at('2026-10-17T10:00:00+02:00'), open)).toBeNull()
   })
+
+  // Die Brautleute geben ungefähre Zeiten an ("ca. 18:30 Uhr") und einen Bereich
+  // ("ca. 20:00 – 21:00 Uhr"): maßgeblich ist der Beginn.
+  describe('approximate times', () => {
+    const approximate = [
+      { time: '16:30 Uhr', event: 'Einlass' },
+      { time: '17:15 Uhr', event: 'Einzug / Tortenanschneiden' },
+      { time: 'ca. 18:30 Uhr', event: 'Traditioneller Einzug' },
+      { time: 'ca. 20:00 – 21:00 Uhr', event: 'Abendessen' },
+      { time: '~ 22:30 Uhr', event: 'Party' },
+    ]
+
+    it('reads the start of an approximate time and of a range', () => {
+      expect(nextProgramIndex(at('2026-10-17T17:20:00+02:00'), approximate)).toBe(2)
+      expect(nextProgramIndex(at('2026-10-17T18:30:00+02:00'), approximate)).toBe(3)
+      expect(nextProgramIndex(at('2026-10-17T20:30:00+02:00'), approximate)).toBe(4)
+    })
+
+    it('accepts a tilde in front of the time', () => {
+      expect(nextProgramIndex(at('2026-10-17T21:00:00+02:00'), approximate)).toBe(4)
+      expect(nextProgramIndex(at('2026-10-17T22:30:00+02:00'), approximate)).toBeNull()
+    })
+  })
 })

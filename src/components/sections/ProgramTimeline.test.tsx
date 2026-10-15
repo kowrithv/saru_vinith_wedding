@@ -82,4 +82,33 @@ describe('ProgramTimeline', () => {
     expect(html).toContain('Einlass &amp; Empfang der Gäste')
     expect(html).not.toMatch(/als nächstes/i)
   })
+
+  it('shows approximate times and ranges as written', () => {
+    render(
+      <ProgramTimeline
+        schedule={[
+          { time: 'ca. 18:30 Uhr', event: 'Traditioneller Einzug' },
+          { time: 'ca. 20:00 – 21:00 Uhr', event: 'Gemeinsames Abendessen' },
+        ]}
+      />
+    )
+    expect(screen.getByText('ca. 18:30 Uhr')).toHaveClass('text-gold-text')
+    expect(screen.getByText('ca. 20:00 – 21:00 Uhr')).toBeInTheDocument()
+    expect(screen.queryByText('Uhrzeit folgt')).not.toBeInTheDocument()
+  })
+
+  it('marks an item with an approximate time as next on the wedding day', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-10-17T15:45:00+02:00'))
+    render(
+      <ProgramTimeline
+        schedule={[
+          { time: '16:30 Uhr', event: 'Einlass' },
+          { time: 'ca. 18:30 Uhr', event: 'Traditioneller Einzug' },
+        ]}
+      />
+    )
+    const next = screen.getByText(/als nächstes/i).closest('li')
+    expect(next).toHaveTextContent('Einlass')
+  })
 })
