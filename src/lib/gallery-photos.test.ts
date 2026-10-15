@@ -9,7 +9,7 @@ function photoInput(overrides: Partial<Parameters<typeof addGalleryPhoto>[1]> = 
     originalKey: 'o1',
     uploaderName: 'Anna',
     deleteTokenHash: 'h1',
-    category: 'Hochzeit',
+    category: 'Standesamt',
     isOfficial: false,
     ...overrides,
   }
@@ -28,7 +28,7 @@ describe('gallery photos', () => {
       thumbKey: 'gallery/photo-1/thumb.jpg',
       originalKey: 'gallery/photo-1/original.jpg',
       uploaderName: 'Anna',
-      category: 'Hochzeit',
+      category: 'Standesamt',
       isOfficial: false,
       createdAt: expect.any(String),
     })

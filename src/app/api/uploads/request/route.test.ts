@@ -48,7 +48,7 @@ describe('POST /api/uploads/request', () => {
     const response = await POST(
       requestBody({
         password: 'empfang-secret',
-        category: 'Hochzeit',
+        category: 'Standesamt',
         files: [{ filename: 'a.jpg', size: 1000, contentType: 'image/jpeg' }],
       })
     )
@@ -60,7 +60,7 @@ describe('POST /api/uploads/request', () => {
     const response = await POST(
       requestBody({
         password: 'empfang-secret',
-        category: 'Hochzeit',
+        category: 'Standesamt',
         files: [{ filename: 'a.jpg', size: 1000, contentType: 'image/jpeg', thumbSize: 2 * 1024 * 1024 + 1 }],
       })
     )
@@ -75,7 +75,7 @@ describe('POST /api/uploads/request', () => {
     const response = await POST(
       requestBody({
         password: 'empfang-secret',
-        category: 'Hochzeit',
+        category: 'Standesamt',
         files: [{ filename: 'a.jpg', size: 1_234_567, contentType: 'image/jpeg', thumbSize: 45_678 }],
       })
     )
@@ -93,7 +93,7 @@ describe('POST /api/uploads/request', () => {
     const response = await POST(
       requestBody({
         password: 'empfang-secret',
-        category: 'Hochzeit',
+        category: 'Standesamt',
         files: [{ filename: 'a.jpg', size: 1000, contentType: 'image/jpeg', thumbSize: 45_678 }],
       })
     )
@@ -107,7 +107,7 @@ describe('POST /api/uploads/request', () => {
     const response = await POST(
       requestBody({
         password: 'falsch',
-        category: 'Hochzeit',
+        category: 'Standesamt',
         files: [{ filename: 'a.jpg', size: 1000, contentType: 'image/jpeg', thumbSize: 50_000 }],
       })
     )
@@ -118,7 +118,7 @@ describe('POST /api/uploads/request', () => {
     getDb()
     const response = await POST(
       requestBody({
-        category: 'Hochzeit',
+        category: 'Standesamt',
         files: [{ filename: 'a.jpg', size: 1000, contentType: 'image/jpeg', thumbSize: 50_000 }],
       })
     )
@@ -130,7 +130,7 @@ describe('POST /api/uploads/request', () => {
     const response = await POST(
       requestBody({
         password: 'empfang-secret',
-        category: 'Hochzeit',
+        category: 'Standesamt',
         files: [
           { filename: 'a.jpg', size: 1_000_000, contentType: 'image/jpeg', thumbSize: 50_000 },
           { filename: 'b.png', size: 2_000_000, contentType: 'image/png', thumbSize: 50_000 },
@@ -150,7 +150,7 @@ describe('POST /api/uploads/request', () => {
     const secret = getOrCreateAdminSecret(db)
     const payload = verifyUploadTicket(body.tickets[0].ticket, secret)
     expect(payload?.isOfficial).toBe(false)
-    expect(payload?.category).toBe('Hochzeit')
+    expect(payload?.category).toBe('Standesamt')
   })
 
   it('accepts the password regardless of case and spaces, and issues a session cookie', async () => {
@@ -158,7 +158,7 @@ describe('POST /api/uploads/request', () => {
     const response = await POST(
       requestBody({
         password: ' EMPFANG-Secret ',
-        category: 'Hochzeit',
+        category: 'Standesamt',
         files: [{ filename: 'a.jpg', size: 1000, contentType: 'image/jpeg', thumbSize: 50_000 }],
       })
     )
@@ -231,7 +231,7 @@ describe('POST /api/uploads/request', () => {
     const response = await POST(
       requestBody({
         password: 'empfang-secret',
-        category: 'Hochzeit',
+        category: 'Standesamt',
         isOfficial: true,
         files: [{ filename: 'a.jpg', size: 1000, contentType: 'image/jpeg', thumbSize: 50_000 }],
       })
@@ -289,7 +289,7 @@ describe('POST /api/uploads/request', () => {
     const response = await POST(
       requestBody({
         password: 'empfang-secret',
-        category: 'Hochzeit',
+        category: 'Standesamt',
         files: [{ filename: 'a.mov', size: 1000, contentType: 'video/quicktime', thumbSize: 50_000 }],
       })
     )
@@ -301,7 +301,7 @@ describe('POST /api/uploads/request', () => {
     const response = await POST(
       requestBody({
         password: 'empfang-secret',
-        category: 'Hochzeit',
+        category: 'Standesamt',
         files: [{ filename: 'a.jpg', size: 1000, contentType: 'constructor', thumbSize: 50_000 }],
       })
     )
@@ -313,7 +313,7 @@ describe('POST /api/uploads/request', () => {
     const response = await POST(
       requestBody({
         password: 'empfang-secret',
-        category: 'Hochzeit',
+        category: 'Standesamt',
         files: [{ filename: 'a.jpg', size: 21 * 1024 * 1024, contentType: 'image/jpeg', thumbSize: 50_000 }],
       })
     )
@@ -331,7 +331,7 @@ describe('POST /api/uploads/request', () => {
         requestBody(
           {
             password: 'empfang-secret',
-            category: 'Hochzeit',
+            category: 'Standesamt',
             files: [{ filename: 'a.jpg', size: 1000, contentType: 'image/jpeg', thumbSize: 50_000 }],
           },
           undefined,
@@ -350,7 +350,7 @@ describe('POST /api/uploads/request', () => {
         requestBody(
           {
             password: 'falsch',
-            category: 'Hochzeit',
+            category: 'Standesamt',
             files: [{ filename: 'a.jpg', size: 1000, contentType: 'image/jpeg', thumbSize: 50_000 }],
           },
           undefined,
@@ -370,7 +370,7 @@ describe('POST /api/uploads/request', () => {
       requestBody(
         {
           password: 'empfang-secret',
-          category: 'Hochzeit',
+          category: 'Standesamt',
           files: [
             { filename: 'a.jpg', size: 1000, contentType: 'image/jpeg', thumbSize: 50_000 },
             { filename: 'b.heic', size: 2000, contentType: 'image/heic', thumbSize: 50_000 },
@@ -391,7 +391,7 @@ describe('POST /api/uploads/request', () => {
     setFeatureLocked(db, 'gallery_upload', true)
     const response = await POST(
       requestBody(
-        { password: 'falsch', category: 'Hochzeit', files: [{ filename: 'a.jpg', size: 1000, contentType: 'image/jpeg', thumbSize: 50_000 }] },
+        { password: 'falsch', category: 'Standesamt', files: [{ filename: 'a.jpg', size: 1000, contentType: 'image/jpeg', thumbSize: 50_000 }] },
         undefined,
         '10.0.1.1'
       )
@@ -407,7 +407,7 @@ describe('POST /api/uploads/request', () => {
     const cookieValue = signCookieValue(Date.now() + 60_000, secret)
     const response = await POST(
       requestBody(
-        { category: 'Hochzeit', files: [{ filename: 'a.jpg', size: 1000, contentType: 'image/jpeg', thumbSize: 50_000 }] },
+        { category: 'Standesamt', files: [{ filename: 'a.jpg', size: 1000, contentType: 'image/jpeg', thumbSize: 50_000 }] },
         cookieValue,
         '10.0.1.2'
       )
@@ -420,7 +420,7 @@ describe('POST /api/uploads/request', () => {
     setFeatureLocked(db, 'gallery_upload', true)
     const body = {
       password: 'empfang-secret',
-      category: 'Hochzeit',
+      category: 'Standesamt',
       files: [{ filename: 'a.jpg', size: 1000, contentType: 'image/jpeg', thumbSize: 50_000 }],
     }
     for (let i = 0; i < 35; i++) {

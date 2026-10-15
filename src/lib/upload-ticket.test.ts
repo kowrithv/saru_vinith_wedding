@@ -8,7 +8,7 @@ const samplePayload: TicketPayload = {
   thumbMaxSize: 2 * 1024 * 1024,
   originalSize: 4_000_000,
   expiresAt: Date.now() + 15 * 60 * 1000,
-  category: 'Hochzeit',
+  category: 'Standesamt',
   isOfficial: false,
 }
 

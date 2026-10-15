@@ -69,7 +69,7 @@ describe('createDb', () => {
       .prepare('SELECT category, is_official FROM gallery_photos WHERE id = ?')
       .get('p1') as { category: string; is_official: number }
 
-    expect(row.category).toBe('Hochzeit')
+    expect(row.category).toBe('Standesamt')
     expect(row.is_official).toBe(0)
     db.close()
   })
@@ -102,7 +102,7 @@ describe('createDb', () => {
     const row = db
       .prepare('SELECT category, is_official FROM gallery_photos WHERE id = ?')
       .get('old-photo') as { category: string; is_official: number }
-    expect(row.category).toBe('Hochzeit')
+    expect(row.category).toBe('Standesamt')
     expect(row.is_official).toBe(0)
     db.close()
   })
@@ -154,5 +154,29 @@ describe('getDb', () => {
 
   it('returns the same connection on repeated calls', () => {
     expect(getDb()).toBe(getDb())
+  })
+
+  // Die Kategorie "Hochzeit" heißt jetzt "Standesamt": Fotos aus früheren Läufen
+  // (Tests, Probe-Uploads) behalten ihre Zuordnung.
+  it('renames photos of the former category "Hochzeit" to "Standesamt", once and for good', () => {
+    const db = createDb(':memory:')
+    const insert = db.prepare(
+      `INSERT INTO gallery_photos (id, thumb_key, original_key, uploader_name, delete_token_hash, category)
+       VALUES (?, ?, ?, ?, ?, ?)`
+    )
+    insert.run('old', 't', 'o', 'Anna', 'h', 'Hochzeit')
+    insert.run('party', 't2', 'o2', 'Ben', 'h2', 'Party')
+
+    applySchema(db)
+    applySchema(db)
+
+    const categories = db
+      .prepare('SELECT id, category FROM gallery_photos ORDER BY id')
+      .all() as { id: string; category: string }[]
+    expect(categories).toEqual([
+      { id: 'old', category: 'Standesamt' },
+      { id: 'party', category: 'Party' },
+    ])
+    db.close()
   })
 })

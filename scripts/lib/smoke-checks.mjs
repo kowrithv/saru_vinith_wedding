@@ -103,7 +103,7 @@ export function buildSmokeChecks(options = {}) {
     method: 'POST',
     body: JSON.stringify({
       password: 'smoke-test-falsch',
-      category: 'Hochzeit',
+      category: 'Standesamt',
       files: [{ filename: 'smoke.jpg', size: 1000, contentType: 'image/jpeg', thumbSize: 1000 }],
     }),
     // 401 = Kennwort geprüft, 423 = Upload pausiert, 429 = Limit - alle zeigen

@@ -130,7 +130,7 @@ Cloudflare-Dashboard, nicht im Code).
 
 Details: `docs/superpowers/specs/2026-10-12-gallery-design.md`.
 
-**Kategorien beim Hochladen:** Gäste wählen nur *Hochzeit* oder *Party*;
+**Kategorien beim Hochladen:** Gäste wählen nur *Standesamt* oder *Party* (früher „Hochzeit“; vorhandene Fotos werden beim Start umbenannt);
 *Kennenlernen* und *Verlobung* legt der Admin an (der Server lehnt sie für Gäste
 ab), *Erinnerungen* entsteht allein über das Erinnerungs-Formular.
 

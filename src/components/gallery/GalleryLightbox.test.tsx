@@ -8,7 +8,7 @@ function photo(overrides: Partial<GalleryPhotoView> = {}): GalleryPhotoView {
   return {
     id: 'p1',
     uploaderName: 'Anna',
-    category: 'Hochzeit',
+    category: 'Standesamt',
     isOfficial: false,
     createdAt: '2026-10-12T10:00:00.000Z',
     thumbUrl: 'https://fotos.example.de/p1/thumb.jpg',
@@ -209,7 +209,7 @@ describe('GalleryLightbox', () => {
       renderLightbox()
       const info = screen.getByTestId('lightbox-info')
       expect(within(info).getByText('Von Anna')).toHaveClass('font-semibold')
-      const detail = within(info).getByText('Hochzeit').parentElement as HTMLElement
+      const detail = within(info).getByText('Standesamt').parentElement as HTMLElement
       expect(detail).toHaveTextContent('12.10. um 12:00 Uhr')
       expect(detail).toHaveClass('text-xs')
     })

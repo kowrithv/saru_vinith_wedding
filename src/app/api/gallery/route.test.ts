@@ -33,7 +33,7 @@ describe('GET /api/gallery', () => {
 
   it('hides photos by default: a fresh database starts in password mode', async () => {
     const db = getDb()
-    addGalleryPhoto(db, { id: 'p1', thumbKey: 't1', originalKey: 'o1', uploaderName: 'Anna', deleteTokenHash: 'h1', category: 'Hochzeit', isOfficial: false })
+    addGalleryPhoto(db, { id: 'p1', thumbKey: 't1', originalKey: 'o1', uploaderName: 'Anna', deleteTokenHash: 'h1', category: 'Standesamt', isOfficial: false })
 
     const body = await (await GET(requestWithCookies({}))).json()
     expect(body.mode).toBe('password')
@@ -44,7 +44,7 @@ describe('GET /api/gallery', () => {
   it('returns photos when the gallery is public, with no cookie at all', async () => {
     const db = getDb()
     setGalleryMode(db, 'public')
-    addGalleryPhoto(db, { id: 'p1', thumbKey: 't1', originalKey: 'o1', uploaderName: 'Anna', deleteTokenHash: 'h1', category: 'Hochzeit', isOfficial: false })
+    addGalleryPhoto(db, { id: 'p1', thumbKey: 't1', originalKey: 'o1', uploaderName: 'Anna', deleteTokenHash: 'h1', category: 'Standesamt', isOfficial: false })
 
     const body = await (await GET(requestWithCookies({}))).json()
     expect(body.mode).toBe('public')
@@ -55,7 +55,7 @@ describe('GET /api/gallery', () => {
   it('hides photos when the mode is password and there is no gallery session', async () => {
     const db = getDb()
     setGalleryMode(db, 'password')
-    addGalleryPhoto(db, { id: 'p1', thumbKey: 't1', originalKey: 'o1', uploaderName: 'Anna', deleteTokenHash: 'h1', category: 'Hochzeit', isOfficial: false })
+    addGalleryPhoto(db, { id: 'p1', thumbKey: 't1', originalKey: 'o1', uploaderName: 'Anna', deleteTokenHash: 'h1', category: 'Standesamt', isOfficial: false })
 
     const body = await (await GET(requestWithCookies({}))).json()
     expect(body.mode).toBe('password')
@@ -66,7 +66,7 @@ describe('GET /api/gallery', () => {
   it('shows photos when the mode is password and the gallery session cookie is valid', async () => {
     const db = getDb()
     setGalleryMode(db, 'password')
-    addGalleryPhoto(db, { id: 'p1', thumbKey: 't1', originalKey: 'o1', uploaderName: 'Anna', deleteTokenHash: 'h1', category: 'Hochzeit', isOfficial: false })
+    addGalleryPhoto(db, { id: 'p1', thumbKey: 't1', originalKey: 'o1', uploaderName: 'Anna', deleteTokenHash: 'h1', category: 'Standesamt', isOfficial: false })
     const cookieValue = createGallerySessionCookieValue(db)
 
     const body = await (await GET(requestWithCookies({ [GALLERY_COOKIE_NAME]: cookieValue }))).json()
@@ -77,7 +77,7 @@ describe('GET /api/gallery', () => {
   it('shows photos to an admin even in password mode without a gallery session cookie', async () => {
     const db = getDb()
     setGalleryMode(db, 'password')
-    addGalleryPhoto(db, { id: 'p1', thumbKey: 't1', originalKey: 'o1', uploaderName: 'Anna', deleteTokenHash: 'h1', category: 'Hochzeit', isOfficial: false })
+    addGalleryPhoto(db, { id: 'p1', thumbKey: 't1', originalKey: 'o1', uploaderName: 'Anna', deleteTokenHash: 'h1', category: 'Standesamt', isOfficial: false })
     const secret = getOrCreateAdminSecret(db)
     const adminCookie = signCookieValue(Date.now() + 1000, secret)
 
@@ -112,7 +112,7 @@ describe('GET /api/gallery', () => {
       originalKey: 'gallery/p1/original.jpg',
       uploaderName: 'Anna',
       deleteTokenHash: 'h1',
-      category: 'Hochzeit',
+      category: 'Standesamt',
       isOfficial: false,
     })
 

@@ -304,7 +304,7 @@ describe('/api/memories', () => {
 
     it('only accepts tickets issued for the memories category', async () => {
       objectsExist()
-      const response = await POST(postWithTicket({ ticket: signedTicket({ category: 'Hochzeit' }) }))
+      const response = await POST(postWithTicket({ ticket: signedTicket({ category: 'Standesamt' }) }))
       expect(response.status).toBe(400)
       expect(listMemoryEntriesCount()).toBe(0)
     })

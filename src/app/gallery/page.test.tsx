@@ -47,7 +47,7 @@ function mockApi(gallery: MockResponse | MockResponse[], options: { access?: boo
 const samplePhoto = {
   id: 'p1',
   uploaderName: 'Anna',
-  category: 'Hochzeit',
+  category: 'Standesamt',
   isOfficial: false,
   createdAt: '2026-10-12T10:00:00.000Z',
   thumbUrl: 'https://fotos.example.de/p1/thumb.jpg',

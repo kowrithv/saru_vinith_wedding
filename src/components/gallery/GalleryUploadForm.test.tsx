@@ -81,7 +81,7 @@ function createFakeBackend(options: FakeBackendOptions = {}) {
           photo: {
             id,
             uploaderName: 'Anna',
-            category: 'Hochzeit',
+            category: 'Standesamt',
             isOfficial: false,
             createdAt: '2026-10-12T10:00:00.000Z',
             thumbUrl: `https://fotos.example.de/${id}/thumb.jpg`,
@@ -144,7 +144,7 @@ describe('GalleryUploadForm', () => {
 
   it('preselects the wedding category instead of the first one in the list', () => {
     render(<GalleryUploadForm onUploaded={vi.fn()} />)
-    expect(screen.getByLabelText(/kategorie/i)).toHaveValue('Hochzeit')
+    expect(screen.getByLabelText(/kategorie/i)).toHaveValue('Standesamt')
   })
 
   // Kennenlernen und Verlobung sind die Fotos des Brautpaars, Erinnerungen
@@ -152,13 +152,13 @@ describe('GalleryUploadForm', () => {
   it('offers guests only the wedding day and the party as categories', () => {
     render(<GalleryUploadForm onUploaded={vi.fn()} />)
     const options = within(screen.getByLabelText(/kategorie/i)).getAllByRole('option')
-    expect(options.map((option) => option.textContent)).toEqual(['Hochzeit', 'Party'])
+    expect(options.map((option) => option.textContent)).toEqual(['Standesamt', 'Party'])
   })
 
   it('offers the couple the story categories as well, but never the memory category', () => {
     render(<GalleryUploadForm isAdmin onUploaded={vi.fn()} />)
     const options = within(screen.getByLabelText(/kategorie/i)).getAllByRole('option')
-    expect(options.map((option) => option.textContent)).toEqual(['Kennenlernen', 'Verlobung', 'Hochzeit', 'Party'])
+    expect(options.map((option) => option.textContent)).toEqual(['Kennenlernen', 'Verlobung', 'Standesamt', 'Party'])
   })
 
   it('requires a name before submitting and announces the problem', async () => {
@@ -277,7 +277,7 @@ describe('GalleryUploadForm', () => {
 
     await waitFor(() => expect(backend.requestBodies).toHaveLength(1))
     expect(backend.requestBodies[0]).toEqual({
-      category: 'Hochzeit',
+      category: 'Standesamt',
       files: [{ filename: 'photo.jpg', size: 100, contentType: 'image/jpeg', thumbSize: 5 }],
     })
   })
@@ -363,7 +363,7 @@ describe('GalleryUploadForm', () => {
 
     await waitFor(() => expect(backend.requestBodies).toHaveLength(1))
     expect(backend.requestBodies[0]).toEqual({
-      category: 'Hochzeit',
+      category: 'Standesamt',
       files: [{ filename: 'photo.jpg', size: 100, contentType: 'image/jpeg', thumbSize: 5 }],
     })
   })

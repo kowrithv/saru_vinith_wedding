@@ -27,7 +27,7 @@ describe('removeGalleryPhoto', () => {
       originalKey: 'gallery/p1/original.jpg',
       uploaderName: 'Anna',
       deleteTokenHash: 'h',
-      category: 'Hochzeit',
+      category: 'Standesamt',
       isOfficial: false,
     })
 

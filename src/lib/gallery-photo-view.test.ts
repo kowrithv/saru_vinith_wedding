@@ -19,7 +19,7 @@ describe('toGalleryPhotoView', () => {
       thumbKey: 'gallery/p1/thumb.jpg',
       originalKey: 'gallery/p1/original.jpg',
       uploaderName: 'Anna',
-      category: 'Hochzeit',
+      category: 'Standesamt',
       isOfficial: false,
       createdAt: '2026-10-12T10:00:00.000Z',
     }
@@ -29,7 +29,7 @@ describe('toGalleryPhotoView', () => {
     expect(view).toEqual({
       id: 'p1',
       uploaderName: 'Anna',
-      category: 'Hochzeit',
+      category: 'Standesamt',
       isOfficial: false,
       createdAt: '2026-10-12T10:00:00.000Z',
       thumbUrl: 'https://fotos.example.de/gallery/p1/thumb.jpg',

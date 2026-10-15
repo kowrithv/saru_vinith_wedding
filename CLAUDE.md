@@ -61,7 +61,7 @@ einer Route meldet `tsc` ggf. veraltete Dateien in `.next/types` – dann
   `bordeaux`, `rose-sand`; Schriften `font-serif` (Playfair), `font-display`
   (Cormorant), `font-script` (Great Vibes, nur Namen/Unterschriften). Ornament:
   `Lotus`, `FloralSpray`, `Card variant="ornate"` (Eckmarken), `EmptyState`.
-- Upload-Kategorien: Gäste wählen nur `Hochzeit`/`Party` (`uploadCategoriesFor`
+- Upload-Kategorien: Gäste wählen nur `Standesamt`/`Party` (`uploadCategoriesFor`
   in `gallery-categories.ts`); `/api/uploads/request` lehnt `Kennenlernen`/`Verlobung`
   für Gäste ab, `Erinnerungen` kommt nur aus dem Erinnerungs-Formular.
 - Lokal ohne R2: `R2_ENDPOINT` + `scripts/dev-fake-r2.mjs` (README "Ohne R2 testen");

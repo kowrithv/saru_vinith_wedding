@@ -23,7 +23,7 @@ Geräte: ☐ iPhone (Safari) ☐ Android (Chrome) ☐ ältere Hardware ☐ Deskt
 
 ## Galerie und Upload (braucht R2)
 - [ ] „Fotos hochladen" öffnet das Formular und scrollt es ins Bild.
-- [ ] Name, Kategorie (Vorauswahl „Hochzeit"), 3 Fotos auswählen → Vorschau, Fortschritt, „3 Fotos hochgeladen – danke!". Ein Kennwortfeld erscheint nur, wenn der Browser noch nicht entsperrt ist.
+- [ ] Name, Kategorie (Vorauswahl „Standesamt"), 3 Fotos auswählen → Vorschau, Fortschritt, „3 Fotos hochgeladen – danke!". Ein Kennwortfeld erscheint nur, wenn der Browser noch nicht entsperrt ist.
 - [ ] 10 Fotos auf einmal: Formular bleibt offen, Liste scrollt, Abbrechen sichtbar.
 - [ ] **iPhone:** Foto im HEIC-Format (Originalformat) hochladen; erscheint in der Galerie, Original-Download funktioniert.
 - [ ] Datei > 20 MB: klare Meldung mit Dateiname.

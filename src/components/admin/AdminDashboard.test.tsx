@@ -78,7 +78,7 @@ const noGalleryPhotos = { body: { photos: [] } }
 const annaPhoto = {
   id: 'p1',
   uploaderName: 'Anna',
-  category: 'Hochzeit',
+  category: 'Standesamt',
   isOfficial: false,
   createdAt: '2026-10-12T10:00:00.000Z',
   thumbUrl: 'https://fotos.example.de/p1/thumb.jpg',
@@ -416,7 +416,7 @@ describe('AdminDashboard', () => {
     await waitFor(() => expect(screen.getByRole('img', { name: /foto von saruga/i })).toBeInTheDocument())
 
     const gallerySection = screen.getByRole('region', { name: /galerie/i })
-    expect(within(gallerySection).getByText('Hochzeit')).toBeInTheDocument()
+    expect(within(gallerySection).getByText('Standesamt')).toBeInTheDocument()
     expect(within(gallerySection).getByText('Party')).toBeInTheDocument()
     expect(within(gallerySection).getAllByText('Offiziell')).toHaveLength(1)
   })

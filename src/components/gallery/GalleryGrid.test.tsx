@@ -7,7 +7,7 @@ function photo(overrides: Partial<GalleryPhotoView> = {}): GalleryPhotoView {
   return {
     id: 'p1',
     uploaderName: 'Anna',
-    category: 'Hochzeit',
+    category: 'Standesamt',
     isOfficial: false,
     createdAt: '2026-10-12T10:00:00.000Z',
     thumbUrl: 'https://fotos.example.de/p1/thumb.jpg',
@@ -32,7 +32,7 @@ describe('GalleryGrid', () => {
   it('filters the grid by category when a chip is clicked', () => {
     render(
       <GalleryGrid
-        photos={[photo({ id: 'p1', category: 'Hochzeit' }), photo({ id: 'p2', category: 'Party' })]}
+        photos={[photo({ id: 'p1', category: 'Standesamt' }), photo({ id: 'p2', category: 'Party' })]}
         onPhotoDeleted={vi.fn()}
       />
     )
@@ -41,7 +41,7 @@ describe('GalleryGrid', () => {
   })
 
   it('shows a category-specific empty state when the active category has no photos', () => {
-    render(<GalleryGrid photos={[photo({ id: 'p1', category: 'Hochzeit' })]} onPhotoDeleted={vi.fn()} />)
+    render(<GalleryGrid photos={[photo({ id: 'p1', category: 'Standesamt' })]} onPhotoDeleted={vi.fn()} />)
     fireEvent.click(screen.getByRole('button', { name: /^party/i }))
     expect(screen.getByText(/keine fotos in dieser kategorie/i)).toBeInTheDocument()
   })
@@ -49,7 +49,7 @@ describe('GalleryGrid', () => {
   it('opens the lightbox for the clicked photo within the filtered set', async () => {
     render(
       <GalleryGrid
-        photos={[photo({ id: 'p1', category: 'Hochzeit' }), photo({ id: 'p2', category: 'Party' })]}
+        photos={[photo({ id: 'p1', category: 'Standesamt' }), photo({ id: 'p2', category: 'Party' })]}
         onPhotoDeleted={vi.fn()}
       />
     )
@@ -80,7 +80,7 @@ describe('GalleryGrid', () => {
   // Der Champagner-Filter muss auf dem hellen Hintergrund erkennbar sein
   // (Kante) und der aktive eine Goldkante tragen (Vorschlag C9).
   describe('filter chips', () => {
-    const photos = [photo({ id: 'p1', category: 'Hochzeit' }), photo({ id: 'p2', category: 'Party' })]
+    const photos = [photo({ id: 'p1', category: 'Standesamt' }), photo({ id: 'p2', category: 'Party' })]
 
     it('draws the inactive chips in champagne with a visible edge', () => {
       render(<GalleryGrid photos={photos} onPhotoDeleted={vi.fn()} />)

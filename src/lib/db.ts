@@ -29,7 +29,7 @@ export function applySchema(db: Database.Database): void {
       original_key TEXT NOT NULL,
       uploader_name TEXT NOT NULL,
       delete_token_hash TEXT NOT NULL,
-      category TEXT NOT NULL DEFAULT 'Hochzeit',
+      category TEXT NOT NULL DEFAULT 'Standesamt',
       is_official INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
     );
@@ -83,8 +83,11 @@ export function applySchema(db: Database.Database): void {
   // nur bei einer brandneuen Tabelle an. Idempotent, da applySchema bei
   // jedem createDb()-Aufruf erneut läuft.
   if (!columnExists(db, 'gallery_photos', 'category')) {
-    db.exec(`ALTER TABLE gallery_photos ADD COLUMN category TEXT NOT NULL DEFAULT 'Hochzeit'`)
+    db.exec(`ALTER TABLE gallery_photos ADD COLUMN category TEXT NOT NULL DEFAULT 'Standesamt'`)
   }
+  // Die Kategorie "Hochzeit" heißt jetzt "Standesamt": vorhandene Fotos
+  // behalten ihre Zuordnung. Idempotent (danach gibt es keine Zeile mehr).
+  db.exec(`UPDATE gallery_photos SET category = 'Standesamt' WHERE category = 'Hochzeit'`)
   if (!columnExists(db, 'gallery_photos', 'is_official')) {
     db.exec(`ALTER TABLE gallery_photos ADD COLUMN is_official INTEGER NOT NULL DEFAULT 0`)
   }
