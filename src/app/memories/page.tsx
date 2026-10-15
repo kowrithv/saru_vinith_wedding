@@ -19,6 +19,7 @@ import {
 import { uploadPhotoForTicket } from '@/lib/photo-upload'
 import { useGuestAccess } from '@/lib/use-guest-access'
 import { useGuestName } from '@/lib/use-guest-name'
+import { formatEntryMoment } from '@/lib/format-time'
 import { cn } from '@/lib/utils'
 
 interface MemoryEntry {
@@ -29,10 +30,6 @@ interface MemoryEntry {
   /** Es gibt ein Foto, auch wenn dieser Browser es (noch) nicht sieht. */
   hasPhoto: boolean
   photo: { id: string; thumbUrl: string; originalUrl: string } | null
-}
-
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('de-DE', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
 export default function MemoriesPage() {
@@ -274,14 +271,9 @@ export default function MemoriesPage() {
           <div className="columns-1 md:columns-2 gap-4">
             {entries.map((entry) => (
               <Card key={entry.id} variant="ornate" className="relative overflow-hidden mb-4 break-inside-avoid">
-                <div className="flex items-start gap-3 mb-2 pl-2">
-                  <div className="w-9 h-9 bg-white rounded-full flex items-center justify-center flex-shrink-0">
-                    <Heart size={16} className="text-dark-blue" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-dark-blue truncate">{entry.name}</p>
-                    <p className="text-xs text-gray-500">{formatDate(entry.createdAt)}</p>
-                  </div>
+                <div className="mb-2 pl-2">
+                  <p className="font-semibold text-dark-blue truncate">{entry.name}</p>
+                  <p className="text-xs text-gray-600">{formatEntryMoment(entry.createdAt)}</p>
                 </div>
                 <p className="text-sm text-gray-700 leading-relaxed italic pl-2">&quot;{entry.message}&quot;</p>
                 {entry.photo ? (

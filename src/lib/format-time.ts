@@ -21,3 +21,21 @@ export function formatPhotoMoment(iso: string): string {
   const parts = Object.fromEntries(MOMENT_FORMAT.formatToParts(date).map((p) => [p.type, p.value]))
   return `${parts.day}.${parts.month}. um ${parts.hour}:${parts.minute} Uhr`
 }
+
+const ENTRY_FORMAT = new Intl.DateTimeFormat('de-DE', {
+  day: '2-digit',
+  month: 'short',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+  hourCycle: 'h23',
+  timeZone: 'Europe/Berlin',
+})
+
+/** "12. Okt. 2026 · 21:14 Uhr" in deutscher Zeit, oder '' bei einem unbrauchbaren Datum. */
+export function formatEntryMoment(iso: string): string {
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) return ''
+  const parts = Object.fromEntries(ENTRY_FORMAT.formatToParts(date).map((p) => [p.type, p.value]))
+  return `${parts.day}. ${parts.month} ${parts.year} · ${parts.hour}:${parts.minute} Uhr`
+}

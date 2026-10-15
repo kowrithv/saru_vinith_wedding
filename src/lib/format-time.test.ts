@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatPhotoMoment, formatTime } from './format-time'
+import { formatEntryMoment, formatPhotoMoment, formatTime } from './format-time'
 
 describe('formatTime', () => {
   it('formats seconds as mm:ss', () => {
@@ -25,5 +25,19 @@ describe('formatPhotoMoment', () => {
 
   it('returns an empty string for an unusable date', () => {
     expect(formatPhotoMoment('kein Datum')).toBe('')
+  })
+})
+
+describe('formatEntryMoment', () => {
+  it('writes the date with the German clock time', () => {
+    expect(formatEntryMoment('2026-10-12T10:00:00.000Z')).toBe('12. Okt. 2026 · 12:00 Uhr')
+  })
+
+  it('uses German time, also across midnight in UTC', () => {
+    expect(formatEntryMoment('2026-10-17T22:30:00.000Z')).toBe('18. Okt. 2026 · 00:30 Uhr')
+  })
+
+  it('returns an empty string for an unusable date', () => {
+    expect(formatEntryMoment('')).toBe('')
   })
 })

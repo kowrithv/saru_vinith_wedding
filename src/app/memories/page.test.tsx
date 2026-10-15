@@ -370,4 +370,40 @@ describe('MemoriesPage', () => {
       expect(screen.queryByAltText(/foto von/i)).not.toBeInTheDocument()
     })
   })
+
+  it('shows the German time next to the date of each entry', async () => {
+    mockFetchRoutes({
+      '/api/access': { body: { unlocked: true } },
+      '/api/memories': {
+        body: {
+          entries: [
+            { id: 1, name: 'Anna', message: 'Ich erinnere mich an eure Verlobung.', hasPhoto: false, photo: null, createdAt: '2026-10-17T19:14:00.000Z' },
+          ],
+          photosEnabled: true,
+        },
+      },
+    })
+    render(<MemoriesPage />)
+
+    expect(await screen.findByText('17. Okt. 2026 · 21:14 Uhr')).toBeInTheDocument()
+  })
+
+  it('has no round avatar next to the name of a text entry', async () => {
+    mockFetchRoutes({
+      '/api/access': { body: { unlocked: true } },
+      '/api/memories': {
+        body: {
+          entries: [
+            { id: 1, name: 'Anna', message: 'Ich erinnere mich an eure Verlobung.', hasPhoto: false, photo: null, createdAt: '2026-10-17T19:14:00.000Z' },
+          ],
+          photosEnabled: true,
+        },
+      },
+    })
+    render(<MemoriesPage />)
+
+    const card = (await screen.findByText(/Ich erinnere mich an eure Verlobung/)).closest('.card-ornate')
+    expect(card).not.toBeNull()
+    expect(card?.querySelector('svg')).toBeNull()
+  })
 })
