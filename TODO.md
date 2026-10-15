@@ -25,8 +25,6 @@ Grenzen").
 - [ ] **Absicherung für den Tag selbst** (`docs/ops/hochzeitstag-runbook.md` §7): Uptime-Monitor
       (z. B. UptimeRobot), Kopie der Sicherung außer Haus (Ziel und Anbieter offen), Cron für
       `scripts/ops/restart-if-unhealthy.sh`, Billing-Alarm bei Cloudflare, optional SMTP
-- [ ] GitHub-Issues #2 bis #6 schließen (gelöst, nur nicht markiert; Verweis auf die Commits
-      `92a9e97` und `b1b6f08`)
 
 ## Bei Claude
 
