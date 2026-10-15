@@ -22,8 +22,9 @@ const resultSchema = z.object({
 // Viele Gäste teilen sich die IP des Veranstaltungs-WLANs, und jede Meldung ist
 // nur eine winzige Transaktion. Das Limit ist deshalb großzügig: es soll nur
 // Dauerfeuer eines einzelnen Skripts bremsen, nie ehrliche Rekorde verlieren
-// (eine abgewiesene Meldung bemerkt der Gast nicht).
-const resultLimiter = new RateLimiter({ maxAttempts: 600, windowMs: 15 * 60 * 1000 })
+// (eine abgewiesene Meldung bemerkt der Gast nicht). 3000 in 15 Minuten sind
+// gut drei Spiele je Sekunde und Adresse.
+const resultLimiter = new RateLimiter({ maxAttempts: 3000, windowMs: 15 * 60 * 1000 })
 
 export async function GET(): Promise<Response> {
   return NextResponse.json({ record: getMemoryRecord(getDb()) })

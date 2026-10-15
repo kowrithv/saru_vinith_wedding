@@ -4,14 +4,13 @@ import { getDb } from '@/lib/db'
 import { addMemoryEntry, listMemoryEntries } from '@/lib/memories'
 import { toMemoryEntryView } from '@/lib/memory-view'
 import { getOrCreateAdminSecret } from '@/lib/admin-auth'
-import { authorizeGuest, hasGuestAccess, setGallerySessionCookie } from '@/lib/gallery-auth'
+import { hasGuestAccess, setGallerySessionCookie } from '@/lib/gallery-auth'
 import { isFeatureLocked } from '@/lib/app-config'
 import { verifyUploadTicket, type TicketPayload } from '@/lib/upload-ticket'
 import { checkUploadedObjects, storeUploadedPhoto } from '@/lib/gallery-upload-complete'
 import { MEMORY_PHOTO_CATEGORY } from '@/lib/gallery-categories'
 import { UPLOADS_PAUSED_MESSAGE } from '@/lib/gallery-upload-limits'
-import { RateLimiter } from '@/lib/rate-limit'
-import { getClientKey } from '@/lib/client-ip'
+import { GuestRateLimiter, gateGuest } from '@/lib/guest-limits'
 
 const entrySchema = z.object({
   name: z.string().trim().min(1).max(60),
@@ -20,14 +19,9 @@ const entrySchema = z.object({
   ticket: z.string().min(1).optional(),
 })
 
-const memoriesLimiter = new RateLimiter({
-  // Deutlich höher als der Admin-Login-Limiter (5/15 Min): mehrere Gäste
-  // teilen sich am Empfang oft dieselbe IP (Venue-WLAN, Mobilfunk-NAT) -
-  // ein niedriges Limit würde eine ganze Tischrunde nach wenigen echten
-  // Einträgen aussperren.
-  maxAttempts: 30,
-  windowMs: 15 * 60 * 1000,
-})
+// Gezählt wird je Gerät (Sitzung), nicht je Adresse: auf der Feier teilen sich
+// viele Gäste das WLAN (siehe guest-limits.ts).
+const memoriesLimiter = new GuestRateLimiter({ perDevice: 20, perAddress: 200, windowMs: 15 * 60 * 1000 })
 
 function photosEnabled(db: ReturnType<typeof getDb>): boolean {
   return !isFeatureLocked(db, 'memory_photos') && !isFeatureLocked(db, 'gallery_upload')
@@ -45,8 +39,8 @@ export async function GET(request: Request): Promise<Response> {
 }
 
 export async function POST(request: Request): Promise<Response> {
-  const clientKey = getClientKey(request)
-  const limit = memoriesLimiter.check(clientKey)
+  const db = getDb()
+  const limit = memoriesLimiter.check(request, db)
   if (!limit.allowed) {
     return NextResponse.json(
       { error: 'Zu viele Einträge. Bitte später erneut versuchen.' },
@@ -54,7 +48,6 @@ export async function POST(request: Request): Promise<Response> {
     )
   }
 
-  const db = getDb()
   if (isFeatureLocked(db, 'memories')) {
     return NextResponse.json(
       { error: 'Neue Einträge sind derzeit vorübergehend gesperrt.' },
@@ -70,9 +63,15 @@ export async function POST(request: Request): Promise<Response> {
   // Vergleich hasht immer zuerst (zeitkonstant, kein Orakel über die Länge).
   const candidatePassword =
     body && typeof body === 'object' ? (body as Record<string, unknown>).password : undefined
-  const access = authorizeGuest(request, db, candidatePassword)
-  if (!access.ok) {
-    return NextResponse.json({ error: 'Falsches Kennwort.' }, { status: 401 })
+  const gate = gateGuest(request, db, candidatePassword)
+  if (!gate.ok) {
+    return NextResponse.json(
+      { error: gate.error },
+      {
+        status: gate.status,
+        ...(gate.status === 429 ? { headers: { 'Retry-After': String(gate.retryAfterSeconds) } } : {}),
+      }
+    )
   }
 
   const parsed = entrySchema.safeParse(body)
@@ -124,6 +123,6 @@ export async function POST(request: Request): Promise<Response> {
     },
     { status: 201 }
   )
-  if (access.issueSession) setGallerySessionCookie(response, db)
+  if (gate.issueSession) setGallerySessionCookie(response, db)
   return response
 }

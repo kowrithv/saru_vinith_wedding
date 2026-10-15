@@ -3,11 +3,10 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getDb } from '@/lib/db'
 import { getOrCreateAdminSecret, isAdminRequest } from '@/lib/admin-auth'
-import { authorizeGuest, setGallerySessionCookie } from '@/lib/gallery-auth'
+import { setGallerySessionCookie } from '@/lib/gallery-auth'
 import { createPresignedPutUrl } from '@/lib/r2'
 import { signUploadTicket } from '@/lib/upload-ticket'
-import { RateLimiter } from '@/lib/rate-limit'
-import { getClientKey } from '@/lib/client-ip'
+import { GuestRateLimiter, gateGuest } from '@/lib/guest-limits'
 import { galleryCategories, isCategoryAllowedForUpload } from '@/lib/gallery-categories'
 import {
   IMAGE_CONTENT_TYPE_EXTENSIONS as CONTENT_TYPE_EXTENSIONS,
@@ -34,23 +33,21 @@ const bodySchema = z.object({
   files: z.array(fileSchema).min(1).max(20),
 })
 
-const uploadsLimiter = new RateLimiter({ maxAttempts: 30, windowMs: 15 * 60 * 1000 })
+// Fotos je Gerät (Sitzung) und Stunde, nicht je Adresse: auf der Feier laden
+// viele Gäste über dasselbe WLAN hoch. 300 Fotos sind für eine Person reichlich
+// und halten ein außer Kontrolle geratenes Gerät auf; ohne Sitzung (erster
+// Upload mit Kennwort) gilt eine großzügige Grenze je Adresse. Der Admin ist
+// ausgenommen.
+const uploadsLimiter = new GuestRateLimiter({ perDevice: 300, perAddress: 600, windowMs: 60 * 60 * 1000 })
 
 export async function POST(request: Request): Promise<Response> {
   const db = getDb()
   const isOfficial = isAdminRequest(request, db)
 
-  // Vor dem Rate-Limiter: Anfragen während der Pause dürfen das Kontingent
-  // nicht füllen, sonst wären alle am gemeinsamen WLAN nach dem Wieder-
-  // Freigeben (auch der Admin) für bis zu 15 Minuten gesperrt.
+  // Zuerst die Pause: Anfragen während der Pause dürfen kein Kontingent
+  // verbrauchen, sonst wären Geräte nach dem Wieder-Freigeben gedrosselt.
   if (!isOfficial && isFeatureLocked(db, 'gallery_upload')) {
     return NextResponse.json({ error: UPLOADS_PAUSED_MESSAGE }, { status: 423 })
-  }
-
-  const clientKey = getClientKey(request)
-  const limit = uploadsLimiter.check(clientKey)
-  if (!limit.allowed) {
-    return NextResponse.json({ error: 'Zu viele Anfragen. Bitte später erneut versuchen.' }, { status: 429 })
   }
 
   const body = await request.json().catch(() => null)
@@ -67,21 +64,22 @@ export async function POST(request: Request): Promise<Response> {
 
   // Gäste: gültige Sitzung (QR-Link oder früher eingegebenes Kennwort) oder
   // das Kennwort im Request. Eine Gast-Sitzung macht niemanden zum Admin:
-  // isOfficial kommt allein aus der Admin-Sitzung.
+  // isOfficial kommt allein aus der Admin-Sitzung. Ein richtiges Kennwort wird
+  // nie abgewiesen; gezählt werden nur falsche (siehe guest-limits.ts).
   let issueSession = false
   if (!isOfficial) {
-    const access = authorizeGuest(request, db, parsed.data.password)
-    if (!access.ok) {
-      return NextResponse.json({ error: 'Falsches Kennwort.' }, { status: 401 })
+    const gate = gateGuest(request, db, parsed.data.password)
+    if (!gate.ok) {
+      return NextResponse.json(
+        { error: gate.error },
+        {
+          status: gate.status,
+          ...(gate.status === 429 ? { headers: { 'Retry-After': String(gate.retryAfterSeconds) } } : {}),
+        }
+      )
     }
-    issueSession = access.issueSession
+    issueSession = gate.issueSession
   }
-
-  // Das Limit soll Kennwort-Raten bremsen, nicht Gäste: viele teilen sich
-  // die IP des Veranstaltungs-WLANs, und ein Upload fragt je Dreiergruppe
-  // Fotos neue Tickets an. Gezählt werden daher nur Fehlversuche - ein
-  // richtiges Kennwort (oder die Admin-Sitzung) setzt den Zähler zurück.
-  uploadsLimiter.reset(clientKey)
 
   for (const file of parsed.data.files) {
     if (!CONTENT_TYPE_EXTENSIONS.has(file.contentType)) {
@@ -89,6 +87,18 @@ export async function POST(request: Request): Promise<Response> {
     }
     if (file.size > MAX_ORIGINAL_BYTES) {
       return NextResponse.json({ error: 'Foto ist zu groß (max. 20 MB).' }, { status: 400 })
+    }
+  }
+
+  // Umfang je Gerät: gezählt werden die angefragten Fotos, erst nachdem alle
+  // Angaben gültig sind (eine fehlerhafte Anfrage verbraucht nichts).
+  if (!isOfficial) {
+    const volume = uploadsLimiter.check(request, db, parsed.data.files.length)
+    if (!volume.allowed) {
+      return NextResponse.json(
+        { error: 'Zu viele Fotos in kurzer Zeit. Bitte in einer Weile weitermachen.' },
+        { status: 429, headers: { 'Retry-After': String(Math.ceil(volume.retryAfterMs / 1000)) } }
+      )
     }
   }
 

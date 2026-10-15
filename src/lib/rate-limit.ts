@@ -42,18 +42,23 @@ export class RateLimiter {
     }
   }
 
-  check(key: string): RateLimitResult {
+  /**
+   * Zählt eine Anfrage; `cost` ist ihr Gewicht (z. B. die Zahl der Fotos).
+   * Eine abgewiesene Anfrage verbraucht nichts vom Kontingent.
+   */
+  check(key: string, cost = 1): RateLimitResult {
     const now = this.now()
     this.sweepExpired(now)
     const bucket = this.buckets.get(key)
 
     if (!bucket || now - bucket.windowStart >= this.windowMs) {
-      this.buckets.set(key, { count: 1, windowStart: now })
+      if (cost > this.maxAttempts) return { allowed: false, retryAfterMs: this.windowMs }
+      this.buckets.set(key, { count: cost, windowStart: now })
       return { allowed: true, retryAfterMs: 0 }
     }
 
-    if (bucket.count < this.maxAttempts) {
-      bucket.count += 1
+    if (bucket.count + cost <= this.maxAttempts) {
+      bucket.count += cost
       return { allowed: true, retryAfterMs: 0 }
     }
 

@@ -78,12 +78,12 @@ describe('/api/memory-record', () => {
 
   it('POST is rate limited per address, but far above what a shared venue Wi-Fi produces', async () => {
     const statuses: number[] = []
-    for (let i = 0; i < 601; i++) {
+    for (let i = 0; i < 3001; i++) {
       const response = await POST(request('POST', { body: { moves: 30, seconds: 100 }, ip: '10.1.0.5' }))
       statuses.push(response.status)
     }
-    expect(statuses.slice(0, 600).every((status) => status === 200)).toBe(true)
-    expect(statuses[600]).toBe(429)
+    expect(statuses.slice(0, 3000).every((status) => status === 200)).toBe(true)
+    expect(statuses[3000]).toBe(429)
   })
 
   it('DELETE rejects a request without an admin cookie and keeps the record', async () => {

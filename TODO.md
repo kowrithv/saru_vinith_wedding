@@ -7,32 +7,23 @@ Antwort. Erledigtes steht unten kurz zum Abhaken.
 
 ### A. Brautpaar: entscheiden
 
-1. **Programm bestätigen (?)**: die beiden „Einzug"-Zeilen (17:15 Einzug/Tortenanschneiden,
-   ca. 18:30 traditioneller Einzug) und „ca. 20:00 – 21:00 Uhr" für das Abendessen.
-2. **Tageszustände ansehen (?)**: `/?zeit=heute`, `/?zeit=feier`, `/?zeit=danach`;
-   Rückmeldung, was dort anders sein soll.
-3. **Kategorien bestätigen (?)**: Gäste wählen *Standesamt* oder *Party*; der Admin
-   zusätzlich *Kennenlernen* und *Verlobung*.
-4. **„Wer von uns?" (?)**: eigene Seite, vorab abstimmen ohne Ergebnis, Auflösung später
-   durch den Admin freigegeben. Offen: DJ-Zugriff auf die Ergebnisse (Vorschlag: eigener
-   Lese-Link nur für die Ergebnisse) und ob mehrfaches Abstimmen erlaubt ist.
-5. **Videos (?)**: nur Fotos (Empfehlung) oder Videos zulassen. Heute nur Fotos mit
-   Hinweis am Auswahlfeld.
-6. **Rate Limit (?)**: Obergrenze für Foto-Uploads je Adresse und Stunde (Vorschlag
-   200); Grenze fürs Gästebuch (heute 30 je 15 Minuten) beibehalten oder anheben.
-7. **Dienstleister (?)**: unklar, was gemeint ist (Seite mit Namen und Links, Zugang für
-   sie, Absprachen). Bitte kurz beschreiben.
+Entschieden am 15.10.: Programm, Tageszustände und Kategorien passen; „Wer von uns?"
+und Videos sind zurückgestellt; das Rate-Limit zählt je Gerät statt je Adresse
+(siehe README „Gäste-Zugang").
+
+1. **Rate Limit:** erledigt (je Gerät, richtiges Kennwort nie abgewiesen). Offen nur,
+   falls ihr andere Zahlen wollt (Gästebuch/Erinnerungen 20 je 15 Minuten, Fotos 300
+   je Stunde, falsche Kennwörter 20 je 15 Minuten).
+2. **Dienstleister:** auf `/info` erwähnt. Offen: die Rollen von Optimeye, MP Designs
+   und Bubble BAS (`src/lib/vendors.ts`).
+3. **Zurückgestellt:** „Wer von uns?" (eigene Seite, DJ-Zugriff) und Videos.
 
 ### B. Brautpaar und Vinith: liefern
 
-1. **Hero-Foto**: Hochformat ab 900 × 1100 px, unter 200 KB, Gesichter im oberen
-   Drittel; ersetzt `public/hero/paar.jpg` (heute ein Platzhalter).
-2. **Vier kleine Fotos** für die Kachel „Unsere Fotos": quadratisch, 120 × 120 px,
-   nicht aus der Galerie (öffentliche Startseite).
-3. **Flyer (Vinith)**: QR-Dateien und Text liegen in `Downloads/hochzeit-qr`; Kennwort
-   `love`.
-4. Optional: Fotos je Meilenstein der Geschichte, Texte für „Gut zu wissen"
-   (Kleidung, Kinder, Geschenke), Porträts für „Wer von uns?".
+1. Erledigt: Hero-Foto (`landing.jpeg`) und vier kleine Fotos auf der Kachel (aus dem
+   Memory-Spiel); der Flyer ist fertig.
+2. Optional (bleibt so): Fotos je Meilenstein der Geschichte, Texte für „Gut zu
+   wissen", Porträts für „Wer von uns?".
 
 ### C. Betreiber: Server und Test (vor dem Freeze)
 
@@ -56,14 +47,12 @@ Antwort. Erledigtes steht unten kurz zum Abhaken.
 ### D. Claude
 
 Sobald die Antworten da sind:
-- „Wer von uns?" umbauen (A.4), Hero- und Kachelfotos einbauen und verkleinern (B.1, B.2),
-  Upload-Obergrenze (A.6), Programm/Kategorien/Zustände anpassen (A.1–A.3).
+- „Wer von uns?" umbauen und Videos entscheiden, wenn sie nicht mehr zurückgestellt sind.
+- Rollen der Dienstleister eintragen (`src/lib/vendors.ts`).
 - Funde aus dem Gerätetest beheben.
 
 Ohne Antwort möglich:
 - Das **unabhängige Code-Review** der letzten Commits (steht aus).
-- Geräte-Checkliste um die neuen Abläufe ergänzen (QR-Scan, Standesamt/Party, Foto zur
-  Erinnerung, Polaroid teilen, `?zeit=…`).
 
 ### E. Nach der Hochzeit
 

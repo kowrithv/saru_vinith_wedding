@@ -3,28 +3,11 @@ import { z } from 'zod'
 import { getDb } from '@/lib/db'
 import { getGuestPassword, verifyGuestPassword } from '@/lib/guest-password'
 import { setGallerySessionCookie } from '@/lib/gallery-auth'
-import { RateLimiter } from '@/lib/rate-limit'
-import { getClientKey } from '@/lib/client-ip'
+import { registerWrongPassword } from '@/lib/guest-limits'
 
 const bodySchema = z.object({ password: z.string().min(1).max(200) })
 
-// Das Kennwort ist ein einfaches Wort auf dem Flyer: Tippfehler sind häufig, und
-// viele Gäste teilen sich die IP des Veranstaltungs-WLANs - bei 5 Versuchen
-// könnten ein paar Fehlversuche alle anderen für 15 Minuten aussperren. 20
-// bremst ein Skript trotzdem auf 80 Versuche je Stunde und Adresse.
-const unlockLimiter = new RateLimiter({ maxAttempts: 20, windowMs: 15 * 60 * 1000 })
-
 export async function POST(request: Request): Promise<Response> {
-  const clientKey = getClientKey(request)
-  const limit = unlockLimiter.check(clientKey)
-  if (!limit.allowed) {
-    const minutes = Math.max(1, Math.ceil(limit.retryAfterMs / 60_000))
-    return NextResponse.json(
-      { error: `Zu viele Versuche. Bitte in etwa ${minutes} ${minutes === 1 ? 'Minute' : 'Minuten'} erneut versuchen.` },
-      { status: 429, headers: { 'Retry-After': String(Math.ceil(limit.retryAfterMs / 1000)) } }
-    )
-  }
-
   const body = await request.json().catch(() => null)
   const parsed = bodySchema.safeParse(body)
   if (!parsed.success) {
@@ -32,14 +15,19 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   const db = getDb()
+  // Ein richtiges Kennwort kommt immer durch, auch von einer Adresse mit vielen
+  // Fehlversuchen: auf der Feier teilen sich viele Gäste das WLAN, und niemand
+  // soll am QR-Code scheitern. Gezählt werden nur falsche (siehe guest-limits.ts).
   if (!verifyGuestPassword(parsed.data.password, getGuestPassword())) {
-    return NextResponse.json({ error: 'Falsches Kennwort.' }, { status: 401 })
+    const wrong = registerWrongPassword(request)
+    return NextResponse.json(
+      { error: wrong.error },
+      {
+        status: wrong.status,
+        ...(wrong.status === 429 ? { headers: { 'Retry-After': String(wrong.retryAfterSeconds) } } : {}),
+      }
+    )
   }
-
-  // Nur Fehlversuche sollen das Limit füllen: auf der Feier teilen sich
-  // viele Gäste die IP des WLANs, und jede erfolgreiche Entsperrung würde
-  // sonst das Kontingent für alle anderen aufbrauchen.
-  unlockLimiter.reset(clientKey)
 
   const response = NextResponse.json({ success: true })
   setGallerySessionCookie(response, db)

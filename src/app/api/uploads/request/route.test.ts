@@ -343,13 +343,13 @@ describe('POST /api/uploads/request', () => {
     expect(statuses.every((status) => status === 200)).toBe(true)
   })
 
-  it('still locks out an address after 30 consecutive wrong passwords', async () => {
+  it('throttles an address after 20 wrong passwords, but never the right one', async () => {
     getDb()
-    const wrong = () =>
+    const send = (password: string) =>
       POST(
         requestBody(
           {
-            password: 'falsch',
+            password,
             category: 'Standesamt',
             files: [{ filename: 'a.jpg', size: 1000, contentType: 'image/jpeg', thumbSize: 50_000 }],
           },
@@ -358,10 +358,65 @@ describe('POST /api/uploads/request', () => {
         )
       )
 
-    for (let i = 0; i < 30; i++) {
-      expect((await wrong()).status).toBe(401)
+    for (let i = 0; i < 20; i++) {
+      expect((await send('falsch')).status).toBe(401)
     }
-    expect((await wrong()).status).toBe(429)
+    expect((await send('falsch')).status).toBe(429)
+    expect((await send('empfang-secret')).status).toBe(200)
+  })
+
+  // 200 Gäste im selben WLAN: gezählt wird je Gerät (Sitzung), nicht je Adresse.
+  describe('photo allowance per device', () => {
+    const files = (count: number) =>
+      Array.from({ length: count }, (_, i) => ({
+        filename: `f${i}.jpg`,
+        size: 1000,
+        contentType: 'image/jpeg',
+        thumbSize: 50_000,
+      }))
+
+    function withSession(session: string, ip: string, count: number): Request {
+      const request = requestBody({ category: 'Standesamt', files: files(count) }, undefined, ip)
+      request.headers.set('cookie', `${GALLERY_COOKIE_NAME}=${session}`)
+      return request
+    }
+
+    it('lets many devices behind one address upload', async () => {
+      const db = getDb()
+      const base = Date.now()
+      for (let device = 0; device < 30; device++) {
+        const session = createGallerySessionCookieValue(db, base + device)
+        const response = await POST(withSession(session, '10.0.3.1', 15))
+        expect(response.status).toBe(200)
+      }
+    })
+
+    it('stops one device at 300 photos an hour, not the others', async () => {
+      const db = getDb()
+      const base = Date.now()
+      const noisy = createGallerySessionCookieValue(db, base + 1_000)
+      const quiet = createGallerySessionCookieValue(db, base + 2_000)
+
+      for (let i = 0; i < 15; i++) {
+        expect((await POST(withSession(noisy, '10.0.3.2', 20))).status).toBe(200)
+      }
+      const over = await POST(withSession(noisy, '10.0.3.2', 1))
+      expect(over.status).toBe(429)
+      expect((await over.json()).error).toMatch(/fotos/i)
+      expect((await POST(withSession(quiet, '10.0.3.2', 20))).status).toBe(200)
+    })
+
+    it('does not limit the admin', async () => {
+      const db = getDb()
+      const secret = getOrCreateAdminSecret(db)
+      const cookieValue = signCookieValue(Date.now() + 60_000, secret)
+      for (let i = 0; i < 20; i++) {
+        const response = await POST(
+          requestBody({ category: 'Kennenlernen', files: files(20) }, cookieValue, '10.0.3.3')
+        )
+        expect(response.status).toBe(200)
+      }
+    })
   })
 
   it('signs a ticket per file with its own photo id', async () => {

@@ -85,15 +85,30 @@ describe('POST /api/gallery/unlock', () => {
     expect(statuses[20]).toBe(429)
   })
 
+  // 200 Gäste im selben WLAN: ein paar Fehlversuche (oder ein Scherzbold)
+  // dürfen niemanden am QR-Code hindern.
+  it('still lets the right password through from an address that is locked', async () => {
+    getDb()
+    for (let i = 0; i < 25; i++) {
+      await POST(unlockRequest('falsch', '10.0.0.30'))
+    }
+    expect((await POST(unlockRequest('falsch', '10.0.0.30'))).status).toBe(429)
+
+    const response = await POST(unlockRequest('empfang-secret', '10.0.0.30'))
+
+    expect(response.status).toBe(200)
+    expect(response.headers.get('set-cookie')).toContain(`${GALLERY_COOKIE_NAME}=`)
+  })
+
   it('limits per address: another address is not affected by a locked one', async () => {
     getDb()
     for (let i = 0; i < 21; i++) {
       await POST(unlockRequest('falsch', '10.0.0.21'))
     }
-    const locked = await POST(unlockRequest('empfang-secret', '10.0.0.21'))
-    const other = await POST(unlockRequest('empfang-secret', '10.0.0.22'))
+    const locked = await POST(unlockRequest('falsch', '10.0.0.21'))
+    const other = await POST(unlockRequest('falsch', '10.0.0.22'))
     expect(locked.status).toBe(429)
-    expect(other.status).toBe(200)
+    expect(other.status).toBe(401)
   })
 
   it('tells the guest how long to wait', async () => {

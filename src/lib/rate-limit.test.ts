@@ -65,4 +65,25 @@ describe('RateLimiter', () => {
     expect(limiter.check('ip-2').allowed).toBe(true)
     expect(limiter.check('ip-1').allowed).toBe(false)
   })
+
+  describe('weights', () => {
+    it('counts the given weight against the allowance', () => {
+      const limiter = new RateLimiter({ maxAttempts: 10, windowMs: 1000 })
+      expect(limiter.check('a', 6).allowed).toBe(true)
+      expect(limiter.check('a', 4).allowed).toBe(true)
+      expect(limiter.check('a', 1).allowed).toBe(false)
+    })
+
+    it('rejects a single request that is heavier than the whole allowance', () => {
+      const limiter = new RateLimiter({ maxAttempts: 10, windowMs: 1000 })
+      expect(limiter.check('a', 11).allowed).toBe(false)
+    })
+
+    it('does not use up the allowance with a rejected heavy request', () => {
+      const limiter = new RateLimiter({ maxAttempts: 10, windowMs: 1000 })
+      expect(limiter.check('a', 8).allowed).toBe(true)
+      expect(limiter.check('a', 5).allowed).toBe(false)
+      expect(limiter.check('a', 2).allowed).toBe(true)
+    })
+  })
 })

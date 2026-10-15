@@ -3,23 +3,19 @@ import { z } from 'zod'
 import { getDb } from '@/lib/db'
 import { addGuestbookEntry, listGuestbookEntries } from '@/lib/guestbook'
 import { isFeatureLocked } from '@/lib/app-config'
-import { authorizeGuest, setGallerySessionCookie } from '@/lib/gallery-auth'
-import { RateLimiter } from '@/lib/rate-limit'
-import { getClientKey } from '@/lib/client-ip'
+import { setGallerySessionCookie } from '@/lib/gallery-auth'
+import { GuestRateLimiter, gateGuest } from '@/lib/guest-limits'
 
 const entrySchema = z.object({
   name: z.string().trim().min(1).max(60),
   message: z.string().trim().min(10).max(500),
 })
 
-const guestbookLimiter = new RateLimiter({
-  // Deutlich höher als der Admin-Login-Limiter (5/15 Min): mehrere Gäste
-  // teilen sich am Empfang oft dieselbe IP (Venue-WLAN, Mobilfunk-NAT) -
-  // ein niedriges Limit würde eine ganze Tischrunde nach wenigen echten
-  // Einträgen aussperren.
-  maxAttempts: 30,
-  windowMs: 15 * 60 * 1000,
-})
+// Gezählt wird je Gerät (Sitzung), nicht je Adresse: auf der Feier teilen sich
+// viele Gäste das WLAN. Zwanzig Einträge in 15 Minuten sind für eine Person
+// reichlich; ohne Sitzung (erster Eintrag mit Kennwort) gilt eine großzügige
+// Grenze je Adresse.
+const guestbookLimiter = new GuestRateLimiter({ perDevice: 20, perAddress: 200, windowMs: 15 * 60 * 1000 })
 
 export async function GET(): Promise<Response> {
   const entries = listGuestbookEntries(getDb())
@@ -27,8 +23,8 @@ export async function GET(): Promise<Response> {
 }
 
 export async function POST(request: Request): Promise<Response> {
-  const clientKey = getClientKey(request)
-  const limit = guestbookLimiter.check(clientKey)
+  const db = getDb()
+  const limit = guestbookLimiter.check(request, db)
   if (!limit.allowed) {
     return NextResponse.json(
       { error: 'Zu viele Einträge. Bitte später erneut versuchen.' },
@@ -36,7 +32,7 @@ export async function POST(request: Request): Promise<Response> {
     )
   }
 
-  if (isFeatureLocked(getDb(), 'guestbook')) {
+  if (isFeatureLocked(db, 'guestbook')) {
     return NextResponse.json(
       { error: 'Neue Einträge sind derzeit vorübergehend gesperrt.' },
       { status: 423 }
@@ -48,12 +44,17 @@ export async function POST(request: Request): Promise<Response> {
   // Kennwort (oder eine Sitzung daraus) zuerst prüfen, bevor auf Name und
   // Nachricht geschaut wird: ein falsches Kennwort verrät so nie, ob der
   // Rest gültig gewesen wäre.
-  const db = getDb()
   const candidatePassword =
     body && typeof body === 'object' ? (body as Record<string, unknown>).password : undefined
-  const access = authorizeGuest(request, db, candidatePassword)
-  if (!access.ok) {
-    return NextResponse.json({ error: 'Falsches Kennwort.' }, { status: 401 })
+  const gate = gateGuest(request, db, candidatePassword)
+  if (!gate.ok) {
+    return NextResponse.json(
+      { error: gate.error },
+      {
+        status: gate.status,
+        ...(gate.status === 429 ? { headers: { 'Retry-After': String(gate.retryAfterSeconds) } } : {}),
+      }
+    )
   }
 
   const parsed = entrySchema.safeParse(body)
@@ -65,6 +66,6 @@ export async function POST(request: Request): Promise<Response> {
   const response = NextResponse.json({ entry }, { status: 201 })
   // Mit dem Kennwort geschrieben: den Browser gleich für Galerie und
   // Erinnerungen entsperren.
-  if (access.issueSession) setGallerySessionCookie(response, db)
+  if (gate.issueSession) setGallerySessionCookie(response, db)
   return response
 }

@@ -108,8 +108,11 @@ einer Route meldet `tsc` ggf. veraltete Dateien in `.next/types` – dann
   `function`-Ausdrücke sein; Regex-Selektoren können mit Label-Texten
   kollidieren. Die Mount-Fetch-Reihenfolge im `AdminDashboard` (Gästebuch,
   Erinnerungen, Galerie) steckt in den Test-Mocks.
-- **Rate-Limiter:** `getClientKey` nimmt `X-Forwarded-For` (der Proxy setzt
-  ihn). `cf-connecting-ip` nur mit `CLIENT_IP_HEADER=cf-connecting-ip` hinter
+- **Rate-Limiter:** Gäste werden je **Gerät** gezählt (`guest-limits.ts`:
+  `GuestRateLimiter`, Sitzung aus dem Cookie), nicht je Adresse; ein richtiges
+  Kennwort wird nie abgewiesen (`gateGuest`), nur falsche zählen. Für alles
+  andere (Admin-Login, Memory-Rekord) nimmt `getClientKey` `X-Forwarded-For` (der
+  Proxy setzt ihn). `cf-connecting-ip` nur mit `CLIENT_IP_HEADER=cf-connecting-ip` hinter
   dem Cloudflare-Proxy – ohne Proxy kann jeder Client den Header fälschen.
   Der Server läuft hinter einem **Caddy auf dem Host** (`localhost:3000`, am
   13.10. in der Caddyfile gesehen); die `docker-compose.yml` veröffentlicht

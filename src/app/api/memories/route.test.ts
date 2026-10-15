@@ -139,28 +139,68 @@ describe('/api/memories', () => {
     expect(response.status).toBe(400)
   })
 
-  it('blocks the 31st submission from the same IP within the window', async () => {
-    // Venue-WLAN/Mobilfunk-NAT kann viele Gäste hinter derselben IP
-    // zusammenfassen - ein Limit von nur 5 würde die ganze Tischrunde
-    // nach den ersten paar echten Einträgen aussperren (Review-Fund).
-    const request = () =>
-      new Request('http://localhost/api/memories', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-forwarded-for': '203.0.113.10' },
-        body: JSON.stringify({
-          name: 'Anna',
-          message: 'Eine gültige Erinnerung hier drin.',
-          password: 'empfang-secret',
-        }),
-      })
-
-    for (let i = 0; i < 30; i++) {
-      const response = await POST(request())
-      expect(response.status).toBe(201)
+  // Auf der Feier teilen sich viele Gäste eine Adresse: gezählt wird je Gerät.
+  it('lets many devices behind one address share memories, each within its own allowance', async () => {
+    const db = getDb()
+    const base = Date.now()
+    for (let device = 0; device < 40; device++) {
+      const session = createGallerySessionCookieValue(db, base + device)
+      for (let i = 0; i < 3; i++) {
+        const response = await POST(
+          new Request('http://localhost/api/memories', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              cookie: `${GALLERY_COOKIE_NAME}=${session}`,
+              'x-forwarded-for': '203.0.113.60',
+            },
+            body: JSON.stringify({ name: 'Gast ' + device, message: 'Eine gültige Erinnerung hier drin.' }),
+          })
+        )
+        expect(response.status).toBe(201)
+      }
     }
+  })
 
-    const overLimit = await POST(request())
-    expect(overLimit.status).toBe(429)
+  it('stops a single device after 20 entries in 15 minutes, not the others', async () => {
+    const db = getDb()
+    const base = Date.now()
+    const noisy = createGallerySessionCookieValue(db, base + 1_000)
+    const quiet = createGallerySessionCookieValue(db, base + 2_000)
+    const write = (session: string) =>
+      POST(
+        new Request('http://localhost/api/memories', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            cookie: `${GALLERY_COOKIE_NAME}=${session}`,
+            'x-forwarded-for': '203.0.113.61',
+          },
+          body: JSON.stringify({ name: 'Anna', message: 'Eine gültige Erinnerung hier drin.' }),
+        })
+      )
+
+    for (let i = 0; i < 20; i++) expect((await write(noisy)).status).toBe(201)
+    expect((await write(noisy)).status).toBe(429)
+    expect((await write(quiet)).status).toBe(201)
+  })
+
+  it('does not turn away the right password after many wrong ones from the same address', async () => {
+    getDb()
+    const send = (password: string) =>
+      POST(
+        new Request('http://localhost/api/memories', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-forwarded-for': '203.0.113.62' },
+          body: JSON.stringify({ name: 'Anna', message: 'Eine gültige Erinnerung hier drin.', password }),
+        })
+      )
+
+    let last = 0
+    for (let i = 0; i < 25; i++) last = (await send('falsch')).status
+    expect(last).toBe(429)
+
+    expect((await send('empfang-secret')).status).toBe(201)
   })
 
   it('rejects a new entry with 423 while memories writes are locked, but GET still works', async () => {
