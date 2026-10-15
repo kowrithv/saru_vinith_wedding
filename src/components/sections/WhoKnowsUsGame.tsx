@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { Check } from 'lucide-react'
 import { whoQuestions, whoGameOptions, whoBoth } from '@/lib/who-game-content'
 import { whoPortraits } from '@/lib/site-images'
@@ -205,74 +205,78 @@ export default function WhoKnowsUsGame() {
   const progress = Math.round((index / whoQuestions.length) * 100)
 
   return (
-    <AnimatePresence mode="wait">
+    // Die Karte und die Fotos bleiben stehen: es sind immer dieselben drei Bilder.
+    // Nur der Text der Frage wird ausgetauscht und blendet ein.
+    <div className="card-ornate rounded-3xl p-6 md:p-8">
+      <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2 text-center">
+        Frage {index + 1} von {whoQuestions.length}
+      </p>
+      <div className="h-1 bg-champagne-dark/30 rounded-full overflow-hidden mb-5" aria-hidden="true">
+        <div className="h-full bg-gold rounded-full transition-all duration-500" style={{ width: `${progress}%` }} />
+      </div>
+      {/* Feste Mindesthöhe (bis zu drei Zeilen): die Fotos darunter springen nicht,
+          wenn die nächste Frage kürzer oder länger ist. */}
       <motion.div
         key={question.id}
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="card-ornate rounded-3xl p-6 md:p-8"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3 }}
+        className="flex min-h-24 flex-col items-center justify-center"
       >
-        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2 text-center">
-          Frage {index + 1} von {whoQuestions.length}
-        </p>
-        <div className="h-1 bg-champagne-dark/30 rounded-full overflow-hidden mb-5" aria-hidden="true">
-          <div className="h-full bg-gold rounded-full transition-all duration-500" style={{ width: `${progress}%` }} />
-        </div>
-        <h3 className="font-display text-2xl md:text-3xl font-semibold leading-tight text-dark-blue mb-2 text-center">
+        <h3 className="font-display text-2xl md:text-3xl font-semibold leading-tight text-dark-blue text-center">
           {question.question}
         </h3>
-        <p className="text-sm text-gray-500 mb-5 text-center">Tippe auf das Foto.</p>
-
-        <div className="mx-auto grid max-w-sm grid-cols-2 gap-3">
-          {whoGameOptions.map((option) => (
-            <PhotoOption
-              key={option}
-              option={option}
-              chosen={option === myVote}
-              decided={hasVoted}
-              disabled={hasVoted || pendingOption !== null}
-              onVote={handleVote}
-            />
-          ))}
-        </div>
-
-        {needsPassword && !hasVoted && (
-          <div className="mt-5">
-            <GuestPasswordField
-              id="who-password"
-              value={password}
-              onChange={setPassword}
-              linkRejected={access.linkRejected}
-            />
-          </div>
-        )}
-
-        {/* Sichtbar bestätigt der Haken auf dem Foto, dazu kommt "Weiter". Ein Satz
-            nach jeder der 14 Fragen wäre zu viel; wann es Ergebnisse gibt, steht
-            oben auf der Seite und am Ende. Nur für Screenreader wird angesagt. */}
-        {hasVoted && (
-          <p className="sr-only" role="status">
-            Deine Stimme ist gespeichert.
-          </p>
-        )}
-
-        {voteError && (
-          <p className="text-sm text-red-600 mt-4" role="alert">
-            {voteError}
-          </p>
-        )}
-
-        {hasVoted && (
-          <button
-            type="button"
-            onClick={handleNext}
-            className="mt-6 w-full px-5 py-3 rounded-xl bg-dark-blue text-white text-sm font-medium hover:bg-dark-blue-light transition-colors"
-          >
-            {isLastQuestion ? 'Fertig' : 'Weiter'}
-          </button>
-        )}
       </motion.div>
-    </AnimatePresence>
+      <p className="text-sm text-gray-500 mt-2 mb-5 text-center">Tippe auf das Foto.</p>
+
+      <div className="mx-auto grid max-w-sm grid-cols-2 gap-3">
+        {whoGameOptions.map((option) => (
+          <PhotoOption
+            key={option}
+            option={option}
+            chosen={option === myVote}
+            decided={hasVoted}
+            disabled={hasVoted || pendingOption !== null}
+            onVote={handleVote}
+          />
+        ))}
+      </div>
+
+      {needsPassword && !hasVoted && (
+        <div className="mt-5">
+          <GuestPasswordField
+            id="who-password"
+            value={password}
+            onChange={setPassword}
+            linkRejected={access.linkRejected}
+          />
+        </div>
+      )}
+
+      {/* Sichtbar bestätigt der Haken auf dem Foto, dazu kommt "Weiter". Ein Satz
+          nach jeder der 14 Fragen wäre zu viel; wann es Ergebnisse gibt, steht
+          oben auf der Seite und am Ende. Nur für Screenreader wird angesagt. */}
+      {hasVoted && (
+        <p className="sr-only" role="status">
+          Deine Stimme ist gespeichert.
+        </p>
+      )}
+
+      {voteError && (
+        <p className="text-sm text-red-600 mt-4" role="alert">
+          {voteError}
+        </p>
+      )}
+
+      {hasVoted && (
+        <button
+          type="button"
+          onClick={handleNext}
+          className="mt-6 w-full px-5 py-3 rounded-xl bg-dark-blue text-white text-sm font-medium hover:bg-dark-blue-light transition-colors"
+        >
+          {isLastQuestion ? 'Fertig' : 'Weiter'}
+        </button>
+      )}
+    </div>
   )
 }

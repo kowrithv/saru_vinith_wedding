@@ -99,6 +99,22 @@ describe('WhoKnowsUsGame', () => {
     expect(screen.getByRole('button', { name: 'Weiter' })).toBeInTheDocument()
   })
 
+  it('keeps the same photo elements when the next question comes, only the text changes', async () => {
+    stubApi()
+    const { container } = render(<WhoKnowsUsGame />)
+    await userEvent.click(await screen.findByRole('button', { name: whoGameOptions[0] }))
+    await screen.findByRole('button', { name: 'Weiter' })
+    const before = [...container.querySelectorAll('button img')]
+    expect(before).toHaveLength(3)
+
+    await userEvent.click(screen.getByRole('button', { name: 'Weiter' }))
+    await screen.findByText(whoQuestions[1].question)
+
+    const after = [...container.querySelectorAll('button img')]
+    expect(after).toHaveLength(3)
+    after.forEach((image, position) => expect(image).toBe(before[position]))
+  })
+
   it('marks the chosen photo and lets the others step back', async () => {
     stubApi()
     render(<WhoKnowsUsGame />)
