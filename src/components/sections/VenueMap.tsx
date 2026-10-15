@@ -3,19 +3,19 @@
 import { useEffect, useRef } from 'react'
 import type { Map as LeafletMap } from 'leaflet'
 import 'leaflet/dist/leaflet.css'
-import { Navigation as NavigationIcon, MapPinned } from 'lucide-react'
+import { MapPin } from 'lucide-react'
+import SaveToCalendarButton from '@/components/sections/SaveToCalendarButton'
 
 interface VenueMapProps {
   lat: number
   lng: number
   label: string
   address: string
+  /** Hinweis zum Parken; ohne Angabe entfällt die Zeile. */
+  parking?: string
 }
 
-const buttonClasses =
-  'inline-flex items-center justify-center gap-2 font-medium rounded-full transition-all duration-200 active:scale-[0.98] text-sm px-6 py-2.5'
-
-export default function VenueMap({ lat, lng, label, address }: VenueMapProps) {
+export default function VenueMap({ lat, lng, label, address, parking }: VenueMapProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<LeafletMap | null>(null)
 
@@ -63,25 +63,47 @@ export default function VenueMap({ lat, lng, label, address }: VenueMapProps) {
   }, [lat, lng, label, address])
 
   return (
-    <div className="isolate rounded-2xl overflow-hidden border border-gray-100 shadow-sm bg-white">
-      <div ref={containerRef} className="w-full h-64 md:h-80" />
-      <div className="flex flex-col sm:flex-row gap-3 p-4">
-        <a
-          href={directionsUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={`${buttonClasses} bg-dark-blue text-white hover:bg-dark-blue-light shadow-md hover:shadow-lg flex-1`}
-        >
-          <NavigationIcon size={16} />
-          Route planen
-        </a>
+    // isolate: Leaflet vergibt intern z-index bis 1000 - ohne eigenen
+    // Stapelkontext läge die Karte über der fixen Navigation.
+    <div className="isolate overflow-hidden rounded-2xl border border-champagne-dark bg-champagne-light shadow-sm">
+      <div ref={containerRef} className="h-56 w-full md:h-72" />
+      <div className="flex flex-col gap-4 p-5 sm:p-6">
+        <div>
+          <h3 className="font-display text-2xl font-semibold leading-tight text-dark-blue md:text-3xl">{label}</h3>
+          <p className="mt-1 text-sm text-gray-700">{address}</p>
+        </div>
+
+        <div className="flex flex-wrap gap-3">
+          <a
+            href={directionsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center gap-2 rounded-full bg-bordeaux px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-bordeaux-light"
+          >
+            <MapPin size={16} />
+            Route planen
+          </a>
+          <SaveToCalendarButton />
+        </div>
+
+        {parking && (
+          <p className="flex items-center gap-2 text-sm text-gray-700">
+            <span
+              aria-hidden="true"
+              className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-dark-blue text-xs font-bold text-white"
+            >
+              P
+            </span>
+            {parking}
+          </p>
+        )}
+
         <a
           href={osmUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className={`${buttonClasses} border-2 border-dark-blue text-dark-blue hover:bg-dark-blue hover:text-white flex-1`}
+          className="self-start text-xs text-gray-600 underline underline-offset-2 hover:text-dark-blue"
         >
-          <MapPinned size={16} />
           Auf OpenStreetMap ansehen
         </a>
       </div>

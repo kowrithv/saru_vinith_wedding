@@ -33,6 +33,27 @@ describe('ProgramTimeline', () => {
     expect(screen.getByText('16:30 Uhr')).toHaveClass('text-gold-text')
   })
 
+  // Titel zuerst, die Uhrzeit darunter als schlichter Text: so liest sich der
+  // Ablauf wie eine Karte, nicht wie eine Tabelle mit Etiketten.
+  it('puts the time below the title as plain text, not as a chip', () => {
+    render(<ProgramTimeline schedule={schedule} />)
+    const title = screen.getByText('Einlass & Empfang der Gäste')
+    const time = screen.getByText('16:30 Uhr')
+
+    expect(title.parentElement).toBe(time.parentElement)
+    expect(title.compareDocumentPosition(time) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(time).not.toHaveClass('rounded-full')
+    expect(time).not.toHaveClass('bg-champagne')
+  })
+
+  it('puts "Uhrzeit folgt" below the title as well', () => {
+    render(<ProgramTimeline schedule={schedule} />)
+    const title = screen.getByText('Sektempfang & Gratulationen')
+    const items = screen.getAllByText('Uhrzeit folgt')
+    expect(items[0].parentElement).toBe(title.parentElement)
+    expect(title.compareDocumentPosition(items[0]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
   it('marks nothing as next before the wedding day', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-10-15T08:00:00Z'))

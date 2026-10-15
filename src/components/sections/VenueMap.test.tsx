@@ -2,6 +2,8 @@ import { describe, expect, it, vi } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import VenueMap from './VenueMap'
 
+vi.mock('@/lib/calendar', () => ({ downloadEventIcs: vi.fn() }))
+
 const mergeOptions = vi.fn()
 
 vi.mock('leaflet', () => ({
@@ -58,5 +60,39 @@ describe('VenueMap', () => {
   it('keeps the map in its own stacking context so it never covers the fixed navigation', () => {
     const { container } = render(<VenueMap {...props} />)
     expect(container.firstElementChild).toHaveClass('isolate')
+  })
+
+  // Eine Karte mit den zwei Handlungen, die Gäste brauchen: Route und Kalender
+  // (Vorschlag C7).
+  describe('venue card', () => {
+    const withParking = { ...props, parking: 'Parkplätze direkt an der Begegnungsstätte' }
+
+    it('names the venue and shows its address under the map', () => {
+      render(<VenueMap {...withParking} />)
+      expect(screen.getByRole('heading', { name: props.label })).toBeInTheDocument()
+      expect(screen.getByText(props.address)).toBeInTheDocument()
+    })
+
+    it('shows the route button in bordeaux', () => {
+      render(<VenueMap {...withParking} />)
+      expect(screen.getByRole('link', { name: /Route planen/i })).toHaveClass('bg-bordeaux')
+    })
+
+    it('offers to save the date in the calendar right there', () => {
+      render(<VenueMap {...withParking} />)
+      expect(screen.getByRole('button', { name: /in kalender speichern/i })).toBeInTheDocument()
+    })
+
+    it('shows the parking note with a P badge that assistive technology skips', () => {
+      render(<VenueMap {...withParking} />)
+      const note = screen.getByText(withParking.parking)
+      const badge = note.querySelector('[aria-hidden="true"]')
+      expect(badge).toHaveTextContent('P')
+    })
+
+    it('shows no parking line when there is no note', () => {
+      render(<VenueMap {...props} />)
+      expect(screen.queryByText(/parkplätze/i)).not.toBeInTheDocument()
+    })
   })
 })

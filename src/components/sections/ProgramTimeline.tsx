@@ -9,8 +9,8 @@ interface ProgramTimelineProps {
   schedule: ScheduleItem[]
 }
 
-// Der Ablauf als Zeitleiste. Am Hochzeitstag zeigt "Als Nächstes" den
-// nächsten Punkt mit bekannter Uhrzeit. Server und erster Browser-Render
+// Der Ablauf als Zeitleiste: Titel, darunter die Uhrzeit. Am Hochzeitstag
+// zeigt "Als Nächstes" den nächsten Punkt mit bekannter Uhrzeit. Server und erster Browser-Render
 // kennen die Uhrzeit nicht (null): dort steht keine Markierung, also gibt es
 // keinen Hydration-Unterschied.
 export default function ProgramTimeline({ schedule }: ProgramTimelineProps) {
@@ -31,19 +31,15 @@ export default function ProgramTimeline({ schedule }: ProgramTimelineProps) {
                 isNext ? 'border-bordeaux bg-bordeaux shadow-[0_0_0_4px_rgba(122,36,50,0.18)]' : 'border-gold bg-white'
               )}
             />
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-              {hasTime ? (
-                <span className="rounded-full bg-champagne px-2.5 py-0.5 text-xs font-semibold text-gold-text">
-                  {item.time}
-                </span>
-              ) : (
-                <span className="text-sm italic text-gray-600">Uhrzeit folgt</span>
-              )}
-              {isNext && (
-                <span className="text-xs font-semibold uppercase tracking-wider text-bordeaux">Als Nächstes</span>
-              )}
-            </div>
-            <p className="mt-1 font-display text-xl font-semibold leading-snug text-dark-blue">{item.event}</p>
+            {isNext && (
+              <p className="mb-0.5 text-xs font-semibold uppercase tracking-wider text-bordeaux">Als Nächstes</p>
+            )}
+            <p className="font-display text-xl font-semibold leading-snug text-dark-blue">{item.event}</p>
+            {hasTime ? (
+              <p className="mt-0.5 text-sm font-semibold text-gold-text">{item.time}</p>
+            ) : (
+              <p className="mt-0.5 text-sm italic text-gray-600">Uhrzeit folgt</p>
+            )}
           </li>
         )
       })}

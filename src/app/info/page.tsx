@@ -1,33 +1,10 @@
-import { Calendar, Clock, MapPin, Car, Info as InfoIcon, type LucideIcon } from 'lucide-react'
+import { Calendar, Info as InfoIcon } from 'lucide-react'
 import SectionTitle from '@/components/ui/SectionTitle'
 import Card from '@/components/ui/Card'
 import VenueMap from '@/components/sections/VenueMap'
 import ProgramTimeline from '@/components/sections/ProgramTimeline'
-import SaveToCalendarButton from '@/components/sections/SaveToCalendarButton'
 import GoodToKnow from '@/components/sections/GoodToKnow'
 import { goodToKnow, receptionEvent, receptionSchedule } from '@/lib/event-info'
-
-interface InfoCardProps {
-  icon: LucideIcon
-  label: string
-  value: string
-  sublabel?: string
-}
-
-function InfoCard({ icon: Icon, label, value, sublabel }: InfoCardProps) {
-  return (
-    <div className="flex items-start gap-4 p-4 bg-white rounded-xl border border-gray-100 shadow-sm">
-      <div className="w-10 h-10 bg-champagne rounded-lg flex items-center justify-center flex-shrink-0">
-        <Icon size={18} className="text-dark-blue" />
-      </div>
-      <div>
-        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">{label}</p>
-        <p className="text-sm font-semibold text-dark-blue">{value}</p>
-        {sublabel && <p className="text-xs text-gray-500 mt-0.5">{sublabel}</p>}
-      </div>
-    </div>
-  )
-}
 
 export default function InfoPage() {
   return (
@@ -45,7 +22,9 @@ export default function InfoPage() {
             </div>
             <div>
               <p className="text-champagne/60 text-xs font-medium uppercase tracking-wider">
-                {receptionEvent.displayDate}
+                <span>{receptionEvent.displayDate}</span>
+                <span aria-hidden="true"> · </span>
+                <span>{receptionEvent.time}</span>
               </p>
               <h2 className="font-serif text-2xl md:text-3xl font-semibold text-white">
                 {receptionEvent.title}
@@ -55,23 +34,13 @@ export default function InfoPage() {
           </div>
         </Card>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
-          <InfoCard icon={Calendar} label="Datum" value={receptionEvent.displayDate} />
-          <InfoCard icon={Clock} label="Uhrzeit" value={receptionEvent.time} />
-          <InfoCard icon={MapPin} label="Ort" value={receptionEvent.venue} sublabel={receptionEvent.address} />
-          <InfoCard icon={Car} label="Parken" value="Parkplätze direkt an der Begegnungsstätte" />
-        </div>
-
-        <div className="mb-4 flex justify-center">
-          <SaveToCalendarButton />
-        </div>
-
         <div className="mb-8">
           <VenueMap
             lat={receptionEvent.lat}
             lng={receptionEvent.lng}
             label={receptionEvent.venue}
             address={receptionEvent.address}
+            parking={receptionEvent.parking}
           />
         </div>
 

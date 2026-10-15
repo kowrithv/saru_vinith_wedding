@@ -9,6 +9,7 @@ export const receptionEvent = {
   time: '16:30 Uhr',
   venue: 'Begegnungsstätte Niederkrüchten',
   address: 'Oberkrüchtener Weg 42, 41372 Niederkrüchten',
+  parking: 'Parkplätze direkt an der Begegnungsstätte',
   description:
     'Wir laden euch herzlich zu unserem Empfang ein, um gemeinsam mit euch diesen besonderen Tag zu feiern.',
   lat: 51.196771,
