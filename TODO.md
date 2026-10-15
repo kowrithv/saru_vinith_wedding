@@ -3,11 +3,22 @@
 Stand Do 15.10.2026 abends. Nur, was jetzt ansteht; Späteres steht in `docs/backlog.md`,
 dauerhafte Hinweise in der README („Bekannte Grenzen").
 
+Noch nicht feature complete: „Wer von uns?" fehlt (siehe unten).
+
 ## Brautpaar
 
-- [ ] Zurückgestellt: „Wer von uns?" und Videos (Einzelheiten im Backlog)
+- [ ] Entscheidungen für „Wer von uns?" als eigene Seite: DJ-Zugriff auf die Ergebnisse
+      (Vorschlag: eigener Lese-Link mit langem Zufallsschlüssel) und mehrfaches Abstimmen
+      (Einzelheiten im Backlog)
+- [ ] Videos bleiben zurückgestellt (Empfehlung: erst nach der Feier)
 
-## Betreiber, vor dem Freeze
+## Claude
+
+- [ ] „Wer von uns?" als eigene Seite bauen, sobald die Entscheidungen da sind (mit Limit je
+      Gerät für die Stimmen)
+- [ ] Admin und Desktop-Breite im Browser ansehen
+
+## Betreiber, vor dem Tag
 
 - [ ] Vorher `caddy version` ≥ 2.5 prüfen; dann `develop` pushen, `develop:main`, Tag
       `v1.0.0-rc.1` (README „Deployment")
@@ -19,15 +30,14 @@ dauerhafte Hinweise in der README („Bekannte Grenzen").
       laufen direkt zu R2)
 - [ ] Gerätetest auf iPhone und Android (`docs/ops/geraetetest-checkliste.md`), danach
       Smoke- und Lasttest gegen die echte Domain
+- [ ] Tag `v1.0.0` und Freeze
+
+## Betreiber, nach dem Tag (vor Samstag)
+
 - [ ] SMTP, Off-Box-Kopie, Uptime-Monitor, Billing-Alarm und der Cron für
       `scripts/ops/restart-if-unhealthy.sh` (`docs/ops/hochzeitstag-runbook.md` §7)
 - [ ] GitHub-Issues #2 bis #6 schließen (alle gelöst, nur nicht als geschlossen markiert;
       Verweis auf die Commits 92a9e97 und b1b6f08)
-- [ ] Tag `v1.0.0` und Freeze
-
-## Claude
-
-- [ ] Unabhängiges Review; Admin und Desktop-Breite im Browser ansehen
 
 ## Nach der Hochzeit
 
