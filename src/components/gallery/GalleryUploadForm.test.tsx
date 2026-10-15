@@ -215,6 +215,34 @@ describe('GalleryUploadForm', () => {
     })
   })
 
+  it('offers the file choice as a large, hard to miss button', () => {
+    render(<GalleryUploadForm hasAccess onUploaded={vi.fn()} />)
+
+    const input = screen.getByLabelText(/fotos ausw/i)
+    expect(input).toHaveAttribute('type', 'file')
+    expect(input).toHaveAttribute('multiple')
+    const button = screen.getByText('Fotos auswählen').closest('label')
+    expect(button).toHaveClass('border-dashed', 'cursor-pointer')
+    expect(screen.getByText('mehrere möglich')).toBeInTheDocument()
+  })
+
+  it('tells the gallery when an upload starts and when it is over', async () => {
+    const user = setupUser()
+    createFakeBackend()
+    const onBusyChange = vi.fn()
+    render(<GalleryUploadForm hasAccess onUploaded={vi.fn()} onBusyChange={onBusyChange} />)
+    expect(onBusyChange).toHaveBeenLastCalledWith(false)
+
+    await user.type(screen.getByLabelText(/dein name/i), 'Anna')
+    await user.upload(screen.getByLabelText(/fotos ausw/i), makeFile())
+    await user.click(screen.getByRole('button', { name: /hochladen/i }))
+
+    expect(onBusyChange).toHaveBeenCalledWith(true)
+    await waitFor(() => expect(onBusyChange).toHaveBeenLastCalledWith(false))
+    const calls = onBusyChange.mock.calls.map(([busy]) => busy)
+    expect(calls.indexOf(true)).toBeLessThan(calls.lastIndexOf(false))
+  })
+
   it('prefills the name this device remembered from another form', () => {
     window.localStorage.setItem('wedding-guest-name', 'Anna')
     render(<GalleryUploadForm hasAccess onUploaded={vi.fn()} />)

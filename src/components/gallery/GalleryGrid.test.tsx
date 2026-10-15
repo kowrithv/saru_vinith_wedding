@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { render, screen, fireEvent, cleanup } from '@testing-library/react'
+import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react'
 import GalleryGrid from './GalleryGrid'
 import type { GalleryPhotoView } from '@/lib/gallery-photo-view'
 
@@ -40,10 +40,92 @@ describe('GalleryGrid', () => {
     expect(screen.getAllByRole('img')).toHaveLength(1)
   })
 
-  it('shows a category-specific empty state when the active category has no photos', () => {
-    render(<GalleryGrid photos={[photo({ id: 'p1', category: 'Standesamt' })]} onPhotoDeleted={vi.fn()} />)
-    fireEvent.click(screen.getByRole('button', { name: /^party/i }))
-    expect(screen.getByText(/keine fotos in dieser kategorie/i)).toBeInTheDocument()
+  describe('empty categories', () => {
+    it('shows only the categories that have photos, plus "Alle"', () => {
+      render(
+        <GalleryGrid
+          photos={[photo({ id: 'p1', category: 'Standesamt' }), photo({ id: 'p2', category: 'Party' })]}
+          onPhotoDeleted={vi.fn()}
+        />
+      )
+
+      expect(screen.getByRole('button', { name: /^alle/i })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /^standesamt/i })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /^party/i })).toBeInTheDocument()
+      for (const empty of [/^kennenlernen/i, /^verlobung/i, /^erinnerungen/i]) {
+        expect(screen.queryByRole('button', { name: empty })).not.toBeInTheDocument()
+      }
+    })
+
+    it('keeps the categories in their usual order', () => {
+      render(
+        <GalleryGrid
+          photos={[photo({ id: 'p1', category: 'Party' }), photo({ id: 'p2', category: 'Verlobung' })]}
+          onPhotoDeleted={vi.fn()}
+        />
+      )
+
+      // Die Foto-Kacheln sind auch Buttons: nur die Filter haben eine Anzahl am Ende.
+      const chips = screen.getAllByRole('button').filter((button) => /\(\d+\)$/.test(button.textContent ?? ''))
+      expect(chips.map((chip) => chip.textContent?.replace(/\s*\(\d+\)$/, ''))).toEqual(['Alle', 'Verlobung', 'Party'])
+    })
+
+    it('shows a category as soon as its first photo arrives', () => {
+      const { rerender } = render(
+        <GalleryGrid photos={[photo({ id: 'p1', category: 'Standesamt' })]} onPhotoDeleted={vi.fn()} />
+      )
+      expect(screen.queryByRole('button', { name: /^party/i })).not.toBeInTheDocument()
+
+      rerender(
+        <GalleryGrid
+          photos={[photo({ id: 'p1', category: 'Standesamt' }), photo({ id: 'p2', category: 'Party' })]}
+          onPhotoDeleted={vi.fn()}
+        />
+      )
+      expect(screen.getByRole('button', { name: /^party/i })).toBeInTheDocument()
+    })
+
+    it('goes back to "Alle" when the last photo of the chosen category disappears', () => {
+      const both = [photo({ id: 'p1', category: 'Standesamt' }), photo({ id: 'p2', category: 'Party' })]
+      const { rerender } = render(<GalleryGrid photos={both} onPhotoDeleted={vi.fn()} />)
+      fireEvent.click(screen.getByRole('button', { name: /^party/i }))
+      expect(screen.getAllByRole('img')).toHaveLength(1)
+
+      rerender(<GalleryGrid photos={[both[0]]} onPhotoDeleted={vi.fn()} />)
+
+      expect(screen.queryByRole('button', { name: /^party/i })).not.toBeInTheDocument()
+      expect(screen.getAllByRole('img')).toHaveLength(1)
+      expect(screen.getByRole('button', { name: /^alle/i })).toHaveClass('bg-dark-blue')
+      expect(screen.queryByText(/keine fotos in dieser kategorie/i)).not.toBeInTheDocument()
+    })
+  })
+
+  it('keeps the open photo when new photos arrive in front of it', async () => {
+    const old = [photo({ id: 'p1', category: 'Party', uploaderName: 'Anna' }), photo({ id: 'p2', category: 'Party', uploaderName: 'Ben' })]
+    const { rerender } = render(<GalleryGrid photos={old} onPhotoDeleted={vi.fn()} />)
+    fireEvent.click(screen.getAllByRole('img')[1])
+    expect(await screen.findByText('2 / 2')).toBeInTheDocument()
+
+    rerender(
+      <GalleryGrid
+        photos={[photo({ id: 'p0', category: 'Party', uploaderName: 'Neu' }), ...old]}
+        onPhotoDeleted={vi.fn()}
+      />
+    )
+
+    expect(await screen.findByText('3 / 3')).toBeInTheDocument()
+    expect(screen.getByRole('dialog').querySelector('img')).toHaveAttribute('src', old[1].originalUrl)
+  })
+
+  it('closes the open photo when it is no longer in the list', async () => {
+    const old = [photo({ id: 'p1', category: 'Party' }), photo({ id: 'p2', category: 'Party' })]
+    const { rerender } = render(<GalleryGrid photos={old} onPhotoDeleted={vi.fn()} />)
+    fireEvent.click(screen.getAllByRole('img')[0])
+    await screen.findByText('1 / 2')
+
+    rerender(<GalleryGrid photos={[old[1]]} onPhotoDeleted={vi.fn()} />)
+
+    await waitFor(() => expect(screen.queryByText(/ \/ /)).not.toBeInTheDocument())
   })
 
   it('opens the lightbox for the clicked photo within the filtered set', async () => {

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'r
 import { Upload, CheckCircle2, XCircle, Loader2, User, ImageIcon, X } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import GuestPasswordField from '@/components/ui/GuestPasswordField'
+import PhotoPickerButton from '@/components/ui/PhotoPickerButton'
 import { defaultGalleryCategory, uploadCategoriesFor } from '@/lib/gallery-categories'
 import { createPreviewImage, type PreviewImage } from '@/lib/gallery-preview'
 import { saveDeleteToken } from '@/lib/gallery-delete-tokens'
@@ -26,6 +27,8 @@ interface GalleryUploadFormProps {
   /** Die gemerkte Sitzung gilt nicht mehr (abgelaufen, Kennwort gewechselt). */
   onAccessLost?: () => void
   onUploaded: (photo: GalleryPhotoView) => void
+  /** Meldet, ob gerade hochgeladen wird (die Galerie lädt dann nicht von selbst neu). */
+  onBusyChange?: (busy: boolean) => void
 }
 
 // Ein Ticket gilt 15 Minuten, und alle gleichzeitigen Uploads teilen sich die
@@ -193,6 +196,7 @@ export default function GalleryUploadForm({
   onAccessGranted,
   onAccessLost,
   onUploaded,
+  onBusyChange,
 }: GalleryUploadFormProps) {
   // Der Admin hat nie ein Kennwortfeld; Gäste nur, solange der Browser nicht
   // entsperrt ist.
@@ -220,6 +224,11 @@ export default function GalleryUploadForm({
 
   // Beim Entfernen des Formulars die Objekt-URLs der Vorschauen freigeben.
   useEffect(() => releasePreviews, [])
+
+  // Die Galerie darf sich nicht neu laden, solange hochgeladen wird.
+  useEffect(() => {
+    onBusyChange?.(submitting)
+  }, [submitting, onBusyChange])
 
   useEffect(() => {
     if (submitting || !restoreFocusRef.current) return
@@ -482,17 +491,13 @@ export default function GalleryUploadForm({
       </div>
 
       <div>
-        <label htmlFor="gallery-upload-files" className="block text-sm font-medium text-gray-700 mb-1.5">
-          Fotos auswählen (mehrere möglich)
-        </label>
-        <input
+        <PhotoPickerButton
           id="gallery-upload-files"
-          type="file"
-          accept="image/*"
+          label="Fotos auswählen"
+          hint="mehrere möglich"
           multiple
           disabled={submitting}
           onChange={handleFilesChange}
-          className="w-full text-sm"
         />
         <p className="mt-1.5 text-xs text-gray-500">Nur Fotos, keine Videos.</p>
       </div>

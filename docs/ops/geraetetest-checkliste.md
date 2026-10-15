@@ -34,6 +34,9 @@ Geräte: ☐ iPhone (Safari) ☐ Android (Chrome) ☐ ältere Hardware ☐ Deskt
 - [ ] Flugmodus während des Uploads: Fehlermeldung, nach erneutem „Hochladen" nur die unfertigen Fotos.
 - [ ] „Abbrechen" mitten im Upload: keine Duplikate nach erneutem Versuch.
 - [ ] Lightbox: öffnen, wischen/Pfeile, Original herunterladen, eigenes Foto löschen (nur auf dem Upload-Gerät).
+- [ ] **Auswahl-Knopf** „Fotos auswählen“ (Galerie) bzw. „Foto auswählen“ (Erinnerungen): groß, gestrichelt, mit Kamera-Symbol; Tippen öffnet die Foto-Auswahl des Handys.
+- [ ] **Filter** zeigen nur Kategorien, in denen Fotos liegen (anfangs z. B. nur „Alle“ und „Standesamt“).
+- [ ] **Neuladen:** Auf Handy A die Galerie offen lassen, auf Handy B ein Foto hochladen: nach spätestens ca. 30 Sekunden erscheint es auf A. Ist A weit unten im Raster, erscheint stattdessen „1 neues Foto anzeigen“ und nichts springt. Läuft auf A selbst gerade ein Upload, lädt die Galerie währenddessen nicht neu.
 - [ ] Mobil-Menü offen: der schwebende Knopf liegt **unter** dem Menü.
 
 ## Erinnerung mit Foto (braucht R2)
