@@ -1,0 +1,86 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import MemoryPolaroid from './MemoryPolaroid'
+import { createPolaroidBlob } from '@/lib/polaroid-image'
+
+vi.mock('@/lib/polaroid-image', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/polaroid-image')>()),
+  createPolaroidBlob: vi.fn(),
+}))
+
+const photo = {
+  thumbUrl: 'https://fotos.example.de/gallery/p1/thumb.jpg',
+  originalUrl: 'https://fotos.example.de/gallery/p1/original.jpg',
+}
+
+describe('MemoryPolaroid', () => {
+  beforeEach(() => {
+    vi.mocked(createPolaroidBlob).mockReset()
+    URL.createObjectURL = vi.fn(() => 'blob:polaroid')
+    URL.revokeObjectURL = vi.fn()
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('shows the photo, opening the original, with the names of the couple on a banner', () => {
+    render(<MemoryPolaroid guestName="Lena" photo={photo} />)
+
+    const image = screen.getByAltText('Foto von Lena')
+    expect(image).toHaveAttribute('src', photo.thumbUrl)
+    expect(image.closest('a')).toHaveAttribute('href', photo.originalUrl)
+    expect(screen.getByText('Saruga & Vinith')).toBeInTheDocument()
+  })
+
+  it('signs the polaroid with the name of the guest', () => {
+    render(<MemoryPolaroid guestName="Lena" photo={photo} />)
+    expect(screen.getByText('Lena')).toBeInTheDocument()
+  })
+
+  it('says that the photo is also in the gallery', () => {
+    render(<MemoryPolaroid guestName="Lena" photo={photo} />)
+    expect(screen.getByText(/auch in der galerie/i)).toBeInTheDocument()
+  })
+
+  it('saves the finished polaroid as an image file', async () => {
+    vi.mocked(createPolaroidBlob).mockResolvedValue(new Blob(['png'], { type: 'image/png' }))
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+    render(<MemoryPolaroid guestName="Lena Müller" photo={photo} />)
+
+    await userEvent.click(screen.getByRole('button', { name: /als polaroid speichern/i }))
+
+    await waitFor(() => expect(click).toHaveBeenCalledTimes(1))
+    expect(createPolaroidBlob).toHaveBeenCalledWith(photo.thumbUrl, 'Lena Müller', 'Saruga & Vinith')
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:polaroid')
+  })
+
+  it('names the downloaded file after the guest', async () => {
+    vi.mocked(createPolaroidBlob).mockResolvedValue(new Blob(['png']))
+    let downloadName = ''
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
+      downloadName = this.download
+    })
+    render(<MemoryPolaroid guestName="Lena Müller" photo={photo} />)
+
+    await userEvent.click(screen.getByRole('button', { name: /als polaroid speichern/i }))
+
+    await waitFor(() => expect(downloadName).toBe('polaroid-saruga-vinith-lena-muller.png'))
+  })
+
+  it('reports a failure without crashing and allows another try', async () => {
+    vi.mocked(createPolaroidBlob).mockRejectedValue(new Error('offline'))
+    render(<MemoryPolaroid guestName="Lena" photo={photo} />)
+
+    await userEvent.click(screen.getByRole('button', { name: /als polaroid speichern/i }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/nicht erstellt/i)
+    expect(screen.getByRole('button', { name: /als polaroid speichern/i })).toBeEnabled()
+  })
+
+  it('offers the original as a plain link too', () => {
+    render(<MemoryPolaroid guestName="Lena" photo={photo} />)
+    expect(screen.getByRole('link', { name: /original/i })).toHaveAttribute('href', photo.originalUrl)
+  })
+})

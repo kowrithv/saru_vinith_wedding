@@ -1,24 +1,11 @@
 import type { CSSProperties } from 'react'
-import { Calendar, ChevronDown, Heart } from 'lucide-react'
+import { ChevronDown } from 'lucide-react'
 import Button from '@/components/ui/Button'
+import Lotus from '@/components/ui/Lotus'
 import { couple } from '@/lib/site-content'
 import { receptionEvent } from '@/lib/event-info'
 import { cn } from '@/lib/utils'
 import HeroBadge from '@/components/sections/HeroBadge'
-
-function FloralOrnament({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" className={className} aria-hidden="true">
-      <path d="M100 60 L120 100 L100 140 L80 100 Z" fill="currentColor" opacity="0.4" />
-      <path d="M100 75 L113 100 L100 125 L87 100 Z" fill="currentColor" opacity="0.6" />
-      <path d="M100 20 C90 40 88 55 100 60 C112 55 110 40 100 20Z" fill="currentColor" opacity="0.3" />
-      <path d="M100 180 C90 160 88 145 100 140 C112 145 110 160 100 180Z" fill="currentColor" opacity="0.3" />
-      <path d="M20 100 C40 90 55 88 60 100 C55 112 40 110 20 100Z" fill="currentColor" opacity="0.3" />
-      <path d="M180 100 C160 90 145 88 140 100 C145 112 160 110 180 100Z" fill="currentColor" opacity="0.3" />
-      <circle cx="100" cy="100" r="4" fill="currentColor" opacity="0.8" />
-    </svg>
-  )
-}
 
 // Eintritts-Animation per CSS statt per JavaScript: der Server-HTML-Stand ist
 // sichtbar, ohne dass erst ein Bundle laden und hydrieren muss, und Besucher
@@ -29,66 +16,85 @@ function stagger(step: number): CSSProperties {
   return { animationDelay: `${0.1 + step * 0.1}s` }
 }
 
-const nameClassName =
-  'block font-serif text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-semibold text-dark-blue leading-tight'
+// Das Foto liegt als Datei in public/hero: zum Tauschen einfach paar.jpg
+// ersetzen (hochkant, am besten ab 900 x 1100 px, unter 200 KB).
+const HERO_PHOTO = '/hero/paar.jpg'
 
 export default function Hero() {
   return (
     // pt-20 hält den Inhalt unter der fixen Navigation (64 px), pb-24 lässt
     // dem Hinweis unten Platz; min-h-svh bleibt auch dann eine Bildschirmhöhe
     // (border-box) und berücksichtigt die einklappende Safari-Leiste.
-    <section className="relative min-h-svh flex items-center justify-center overflow-hidden pt-20 pb-24 bg-gradient-to-br from-champagne-light via-white to-baby-blue-light">
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <FloralOrnament className="absolute -top-20 -left-20 w-80 h-80 text-champagne-dark opacity-30" />
-        <FloralOrnament className="absolute -bottom-20 -right-20 w-96 h-96 text-baby-blue-dark opacity-25" />
-        <FloralOrnament className="absolute top-1/2 -translate-y-1/2 -right-16 w-64 h-64 text-gold opacity-10" />
+    <section className="relative min-h-svh flex items-center justify-center overflow-hidden pt-20 pb-24 bg-gradient-to-b from-champagne-light via-white to-rose-sand-light">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
+        <Lotus size={300} className="absolute -top-16 -left-20 text-champagne-dark opacity-30" />
+        <Lotus size={340} className="absolute -bottom-20 -right-24 text-rose-sand opacity-50" />
       </div>
 
-      <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 text-center flex flex-col items-center">
-        <div className={cn(enter, 'mb-6')} style={stagger(0)}>
-          <span className="inline-flex items-center gap-2 px-4 py-1.5 bg-white/70 backdrop-blur-sm text-dark-blue text-sm font-medium rounded-full border border-champagne-dark/30 shadow-sm">
-            <Heart size={12} className="text-gold fill-gold" />
-            <HeroBadge />
-            <Heart size={12} className="text-gold fill-gold" />
-          </span>
-        </div>
-
-        <div className={cn(enter, 'flex items-center justify-center gap-4 mb-4')} style={stagger(1)}>
-          <div className="h-px w-16 bg-gradient-to-r from-transparent to-gold/50" />
-          <FloralOrnament className="w-10 h-10 text-gold" />
-          <div className="h-px w-16 bg-gradient-to-l from-transparent to-gold/50" />
-        </div>
-
-        <h1 className={cn(enter, 'flex flex-col items-center mb-6')} style={stagger(2)}>
-          <span className={cn(nameClassName, 'mb-2')}>{couple.bride}</span>
-          <span className="flex items-center justify-center gap-4 my-2">
-            <span className="block h-px w-20 bg-gold/40" />
-            <span className="text-2xl text-gold-text font-serif">&amp;</span>
-            <span className="block h-px w-20 bg-gold/40" />
-          </span>
-          <span className={nameClassName}>{couple.groom}</span>
-        </h1>
-
-        <p className={cn(enter, 'text-gold-text font-medium text-lg mb-8')} style={stagger(3)}>
-          {couple.hashtag}
+      <div className="relative z-10 max-w-3xl mx-auto px-4 sm:px-6 text-center flex flex-col items-center">
+        <p
+          className={cn(
+            enter,
+            'mb-5 font-display text-sm sm:text-base font-semibold uppercase tracking-[0.3em] text-bordeaux'
+          )}
+          style={stagger(0)}
+        >
+          <HeroBadge />
         </p>
 
-        <div className={cn(enter, 'mb-10')} style={stagger(4)}>
-          <div className="flex items-center gap-3 bg-white/80 backdrop-blur-sm border border-champagne-dark/30 rounded-2xl px-6 py-4 shadow-sm">
-            <div className="w-10 h-10 bg-dark-blue rounded-xl flex items-center justify-center flex-shrink-0">
-              <Calendar size={18} className="text-white" />
-            </div>
-            <div className="text-left">
-              <p className="text-xs text-gray-600 font-medium uppercase tracking-wider">Empfang</p>
-              <p className="text-dark-blue font-semibold text-sm">{receptionEvent.displayDate}</p>
-              <p className="text-xs text-gray-600">{receptionEvent.time} · {receptionEvent.venue}</p>
-            </div>
+        <div className={cn(enter, 'mb-6')} style={stagger(1)}>
+          {/* Bogenrahmen: die Form von Torbogen und Mandap. */}
+          <div
+            data-testid="hero-arch"
+            className="relative h-60 w-48 sm:h-72 sm:w-56 overflow-hidden rounded-t-full rounded-b-md bg-champagne shadow-[0_0_0_6px_#fff,0_0_0_7px_var(--color-gold),0_18px_40px_rgba(30,58,95,0.18)]"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={HERO_PHOTO}
+              alt="Saruga und Vinith"
+              width={450}
+              height={800}
+              fetchPriority="high"
+              className="h-full w-full object-cover object-[50%_32%]"
+            />
           </div>
         </div>
 
+        <h1
+          className={cn(
+            enter,
+            'font-display font-semibold text-dark-blue leading-none text-5xl sm:text-6xl md:text-7xl flex flex-wrap items-baseline justify-center gap-x-3 mb-5'
+          )}
+          style={stagger(2)}
+        >
+          <span>{couple.bride}</span>
+          <span className="font-script text-gold-text text-4xl sm:text-5xl md:text-6xl font-normal">&amp;</span>
+          <span>{couple.groom}</span>
+        </h1>
+
+        <div className={cn(enter, 'flex items-center justify-center gap-4 mb-5')} style={stagger(3)}>
+          <span className="h-px w-16 bg-gradient-to-r from-transparent to-gold/60" />
+          <Lotus size={22} className="text-gold" />
+          <span className="h-px w-16 bg-gradient-to-l from-transparent to-gold/60" />
+        </div>
+
+        <div className={cn(enter, 'mb-2')} style={stagger(4)}>
+          <p className="font-display text-xl sm:text-2xl font-semibold text-dark-blue">
+            <span>Samstag, </span>
+            <span>{receptionEvent.displayDate}</span>
+          </p>
+          <p className="mt-1 text-sm text-gray-600">
+            {receptionEvent.time} · {receptionEvent.venue}
+          </p>
+        </div>
+
+        <p className={cn(enter, 'text-gold-text font-medium mb-8')} style={stagger(5)}>
+          {couple.hashtag}
+        </p>
+
         <div
           className={cn(enter, 'flex flex-col sm:flex-row items-center justify-center gap-3 flex-wrap')}
-          style={stagger(5)}
+          style={stagger(6)}
         >
           <Button href="/info" variant="primary" size="lg">
             Hochzeitsinfos

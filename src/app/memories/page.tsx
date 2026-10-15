@@ -7,6 +7,7 @@ import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
 import GuestPasswordField from '@/components/ui/GuestPasswordField'
 import EmptyState from '@/components/ui/EmptyState'
+import MemoryPolaroid from '@/components/memories/MemoryPolaroid'
 import { textFieldClassName } from '@/lib/form-styles'
 import { MEMORY_PHOTO_CATEGORY } from '@/lib/gallery-categories'
 import { saveDeleteToken } from '@/lib/gallery-delete-tokens'
@@ -284,20 +285,7 @@ export default function MemoriesPage() {
                 </div>
                 <p className="text-sm text-gray-700 leading-relaxed italic pl-2">&quot;{entry.message}&quot;</p>
                 {entry.photo ? (
-                  <a
-                    href={entry.photo.originalUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-3 block overflow-hidden rounded-xl"
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={entry.photo.thumbUrl}
-                      alt={`Foto von ${entry.name}`}
-                      loading="lazy"
-                      className="w-full h-auto object-cover"
-                    />
-                  </a>
+                  <MemoryPolaroid guestName={entry.name} photo={entry.photo} />
                 ) : (
                   entry.hasPhoto && (
                     <p className="mt-3 flex items-center gap-2 pl-2 text-xs text-gray-500">

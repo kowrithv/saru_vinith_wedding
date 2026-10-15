@@ -56,4 +56,29 @@ describe('Hero', () => {
     render(<Hero />)
     expect(screen.getByRole('link', { name: /mehr entdecken/i })).toHaveAttribute('href', '#countdown')
   })
+
+  // Hero A: ein Foto von euch im Bogenrahmen statt reiner Schrift.
+  it('shows a photo of the couple in an arch frame with a meaningful alt text', () => {
+    render(<Hero />)
+    const photo = screen.getByRole('img', { name: /saruga und vinith/i })
+    expect(photo).toHaveAttribute('src', '/hero/paar.jpg')
+    expect(photo.closest('[data-testid="hero-arch"]')).toHaveClass('rounded-t-full')
+  })
+
+  it('loads the photo with high priority because it is the first thing guests see', () => {
+    render(<Hero />)
+    expect(screen.getByRole('img', { name: /saruga und vinith/i })).toHaveAttribute('fetchpriority', 'high')
+  })
+
+  it('writes the names in the display font and the ampersand in the script font', () => {
+    render(<Hero />)
+    const heading = screen.getByRole('heading', { level: 1 })
+    expect(heading).toHaveClass('font-display')
+    expect(screen.getByText('&')).toHaveClass('font-script')
+  })
+
+  it('names the weekday next to the date', () => {
+    render(<Hero />)
+    expect(screen.getByText(/samstag/i)).toBeInTheDocument()
+  })
 })
