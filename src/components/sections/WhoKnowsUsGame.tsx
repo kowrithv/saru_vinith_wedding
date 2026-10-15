@@ -3,18 +3,72 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Check } from 'lucide-react'
-import { whoQuestions, whoGameOptions } from '@/lib/who-game-content'
+import { whoQuestions, whoGameOptions, whoBoth } from '@/lib/who-game-content'
+import { whoPortraits } from '@/lib/site-images'
 import { getDeviceId } from '@/lib/device-id'
 import { usePolling } from '@/lib/use-polling'
 import { useGuestAccess } from '@/lib/use-guest-access'
 import { useWhoVotes } from '@/lib/who-local-votes'
 import GuestPasswordField from '@/components/ui/GuestPasswordField'
 import Lotus from '@/components/ui/Lotus'
-import WhoOptionBadge from '@/components/sections/WhoOptionBadge'
 import WhoResults, { type TallyMap } from '@/components/sections/WhoResults'
 import { cn } from '@/lib/utils'
 
 const VOTE_FAILED_MESSAGE = 'Abstimmen fehlgeschlagen. Bitte versuch es erneut.'
+
+interface PhotoOptionProps {
+  option: string
+  chosen: boolean
+  /** Es wurde schon abgestimmt: die anderen Fotos treten zurück. */
+  decided: boolean
+  disabled: boolean
+  onVote: (option: string) => void
+}
+
+// Abgestimmt wird über das Foto: kein Name im Bild. Der Name steht nur im
+// Zugänglichkeits-Label (Screenreader, Tests). Die beiden Einzelfotos sind
+// quadratisch, "Beide" liegt als breites Foto darunter.
+function PhotoOption({ option, chosen, decided, disabled, onVote }: PhotoOptionProps) {
+  const url = whoPortraits.get(option)
+  const both = option === whoBoth
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      aria-label={option}
+      aria-pressed={decided ? chosen : undefined}
+      onClick={() => onVote(option)}
+      className={cn(
+        'group relative block overflow-hidden rounded-2xl border-2 bg-champagne transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dark-blue',
+        both ? 'col-span-2 aspect-[2/1]' : 'aspect-square',
+        chosen
+          ? 'border-dark-blue shadow-md'
+          : decided
+            ? 'border-champagne-dark opacity-45 saturate-50'
+            : 'border-champagne-dark hover:border-dark-blue hover:shadow-md active:scale-[0.98]'
+      )}
+    >
+      {url && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={url}
+          alt=""
+          aria-hidden="true"
+          draggable={false}
+          className="h-full w-full object-cover"
+        />
+      )}
+      {chosen && (
+        <span
+          aria-hidden="true"
+          className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-dark-blue text-white shadow"
+        >
+          <Check size={18} />
+        </span>
+      )}
+    </button>
+  )
+}
 
 interface WhoState {
   released: boolean
@@ -165,35 +219,22 @@ export default function WhoKnowsUsGame() {
         <div className="h-1 bg-champagne-dark/30 rounded-full overflow-hidden mb-5" aria-hidden="true">
           <div className="h-full bg-gold rounded-full transition-all duration-500" style={{ width: `${progress}%` }} />
         </div>
-        <h3 className="font-display text-2xl md:text-3xl font-semibold leading-tight text-dark-blue mb-6 text-center">
+        <h3 className="font-display text-2xl md:text-3xl font-semibold leading-tight text-dark-blue mb-2 text-center">
           {question.question}
         </h3>
+        <p className="text-sm text-gray-500 mb-5 text-center">Tippe auf das Foto.</p>
 
-        <div className="flex flex-col gap-3">
-          {whoGameOptions.map((option) => {
-            const chosen = option === myVote
-            return (
-              <button
-                key={option}
-                type="button"
-                disabled={hasVoted || pendingOption !== null}
-                aria-pressed={hasVoted ? chosen : undefined}
-                onClick={() => handleVote(option)}
-                className={cn(
-                  'flex items-center gap-3 px-3 py-2.5 rounded-xl border-[1.5px] text-sm font-medium text-left transition-colors',
-                  chosen
-                    ? 'border-dark-blue bg-champagne/50 text-dark-blue'
-                    : hasVoted
-                      ? 'border-champagne-dark bg-white text-gray-400'
-                      : 'border-champagne-dark bg-white text-gray-700 hover:border-dark-blue hover:bg-champagne/30'
-                )}
-              >
-                <WhoOptionBadge option={option} size={40} className={cn(hasVoted && !chosen && 'opacity-50')} />
-                <span className="flex-1">{option}</span>
-                {chosen && <Check size={18} className="text-dark-blue flex-shrink-0" aria-hidden="true" />}
-              </button>
-            )
-          })}
+        <div className="mx-auto grid max-w-sm grid-cols-2 gap-3">
+          {whoGameOptions.map((option) => (
+            <PhotoOption
+              key={option}
+              option={option}
+              chosen={option === myVote}
+              decided={hasVoted}
+              disabled={hasVoted || pendingOption !== null}
+              onVote={handleVote}
+            />
+          ))}
         </div>
 
         {needsPassword && !hasVoted && (

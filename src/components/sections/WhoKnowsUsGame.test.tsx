@@ -74,6 +74,31 @@ describe('WhoKnowsUsGame', () => {
     expect(screen.getByText(`Frage 1 von ${whoQuestions.length}`)).toBeInTheDocument()
   })
 
+  it('votes with photos: one photo per answer and no names in the picture', async () => {
+    stubApi()
+    const { container } = render(<WhoKnowsUsGame />)
+    await screen.findByText(whoQuestions[0].question)
+
+    const sources = [...container.querySelectorAll('button img')].map((img) => img.getAttribute('src'))
+    expect(sources).toEqual(['/who/saruga.jpg', '/who/vinith.jpg', '/who/beide.jpg'])
+    // Die Namen gibt es nur als Beschriftung für Screenreader, nicht als Text im Bild.
+    whoGameOptions.forEach((option) => {
+      expect(screen.queryByText(option)).not.toBeInTheDocument()
+      expect(screen.getByRole('button', { name: option })).toBeInTheDocument()
+    })
+  })
+
+  it('marks the chosen photo and lets the others step back', async () => {
+    stubApi()
+    render(<WhoKnowsUsGame />)
+    await userEvent.click(await screen.findByRole('button', { name: whoGameOptions[1] }))
+
+    await screen.findByText(/deine stimme ist gespeichert/i)
+    expect(screen.getByRole('button', { name: whoGameOptions[1] })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: whoGameOptions[0] })).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByRole('button', { name: whoGameOptions[2] })).toHaveAttribute('aria-pressed', 'false')
+  })
+
   it('casts a vote with the device id and confirms it without showing any results', async () => {
     const api = stubApi()
     render(<WhoKnowsUsGame />)

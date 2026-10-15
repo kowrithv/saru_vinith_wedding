@@ -140,9 +140,10 @@ Link zum Kopieren mit `#k=<Wort>` im Fragment). Das Wort wird aus `ADMIN_SECRET`
 einer Liste leicht tippbarer Wörter gewählt (`who-results-words.ts`), zeigt nur die
 Ergebnisse (auch vor der Freigabe) und ist kein starkes Geheimnis: es hält Gäste vom
 Vorab-Blick ab. Falsche Wörter werden gebremst (20 je Adresse in 15 Minuten); das
-richtige wird nie abgewiesen. Die Porträts liegen als
-`public/who/saruga.jpg` und `public/who/vinith.jpg` (zum Tauschen die Datei
-ersetzen).
+richtige wird nie abgewiesen. Abgestimmt wird über Fotos statt Namen: je eines für
+Saruga und Vinith (`public/who/saruga.jpg`, `public/who/vinith.jpg`, quadratisch,
+640 px) und ein gemeinsames für „Beide" (`public/who/beide.jpg`, 2:1, 1000 x 500 px).
+Zum Tauschen die Datei ersetzen (gleicher Name und gleiches Format).
 
 Details: `docs/superpowers/specs/2026-10-12-gallery-design.md`.
 

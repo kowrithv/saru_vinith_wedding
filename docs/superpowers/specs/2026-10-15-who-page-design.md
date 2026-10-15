@@ -4,7 +4,7 @@
 
 Gäste stimmen vorab ab, ohne Ergebnisse zu sehen. Das Brautpaar gibt die Auflösung
 später frei; der DJ sieht die Ergebnisse vorher über einen eigenen Link. Aus den
-Buchstaben-Marken (S, V) werden Porträts.
+Buchstaben-Marken (S, V) werden Fotos; abgestimmt wird über Bilder statt Namen.
 
 ## Entscheidungen (Vorgaben, jederzeit änderbar)
 
@@ -25,9 +25,11 @@ Buchstaben-Marken (S, V) werden Porträts.
   Gästebuch). Limit je Gerät 60 Stimmen / 15 Minuten, je Adresse 1500 (erste Stimme ohne
   Sitzung, gemeinsames WLAN; das Einlese-Skript für die alten Stimmen kommt von einer
   Adresse).
-- **Porträts:** zwei Ausschnitte aus `public/hero/paar.jpg` als
-  `public/who/saruga.jpg` und `public/who/vinith.jpg` (quadratisch, 192 px). Zum Tauschen
-  die Datei ersetzen. „Beide" zeigt beide Porträts überlappt.
+- **Fotos statt Namen:** je ein Foto für Saruga und Vinith (`public/who/saruga.jpg`,
+  `vinith.jpg`, quadratisch, 640 px) und ein gemeinsames für „Beide" (`beide.jpg`, 2:1,
+  1000 x 500 px). Die Abstimmung zeigt nur die Fotos (zwei Quadrate, darunter das breite
+  Foto); der Name steht nur als Beschriftung für Screenreader. In den Ergebnissen stehen
+  die Namen neben kleinen runden Fotos. Zum Tauschen die Datei ersetzen.
 
 ## API
 

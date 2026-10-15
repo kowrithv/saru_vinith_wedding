@@ -1,4 +1,5 @@
 import { couple } from './site-content'
+import { whoBoth } from './who-game-content'
 
 // Die Bilder der Startseite liegen als Dateien in public/: zum Tauschen die
 // Datei ersetzen (gleicher Name), im Code ändert sich nichts.
@@ -15,11 +16,13 @@ export const homePreviewPhotos: string[] = [
 ]
 
 /**
- * Porträts für "Wer von uns?" (quadratisch, 192 x 192 px), nach dem Namen der
- * Antwort. Sie sind Ausschnitte aus dem Paarfoto: zum Tauschen die Datei
- * ersetzen (gleicher Name). "Beide" zeigt beide Porträts zusammen.
+ * Fotos für "Wer von uns?", nach der Antwort: je ein Foto für Saruga und Vinith
+ * (quadratisch, 640 x 640 px) und ein gemeinsames für "Beide" (2:1, 1000 x 500
+ * px). Abgestimmt wird über diese Bilder, nicht über Namen. Zum Tauschen die
+ * Datei ersetzen (gleicher Name, gleiches Format), im Code ändert sich nichts.
  */
 export const whoPortraits: ReadonlyMap<string, string> = new Map([
   [couple.bride, '/who/saruga.jpg'],
   [couple.groom, '/who/vinith.jpg'],
+  [whoBoth, '/who/beide.jpg'],
 ])

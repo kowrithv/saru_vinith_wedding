@@ -10,8 +10,8 @@ Gesammelt, damit `TODO.md` nur das enthält, was jetzt ansteht.
 
 ## Inhalte, die nach Wunsch dazukommen
 
-- Bessere Porträts für „Wer von uns?": heute zwei Ausschnitte aus dem Paarfoto
-  (`public/who/saruga.jpg`, `public/who/vinith.jpg`, quadratisch, 192 px); Datei ersetzen.
+- Andere Fotos für „Wer von uns?": `public/who/saruga.jpg`, `vinith.jpg` (quadratisch,
+  640 px) und `beide.jpg` (2:1, 1000 x 500 px); Datei ersetzen.
 
 ## Technisch
 

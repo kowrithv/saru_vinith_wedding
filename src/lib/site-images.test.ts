@@ -4,6 +4,7 @@ import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import sharp from 'sharp'
 import { couple } from './site-content'
+import { whoBoth } from './who-game-content'
 import { heroPhoto, homePreviewPhotos, whoPortraits } from './site-images'
 
 const publicDir = path.join(process.cwd(), 'public')
@@ -43,17 +44,29 @@ describe('static map', () => {
   })
 })
 
-describe('who portraits', () => {
-  it('has one for each of the two people', () => {
-    expect([...whoPortraits.keys()].sort()).toEqual([couple.bride, couple.groom].sort())
+describe('who photos', () => {
+  it('has one for each answer', () => {
+    expect([...whoPortraits.keys()].sort()).toEqual([couple.bride, couple.groom, whoBoth].sort())
   })
 
-  it.each([...whoPortraits.entries()])('%s exists, is square and small', async (_name, url) => {
+  it.each([couple.bride, couple.groom])('%s is a square photo of reasonable size', async (name) => {
+    const url = whoPortraits.get(name) as string
     const file = path.join(publicDir, url)
     expect(existsSync(file), `${url} fehlt`).toBe(true)
-    expect(statSync(file).size).toBeLessThanOrEqual(30 * 1024)
+    expect(statSync(file).size).toBeLessThanOrEqual(120 * 1024)
     const { width, height } = await sharp(file).metadata()
     expect(width).toBe(height)
-    expect(width).toBeLessThanOrEqual(256)
+    expect(width).toBeGreaterThanOrEqual(400)
+    expect(width).toBeLessThanOrEqual(900)
+  })
+
+  it('the shared photo for both is twice as wide as high', async () => {
+    const url = whoPortraits.get(whoBoth) as string
+    const file = path.join(publicDir, url)
+    expect(existsSync(file), `${url} fehlt`).toBe(true)
+    expect(statSync(file).size).toBeLessThanOrEqual(150 * 1024)
+    const { width, height } = await sharp(file).metadata()
+    expect(width).toBe((height ?? 0) * 2)
+    expect(width).toBeGreaterThanOrEqual(800)
   })
 })

@@ -5,8 +5,11 @@ export interface WhoQuestion {
   question: string
 }
 
+/** Die Antwort "beide": wird mit dem gemeinsamen Foto gezeigt. */
+export const whoBoth = 'Beide'
+
 // Die Antwortmöglichkeiten sind für alle Fragen identisch.
-export const whoGameOptions: string[] = [couple.bride, couple.groom, 'Beide']
+export const whoGameOptions: string[] = [couple.bride, couple.groom, whoBoth]
 
 export const whoQuestions: WhoQuestion[] = [
   { id: '1', question: 'Wer hat beim ersten Treffen mehr geredet?' },

@@ -62,7 +62,7 @@ einer Route meldet `tsc` ggf. veraltete Dateien in `.next/types` – dann
   (`who-results.ts`, Schalter `who_results_released`; Freigabe beendet die
   Abstimmung). DJ-Seite `/dj`: ein Wort aus `who-results-words.ts`, gewählt per HMAC aus dem
   Admin-Schlüssel (kein starkes Geheimnis; falsche Wörter je Adresse gebremst, das
-  richtige nie abgewiesen), Header `x-results-key`, Link mit `#k=<Wort>`. Porträts: `public/who/*.jpg`,
+  richtige nie abgewiesen), Header `x-results-key`, Link mit `#k=<Wort>`. Abstimmung über Fotos statt Namen: `public/who/*.jpg`,
   `whoPortraits` in `site-images.ts`.
 - Tailwind v4, Farb-Tokens `dark-blue`, `champagne(-light/-dark)`, `gold`,
   `bordeaux`, `rose-sand`; Schriften `font-serif` (Playfair), `font-display`
