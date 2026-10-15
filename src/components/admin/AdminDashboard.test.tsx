@@ -65,7 +65,7 @@ function mockFetchSequence(
     }
     // Der Abschnitt "Wer von uns?" lädt seinen Stand selbst (eigene Tests).
     if (url === '/api/admin/who-results') {
-      return Promise.resolve({ ok: true, status: 200, json: async () => ({ phase: 'voting', key: 'kirsche' }) })
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({ phase: 'voting', key: 'kirsche', votes: 0, voters: 0 }) })
     }
     return fn(url, init)
   }

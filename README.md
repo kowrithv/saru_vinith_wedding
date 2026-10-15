@@ -156,7 +156,11 @@ Link zum Kopieren mit `#k=<Wort>` im Fragment). Das Wort wird aus `ADMIN_SECRET`
 einer Liste leicht tippbarer Wörter gewählt (`who-results-words.ts`), zeigt nur die
 Ergebnisse (auch vor der Freigabe) und ist kein starkes Geheimnis: es hält Gäste vom
 Vorab-Blick ab. Falsche Wörter werden gebremst (20 je Adresse in 15 Minuten); das
-richtige wird nie abgewiesen. Abgestimmt wird über Fotos statt Namen: je eines für
+richtige wird nie abgewiesen. Im Admin steht die Zahl der Stimmen und Geräte, dazu der
+Knopf **„Alle Stimmen löschen"** (Rückfrage; nach der Freigabe gesperrt): er leert
+`who_votes` und zählt die „Runde" (`who_votes_epoch`) hoch, die `GET /api/who-votes`
+mitschickt. Die Seite der Gäste vergleicht sie mit der gemerkten Runde und vergisst ihre
+alten Antworten von selbst, ein Testgerät beginnt wieder bei Frage 1. Abgestimmt wird über Fotos statt Namen: je eines für
 Saruga und Vinith (`public/who/saruga.jpg`, `public/who/vinith.jpg`, quadratisch,
 640 px) und ein gemeinsames für „Beide" (`public/who/beide.jpg`, 2:1, 1000 x 500 px).
 Zum Tauschen die Datei ersetzen (gleicher Name und gleiches Format).

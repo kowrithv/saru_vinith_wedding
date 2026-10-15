@@ -3,7 +3,7 @@ import { GET } from './route'
 import { whoQuestions, whoGameOptions } from '@/lib/who-game-content'
 import { getDb } from '@/lib/db'
 import { setFeatureLocked } from '@/lib/app-config'
-import { castVote } from '@/lib/who-votes'
+import { castVote, resetVotes } from '@/lib/who-votes'
 import { RESULTS_KEY_HEADER, resultsKey, setResultsReleased, setWhoPhase } from '@/lib/who-results'
 import { ADMIN_COOKIE_NAME, adminCookieSecret, getOrCreateAdminSecret, signCookieValue } from '@/lib/admin-auth'
 
@@ -38,7 +38,7 @@ describe('GET /api/who-votes', () => {
     expect(response.status).toBe(200)
     expect(response.headers.get('cache-control')).toMatch(/no-store/)
     const body = await response.json()
-    expect(body).toEqual({ phase: 'voting', released: false, questions: null })
+    expect(body).toEqual({ phase: 'voting', released: false, epoch: '0', questions: null })
   })
 
   it('keeps the results hidden while the voting is closed but not released', async () => {
@@ -47,7 +47,7 @@ describe('GET /api/who-votes', () => {
 
     const body = await (await GET(getRequest())).json()
 
-    expect(body).toEqual({ phase: 'closed', released: false, questions: null })
+    expect(body).toEqual({ phase: 'closed', released: false, epoch: '0', questions: null })
   })
 
   it('shows the DJ the live counts in every phase', async () => {
@@ -157,5 +157,20 @@ describe('GET /api/who-votes', () => {
 
     expect(response.status).toBe(200)
     expect(Object.keys((await response.json()).questions)).toHaveLength(whoQuestions.length)
+  })
+
+  it('tells the guests which round of the voting this is, so a reset reaches their browsers', async () => {
+    expect((await (await GET(getRequest())).json()).epoch).toBe('0')
+
+    resetVotes(getDb())
+
+    expect((await (await GET(getRequest())).json()).epoch).toBe('1')
+  })
+
+  it('sends the round also with the results', async () => {
+    setResultsReleased(getDb(), true)
+    resetVotes(getDb())
+
+    expect((await (await GET(getRequest())).json()).epoch).toBe('1')
   })
 })

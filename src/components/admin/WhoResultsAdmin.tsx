@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Copy, Eye, EyeOff, Lock, Vote } from 'lucide-react'
+import { Copy, Eye, EyeOff, Lock, Trash2, Vote } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 type Phase = 'voting' | 'closed' | 'released'
@@ -9,10 +9,18 @@ type Phase = 'voting' | 'closed' | 'released'
 interface ResultsState {
   phase: Phase
   key: string
+  /** Abgegebene Stimmen und wie viele Geräte dahinterstehen. */
+  votes: number
+  voters: number
 }
 
 const LOAD_FAILED = 'Der Stand konnte nicht geladen werden.'
 const SWITCH_FAILED = 'Umschalten fehlgeschlagen. Bitte versuch es erneut.'
+const DELETE_FAILED = 'Löschen fehlgeschlagen. Bitte versuch es erneut.'
+
+function plural(count: number, one: string, many: string): string {
+  return count === 1 ? `1 ${one}` : `${count} ${many}`
+}
 
 const PHASES: { phase: Phase; label: string; description: string }[] = [
   { phase: 'voting', label: 'Abstimmen', description: 'Die Gäste stimmen ab. Die Ergebnisse sind verborgen.' },
@@ -35,6 +43,7 @@ export default function WhoResultsAdmin() {
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [copyMessage, setCopyMessage] = useState<string | null>(null)
+  const [resetMessage, setResetMessage] = useState<string | null>(null)
 
   useEffect(() => {
     let active = true
@@ -63,6 +72,7 @@ export default function WhoResultsAdmin() {
       return
     }
     setError(null)
+    setResetMessage(null)
     setBusy(true)
     try {
       const response = await fetch('/api/admin/who-results', {
@@ -77,6 +87,39 @@ export default function WhoResultsAdmin() {
       setState((await response.json()) as ResultsState)
     } catch {
       setError(SWITCH_FAILED)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  // Alle Stimmen löschen, z. B. die Testdaten vor der Feier. Die Gäste-Seiten
+  // vergessen ihre Antworten danach von selbst (neue "Runde", siehe who-votes.ts).
+  const resetVotes = async () => {
+    if (!state || busy) return
+    if (
+      !window.confirm(
+        `Alle ${plural(state.votes, 'Stimme', 'Stimmen')} von ${plural(state.voters, 'Gerät', 'Geräten')} wirklich löschen? Das lässt sich nicht rückgängig machen.`
+      )
+    ) {
+      return
+    }
+    setError(null)
+    setResetMessage(null)
+    setBusy(true)
+    try {
+      const response = await fetch('/api/admin/who-results', { method: 'DELETE' })
+      if (!response.ok) {
+        const data = (await response.json().catch(() => null)) as { error?: string } | null
+        setError(
+          response.status === 401 ? 'Sitzung abgelaufen – bitte neu anmelden.' : (data?.error ?? DELETE_FAILED)
+        )
+        return
+      }
+      const data = (await response.json()) as ResultsState & { deleted: number }
+      setState(data)
+      setResetMessage(`${plural(data.deleted, 'Stimme', 'Stimmen')} gelöscht. Die Abstimmung beginnt von vorn.`)
+    } catch {
+      setError(DELETE_FAILED)
     } finally {
       setBusy(false)
     }
@@ -132,6 +175,33 @@ export default function WhoResultsAdmin() {
           </button>
         ))}
       </div>
+
+      {state && (
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm text-gray-700" data-testid="who-vote-count">
+            Bisher {plural(state.votes, 'Stimme', 'Stimmen')} von {plural(state.voters, 'Gerät', 'Geräten')}.
+          </p>
+          <button
+            type="button"
+            onClick={resetVotes}
+            disabled={busy || state.votes === 0 || state.phase === 'released'}
+            className="flex items-center gap-1.5 rounded-lg border border-red-300 bg-white px-3 py-2 text-xs font-medium text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-white"
+          >
+            <Trash2 size={14} aria-hidden="true" />
+            Alle Stimmen löschen
+          </button>
+          {state.phase === 'released' && (
+            <p className="basis-full text-xs text-gray-500">
+              Nach der Freigabe nicht möglich. Zuerst auf „Beendet“ oder „Abstimmen“ stellen.
+            </p>
+          )}
+          {resetMessage && (
+            <p className="basis-full text-xs text-green-700" role="status">
+              {resetMessage}
+            </p>
+          )}
+        </div>
+      )}
 
       {state && (
         <div className="mt-5 rounded-xl bg-champagne-light/60 border border-champagne-dark/40 p-4">

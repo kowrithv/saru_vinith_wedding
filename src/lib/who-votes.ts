@@ -1,5 +1,6 @@
 import type Database from 'better-sqlite3'
 import { whoQuestions, whoGameOptions } from './who-game-content'
+import { getConfigValue, setConfigValue } from './app-config'
 
 export interface VoteResult {
   tally: Record<string, number>
@@ -77,4 +78,39 @@ export function castVote(
 
   const outcome = apply()
   return { tally: tallyForQuestion(db, questionId), ...outcome }
+}
+
+export interface VoteCounts {
+  /** Alle abgegebenen Stimmen (eine je Frage und Gerät). */
+  votes: number
+  /** Wie viele Geräte mindestens eine Stimme abgegeben haben. */
+  voters: number
+}
+
+export function countVotes(db: Database.Database): VoteCounts {
+  const row = db
+    .prepare('SELECT COUNT(*) AS votes, COUNT(DISTINCT voter_id) AS voters FROM who_votes')
+    .get() as VoteCounts
+  return { votes: row.votes, voters: row.voters }
+}
+
+const EPOCH_CONFIG_KEY = 'who_votes_epoch'
+
+/**
+ * Zählt mit, wie oft die Abstimmung zurückgesetzt wurde. Die Seite der Gäste
+ * vergleicht ihn mit dem, den ihr Browser gemerkt hat: weicht er ab, vergisst der
+ * Browser seine alten Antworten (sonst hielte sich ein Testgerät nach dem
+ * Zurücksetzen weiter für "fertig").
+ */
+export function getVotesEpoch(db: Database.Database): string {
+  return getConfigValue(db, EPOCH_CONFIG_KEY) ?? '0'
+}
+
+/** Löscht alle Stimmen und beginnt eine neue Runde. Liefert die Zahl der gelöschten Stimmen. */
+export function resetVotes(db: Database.Database): number {
+  return db.transaction(() => {
+    const { changes } = db.prepare('DELETE FROM who_votes').run()
+    setConfigValue(db, EPOCH_CONFIG_KEY, String(Number(getVotesEpoch(db)) + 1))
+    return changes
+  })()
 }

@@ -9,6 +9,7 @@ vi.mock('@/lib/device-id', () => ({
 }))
 
 interface ApiOptions {
+  epoch?: string
   phase?: 'voting' | 'closed' | 'released'
   questions?: Record<string, Record<string, number>> | null
   unlocked?: boolean
@@ -21,12 +22,12 @@ function tallyWith(counts: Record<string, number>) {
   )
 }
 
-function stubApi({ phase = 'voting', questions = null, unlocked = true, voteResponse }: ApiOptions = {}) {
+function stubApi({ phase = 'voting', epoch = '0', questions = null, unlocked = true, voteResponse }: ApiOptions = {}) {
   const calls: { url: string; init?: RequestInit }[] = []
   const fn = vi.fn(async (url: string, init?: RequestInit) => {
     calls.push({ url, init })
     if (url === '/api/who-votes') {
-      return { ok: true, status: 200, json: async () => ({ phase, released: phase === 'released', questions }) }
+      return { ok: true, status: 200, json: async () => ({ phase, released: phase === 'released', epoch, questions }) }
     }
     if (url === '/api/access') {
       return { ok: true, status: 200, json: async () => ({ unlocked }) }
@@ -365,6 +366,29 @@ describe('WhoKnowsUsGame', () => {
       expect(container.querySelectorAll('button img')).toHaveLength(0)
       expect(screen.queryByText(/\d+ %/)).not.toBeInTheDocument()
       expect(screen.queryByText('Die Auflösung')).not.toBeInTheDocument()
+    })
+  })
+
+  describe('after a reset by the couple', () => {
+    it('forgets the answers of this browser and starts at question 1 again', async () => {
+      window.localStorage.setItem(
+        'who-game-votes',
+        JSON.stringify({ [whoQuestions[0].id]: whoGameOptions[0], [whoQuestions[1].id]: whoGameOptions[1] })
+      )
+      stubApi({ epoch: '1' })
+      render(<WhoKnowsUsGame />)
+
+      expect(await screen.findByText(whoQuestions[0].question)).toBeInTheDocument()
+      expect(screen.getByText(`Frage 1 von ${whoQuestions.length}`)).toBeInTheDocument()
+      expect(window.localStorage.getItem('who-game-votes')).toBeNull()
+    })
+
+    it('keeps the answers while nothing was reset', async () => {
+      window.localStorage.setItem('who-game-votes', JSON.stringify({ [whoQuestions[0].id]: whoGameOptions[0] }))
+      stubApi({ epoch: '0' })
+      render(<WhoKnowsUsGame />)
+
+      expect(await screen.findByText(whoQuestions[1].question)).toBeInTheDocument()
     })
   })
 

@@ -26,10 +26,11 @@ Erledigt (16.10., nachts): Image `v1.0.0-rc.2` gebaut (`rc.1` scheiterte an
 Caddy-Limit `request_body { max_size 64KB }` für `/api/*` (413 und 401 geprüft); Smoke-Test
 gegen `https://vsjourney.de` grün (20 von 20).
 
-- [ ] **`v1.0.0-rc.3`** (Galerie: großer Auswahl-Knopf, Upload-Kacheln mit Fortschritt, Neuladen
-      alle 30 s, leere Filter weg): `develop` pushen, nach `main` mergen, Tag auf den Kopf von
-      `main`, im Actions-Lauf alle Jobs grün; auf dem Server `IMAGE_TAG=1.0.0-rc.3` in der
-      `.env`, `docker-compose pull`, `docker-compose up -d`; danach der Gerätetest auf diesem Stand
+- [x] `v1.0.0-rc.3` ausgerollt und getestet (Upload-Kacheln, Neuladen, Polaroid, Download, Löschen)
+- [ ] **`v1.0.0-rc.4`** (Admin: „Alle Stimmen löschen" für „Wer von uns?", Gäste-Seiten vergessen
+      alte Antworten): `develop` pushen, nach `main` mergen, Tag auf den Kopf von `main`, alle
+      Jobs grün; auf dem Server `IMAGE_TAG=1.0.0-rc.4`, `docker-compose pull`, `up -d`;
+      dann im Admin die Testdaten löschen und mit dem Test-Handy prüfen
 - [ ] Gerätetest auf iPhone und Android (`docs/ops/geraetetest-checkliste.md`): vor allem
       Foto-Upload nach R2 (HEIC und Android), QR-Anmeldung, Polaroid speichern, „Wer von
       uns?" mit Ändern; Bucket-CORS ohne `localhost` prüfen
