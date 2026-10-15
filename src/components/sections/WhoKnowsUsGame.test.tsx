@@ -121,8 +121,8 @@ describe('WhoKnowsUsGame', () => {
     await screen.findByText(whoQuestions[0].question)
 
     // Vor der Stimme ist der Knopf da, aber unsichtbar und für niemanden bedienbar.
-    const button = container.querySelector('button.invisible') as HTMLButtonElement
-    expect(button).not.toBeNull()
+    const button = screen.getByText('Weiter', { selector: 'button' }) as HTMLButtonElement
+    expect(button).toHaveClass('invisible')
     expect(button).toBeDisabled()
     expect(button).toHaveAttribute('aria-hidden', 'true')
     expect(button).toHaveAttribute('tabindex', '-1')
@@ -134,6 +134,100 @@ describe('WhoKnowsUsGame', () => {
     expect(same).toBe(button)
     expect(same).toBeEnabled()
     expect(same).not.toHaveClass('invisible')
+  })
+
+  describe('changing a vote', () => {
+    it('sends the new answer when another photo is tapped after voting and moves the check', async () => {
+      const api = stubApi()
+      render(<WhoKnowsUsGame />)
+      await userEvent.click(await screen.findByRole('button', { name: whoGameOptions[0] }))
+      await screen.findByRole('button', { name: 'Weiter' })
+
+      await userEvent.click(screen.getByRole('button', { name: whoGameOptions[1] }))
+
+      await waitFor(() => expect(api.voteBodies()).toHaveLength(2))
+      expect(api.voteBodies()[1]).toMatchObject({ questionId: whoQuestions[0].id, option: whoGameOptions[1] })
+      await waitFor(() =>
+        expect(screen.getByRole('button', { name: whoGameOptions[1] })).toHaveAttribute('aria-pressed', 'true')
+      )
+      expect(screen.getByRole('button', { name: whoGameOptions[0] })).toHaveAttribute('aria-pressed', 'false')
+      expect(JSON.parse(window.localStorage.getItem('who-game-votes') as string)).toEqual({
+        [whoQuestions[0].id]: whoGameOptions[1],
+      })
+    })
+
+    it('does not send anything when the chosen photo is tapped again', async () => {
+      const api = stubApi()
+      render(<WhoKnowsUsGame />)
+      await userEvent.click(await screen.findByRole('button', { name: whoGameOptions[0] }))
+      await screen.findByRole('button', { name: 'Weiter' })
+
+      await userEvent.click(screen.getByRole('button', { name: whoGameOptions[0] }))
+
+      expect(api.voteBodies()).toHaveLength(1)
+    })
+
+    it('keeps the old answer when the change is not confirmed', async () => {
+      let call = 0
+      const fn = vi.fn(async (url: string) => {
+        if (url === '/api/who-votes') return { ok: true, status: 200, json: async () => ({ released: false, questions: null }) }
+        if (url === '/api/access') return { ok: true, status: 200, json: async () => ({ unlocked: true }) }
+        call += 1
+        return call === 1
+          ? { ok: true, status: 200, json: async () => ({ alreadyVoted: false, changed: false }) }
+          : { ok: false, status: 429, json: async () => ({ error: 'Zu viele Stimmen. Bitte später erneut versuchen.' }) }
+      })
+      vi.stubGlobal('fetch', fn)
+      render(<WhoKnowsUsGame />)
+      await userEvent.click(await screen.findByRole('button', { name: whoGameOptions[0] }))
+      await screen.findByRole('button', { name: 'Weiter' })
+
+      await userEvent.click(screen.getByRole('button', { name: whoGameOptions[2] }))
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(/zu viele stimmen/i)
+      expect(screen.getByRole('button', { name: whoGameOptions[0] })).toHaveAttribute('aria-pressed', 'true')
+      expect(JSON.parse(window.localStorage.getItem('who-game-votes') as string)).toEqual({
+        [whoQuestions[0].id]: whoGameOptions[0],
+      })
+    })
+
+    it('goes back to the previous question and shows the answer given there', async () => {
+      stubApi()
+      render(<WhoKnowsUsGame />)
+      await userEvent.click(await screen.findByRole('button', { name: whoGameOptions[2] }))
+      await userEvent.click(await screen.findByRole('button', { name: 'Weiter' }))
+      await screen.findByText(whoQuestions[1].question)
+
+      await userEvent.click(screen.getByRole('button', { name: 'Zurück' }))
+
+      expect(await screen.findByText(whoQuestions[0].question)).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: whoGameOptions[2] })).toHaveAttribute('aria-pressed', 'true')
+      expect(screen.getByText(`Frage 1 von ${whoQuestions.length}`)).toBeInTheDocument()
+    })
+
+    it('has no Zurück on the first question', async () => {
+      stubApi()
+      render(<WhoKnowsUsGame />)
+      await screen.findByText(whoQuestions[0].question)
+
+      expect(screen.queryByRole('button', { name: 'Zurück' })).not.toBeInTheDocument()
+    })
+
+    it('lets the guest review and change the answers from the thank-you page', async () => {
+      window.localStorage.setItem(
+        'who-game-votes',
+        JSON.stringify(Object.fromEntries(whoQuestions.map((q) => [q.id, whoGameOptions[0]])))
+      )
+      stubApi()
+      render(<WhoKnowsUsGame />)
+      await screen.findByText('Danke fürs Mitmachen!')
+
+      await userEvent.click(screen.getByRole('button', { name: /antworten ansehen und ändern/i }))
+
+      expect(await screen.findByText(whoQuestions[0].question)).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: whoGameOptions[0] })).toHaveAttribute('aria-pressed', 'true')
+      expect(screen.getByRole('button', { name: 'Weiter' })).toBeEnabled()
+    })
   })
 
   it('marks the chosen photo and lets the others step back', async () => {
@@ -164,8 +258,6 @@ describe('WhoKnowsUsGame', () => {
     stubApi()
     render(<WhoKnowsUsGame />)
     await userEvent.click(await screen.findByRole('button', { name: whoGameOptions[1] }))
-    expect(screen.getByRole('button', { name: whoGameOptions[0] })).toBeDisabled()
-
     await userEvent.click(await screen.findByRole('button', { name: 'Weiter' }))
 
     expect(await screen.findByText(whoQuestions[1].question)).toBeInTheDocument()

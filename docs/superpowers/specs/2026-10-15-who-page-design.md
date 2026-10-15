@@ -8,7 +8,11 @@ Buchstaben-Marken (S, V) werden Fotos; abgestimmt wird über Bilder statt Namen.
 
 ## Entscheidungen (Vorgaben, jederzeit änderbar)
 
-- **Eine Stimme je Frage und Gerät** (wie bisher, kein Ändern, kein Mehrfach-Abstimmen).
+- **Eine Stimme je Frage und Gerät, bis zur Auflösung änderbar:** eine weitere Stimme
+  desselben Geräts auf dieselbe Frage ersetzt die erste (gezählt wird weiter eine). Auf
+  der Seite bleiben die Fotos nach der Stimme antippbar, es gibt „Zurück" und auf der
+  Dank-Seite „Antworten ansehen und ändern". Mit der Freigabe oder der Sperre ist
+  Schluss (423).
 - **DJ-Zugang:** Seite `/dj` mit einem **Wort** (der DJ tippt es ab, deshalb kein
   langer Schlüssel). Das Wort wird aus `HMAC(Admin-Schlüssel, 'who-results-link')` aus der
   Liste `RESULTS_WORDS` gewählt (nichts zu speichern, stabil, ändert sich mit
@@ -36,7 +40,7 @@ Buchstaben-Marken (S, V) werden Fotos; abgestimmt wird über Bilder statt Namen.
 - `GET /api/who-votes` → `{ released: boolean, questions: TallyMap | null }`. `questions`
   nur bei Freigabe, mit gültigem `x-results-key` oder als Admin; sonst `null`.
 - `POST /api/who-votes/vote` Body `{ questionId, voterId, option, password? }` →
-  `{ alreadyVoted }` (kein Zwischenstand). 423 bei Sperre oder Freigabe, 401/429 wie
+  `{ alreadyVoted, changed }` (kein Zwischenstand). 423 bei Sperre oder Freigabe, 401/429 wie
   Gästebuch.
 - `GET|POST /api/admin/who-results` (nur Admin) → `{ released, key }`; POST `{ released }`.
 

@@ -3,7 +3,10 @@ import { whoQuestions, whoGameOptions } from './who-game-content'
 
 export interface VoteResult {
   tally: Record<string, number>
+  /** Dieses Gerät hatte für die Frage schon abgestimmt. */
   alreadyVoted: boolean
+  /** Die Stimme wurde geändert (andere Antwort als vorher). */
+  changed: boolean
 }
 
 function emptyTallyForQuestion(): Record<string, number> {
@@ -29,6 +32,10 @@ export function getTally(db: Database.Database): Record<string, Record<string, n
   return result
 }
 
+/**
+ * Eine Stimme je Frage und Gerät. Wer noch einmal abstimmt, ändert seine
+ * Stimme: sie wandert zur neuen Antwort und zählt weiter nur einmal.
+ */
 export function castVote(
   db: Database.Database,
   questionId: string,
@@ -42,21 +49,32 @@ export function castVote(
     throw new Error('Unbekannte Antwort.')
   }
 
-  try {
-    db.prepare(
-      'INSERT INTO who_votes (question_id, voter_id, option) VALUES (?, ?, ?)'
-    ).run(questionId, voterId, option)
-    return { tally: tallyForQuestion(db, questionId), alreadyVoted: false }
-  } catch (error) {
-    if ((error as { code?: string }).code === 'SQLITE_CONSTRAINT_UNIQUE') {
-      // Dieselbe voterId hat für diese Frage schon abgestimmt (z. B. ein
-      // erneuter Versuch desselben Clients nach einem Netzwerkfehler, oder
-      // mehrere offene Tabs). Schützt NICHT gegen ein Gerät, das
-      // localStorage gezielt löscht - dabei entsteht eine neue voterId
-      // (device-id.ts), die diese Prüfung nicht greift. Die bestehende
-      // Stimme bleibt gültig, es wird nur der aktuelle Stand zurückgegeben.
-      return { tally: tallyForQuestion(db, questionId), alreadyVoted: true }
+  // Lesen und Schreiben in einer Transaktion: gleichzeitige Anfragen desselben
+  // Geräts (mehrere Tabs, Wiederholung nach einem Netzfehler) sehen einander.
+  const apply = db.transaction((): { alreadyVoted: boolean; changed: boolean } => {
+    const existing = db
+      .prepare('SELECT option FROM who_votes WHERE question_id = ? AND voter_id = ?')
+      .get(questionId, voterId) as { option: string } | undefined
+
+    if (!existing) {
+      db.prepare('INSERT INTO who_votes (question_id, voter_id, option) VALUES (?, ?, ?)').run(
+        questionId,
+        voterId,
+        option
+      )
+      return { alreadyVoted: false, changed: false }
     }
-    throw error
-  }
+    if (existing.option === option) {
+      return { alreadyVoted: true, changed: false }
+    }
+    db.prepare('UPDATE who_votes SET option = ? WHERE question_id = ? AND voter_id = ?').run(
+      option,
+      questionId,
+      voterId
+    )
+    return { alreadyVoted: true, changed: true }
+  })
+
+  const outcome = apply()
+  return { tally: tallyForQuestion(db, questionId), ...outcome }
 }

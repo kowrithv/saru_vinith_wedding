@@ -41,20 +41,56 @@ describe('castVote', () => {
     db.close()
   })
 
-  it('never counts a second vote from the same voter on the same question', () => {
+  it('counts one vote per voter and question: a second vote replaces the first', () => {
     const db = createDb(':memory:')
     castVote(db, '1', 'voter-a', whoGameOptions[0])
     const second = castVote(db, '1', 'voter-a', whoGameOptions[1])
 
     expect(second.alreadyVoted).toBe(true)
-    // Die ursprüngliche Stimme bleibt unverändert, die zweite wird NICHT gezählt.
-    expect(second.tally[whoGameOptions[0]]).toBe(1)
-    expect(second.tally[whoGameOptions[1]]).toBe(0)
+    expect(second.changed).toBe(true)
+    // Die Stimme wandert zur neuen Antwort, gezählt wird weiter eine.
+    expect(second.tally[whoGameOptions[0]]).toBe(0)
+    expect(second.tally[whoGameOptions[1]]).toBe(1)
 
     const row = db
       .prepare('SELECT COUNT(*) as n FROM who_votes WHERE question_id = ? AND voter_id = ?')
       .get('1', 'voter-a') as { n: number }
     expect(row.n).toBe(1)
+    db.close()
+  })
+
+  it('does not change anything when the same answer is sent again', () => {
+    const db = createDb(':memory:')
+    castVote(db, '1', 'voter-a', whoGameOptions[0])
+    const again = castVote(db, '1', 'voter-a', whoGameOptions[0])
+
+    expect(again.alreadyVoted).toBe(true)
+    expect(again.changed).toBe(false)
+    expect(again.tally[whoGameOptions[0]]).toBe(1)
+    db.close()
+  })
+
+  it('reports a first vote as new and unchanged', () => {
+    const db = createDb(':memory:')
+    const first = castVote(db, '1', 'voter-a', whoGameOptions[2])
+
+    expect(first.alreadyVoted).toBe(false)
+    expect(first.changed).toBe(false)
+    db.close()
+  })
+
+  it('changes only the vote of that voter on that question', () => {
+    const db = createDb(':memory:')
+    castVote(db, '1', 'voter-a', whoGameOptions[0])
+    castVote(db, '1', 'voter-b', whoGameOptions[0])
+    castVote(db, '2', 'voter-a', whoGameOptions[0])
+
+    castVote(db, '1', 'voter-a', whoGameOptions[1])
+
+    const tally = getTally(db)
+    expect(tally['1'][whoGameOptions[0]]).toBe(1)
+    expect(tally['1'][whoGameOptions[1]]).toBe(1)
+    expect(tally['2'][whoGameOptions[0]]).toBe(1)
     db.close()
   })
 

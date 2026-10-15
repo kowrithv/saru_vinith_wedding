@@ -49,18 +49,48 @@ describe('POST /api/who-votes/vote', () => {
     const response = await POST(vote('1', 'voter-a', whoGameOptions[0]))
 
     expect(response.status).toBe(200)
-    expect(await response.json()).toEqual({ alreadyVoted: false })
+    expect(await response.json()).toEqual({ alreadyVoted: false, changed: false })
     expect(getTally(getDb())['1'][whoGameOptions[0]]).toBe(1)
   })
 
-  it('does not count a second vote from the same device on the same question', async () => {
+  it('lets a device change its vote on a question and counts it once', async () => {
     await POST(vote('1', 'voter-a', whoGameOptions[0]))
     const response = await POST(vote('1', 'voter-a', whoGameOptions[1]))
 
-    expect(await response.json()).toEqual({ alreadyVoted: true })
+    expect(await response.json()).toEqual({ alreadyVoted: true, changed: true })
+    const tally = getTally(getDb())['1']
+    expect(tally[whoGameOptions[0]]).toBe(0)
+    expect(tally[whoGameOptions[1]]).toBe(1)
+  })
+
+  it('reports the same answer sent again as unchanged', async () => {
+    await POST(vote('1', 'voter-a', whoGameOptions[0]))
+    const response = await POST(vote('1', 'voter-a', whoGameOptions[0]))
+
+    expect(await response.json()).toEqual({ alreadyVoted: true, changed: false })
+    expect(getTally(getDb())['1'][whoGameOptions[0]]).toBe(1)
+  })
+
+  it('does not let a vote change once the results are released', async () => {
+    await POST(vote('1', 'voter-a', whoGameOptions[0]))
+    setResultsReleased(getDb(), true)
+
+    const response = await POST(vote('1', 'voter-a', whoGameOptions[1]))
+
+    expect(response.status).toBe(423)
     const tally = getTally(getDb())['1']
     expect(tally[whoGameOptions[0]]).toBe(1)
     expect(tally[whoGameOptions[1]]).toBe(0)
+  })
+
+  it('does not let a vote change while voting is locked', async () => {
+    await POST(vote('1', 'voter-a', whoGameOptions[0]))
+    setFeatureLocked(getDb(), 'who_votes', true)
+
+    const response = await POST(vote('1', 'voter-a', whoGameOptions[1]))
+
+    expect(response.status).toBe(423)
+    expect(getTally(getDb())['1'][whoGameOptions[0]]).toBe(1)
   })
 
   it('rejects an unknown question id with 400', async () => {

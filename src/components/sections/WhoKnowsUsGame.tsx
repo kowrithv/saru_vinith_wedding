@@ -19,7 +19,7 @@ const VOTE_FAILED_MESSAGE = 'Abstimmen fehlgeschlagen. Bitte versuch es erneut.'
 interface PhotoOptionProps {
   option: string
   chosen: boolean
-  /** Es wurde schon abgestimmt: die anderen Fotos treten zurück. */
+  /** Es wurde schon abgestimmt: die anderen Fotos treten etwas zurück, bleiben aber antippbar. */
   decided: boolean
   disabled: boolean
   onVote: (option: string) => void
@@ -44,7 +44,7 @@ function PhotoOption({ option, chosen, decided, disabled, onVote }: PhotoOptionP
         chosen
           ? 'border-dark-blue shadow-md'
           : decided
-            ? 'border-champagne-dark opacity-45 saturate-50'
+            ? 'border-champagne-dark opacity-70 hover:border-dark-blue hover:opacity-100 active:scale-[0.98]'
             : 'border-champagne-dark hover:border-dark-blue hover:shadow-md active:scale-[0.98]'
       )}
     >
@@ -141,6 +141,13 @@ export default function WhoKnowsUsGame() {
         <p className="text-gray-500 text-sm">
           Die Auflösung gibt es bei der Feier. Schaut dann einfach wieder hier vorbei.
         </p>
+        <button
+          type="button"
+          onClick={() => setViewIndex(0)}
+          className="mt-6 px-5 py-3 rounded-xl border border-champagne-dark bg-white text-sm font-medium text-dark-blue hover:border-dark-blue transition-colors"
+        >
+          Antworten ansehen und ändern
+        </button>
       </motion.div>
     )
   }
@@ -150,8 +157,9 @@ export default function WhoKnowsUsGame() {
   const hasVoted = Boolean(myVote)
   const isLastQuestion = index === whoQuestions.length - 1
 
+  // Ein weiterer Tipp auf ein anderes Foto ändert die Stimme (bis zur Auflösung).
   const handleVote = async (option: string) => {
-    if (hasVoted || pendingOption !== null) return
+    if (pendingOption !== null || option === myVote) return
     setVoteError(null)
 
     if (needsPassword && !password.trim()) {
@@ -202,6 +210,11 @@ export default function WhoKnowsUsGame() {
     setViewIndex(index + 1)
   }
 
+  const handleBack = () => {
+    setVoteError(null)
+    setViewIndex(Math.max(0, index - 1))
+  }
+
   const progress = Math.round((index / whoQuestions.length) * 100)
 
   return (
@@ -236,13 +249,13 @@ export default function WhoKnowsUsGame() {
             option={option}
             chosen={option === myVote}
             decided={hasVoted}
-            disabled={hasVoted || pendingOption !== null}
+            disabled={pendingOption !== null}
             onVote={handleVote}
           />
         ))}
       </div>
 
-      {needsPassword && !hasVoted && (
+      {needsPassword && (
         <div className="mt-5">
           <GuestPasswordField
             id="who-password"
@@ -268,21 +281,36 @@ export default function WhoKnowsUsGame() {
         </p>
       )}
 
-      {/* Der Platz für "Weiter" ist von Anfang an da (unsichtbar, solange nicht
-          abgestimmt ist): die Karte wächst nicht, wenn der Knopf erscheint. */}
-      <button
-        type="button"
-        onClick={handleNext}
-        disabled={!hasVoted}
-        tabIndex={hasVoted ? undefined : -1}
-        aria-hidden={hasVoted ? undefined : true}
-        className={cn(
-          'mt-6 w-full px-5 py-3 rounded-xl bg-dark-blue text-white text-sm font-medium hover:bg-dark-blue-light transition-colors',
-          !hasVoted && 'invisible'
-        )}
-      >
-        {isLastQuestion ? 'Fertig' : 'Weiter'}
-      </button>
+      {/* Der Platz für "Zurück" und "Weiter" ist von Anfang an da (unsichtbar, solange
+          sie nicht gebraucht werden): die Karte wächst nicht, wenn ein Knopf erscheint. */}
+      <div className="mt-6 flex gap-3">
+        <button
+          type="button"
+          onClick={handleBack}
+          disabled={index === 0}
+          tabIndex={index === 0 ? -1 : undefined}
+          aria-hidden={index === 0 ? true : undefined}
+          className={cn(
+            'px-5 py-3 rounded-xl border border-champagne-dark bg-white text-sm font-medium text-dark-blue hover:border-dark-blue transition-colors',
+            index === 0 && 'invisible'
+          )}
+        >
+          Zurück
+        </button>
+        <button
+          type="button"
+          onClick={handleNext}
+          disabled={!hasVoted}
+          tabIndex={hasVoted ? undefined : -1}
+          aria-hidden={hasVoted ? undefined : true}
+          className={cn(
+            'flex-1 px-5 py-3 rounded-xl bg-dark-blue text-white text-sm font-medium hover:bg-dark-blue-light transition-colors',
+            !hasVoted && 'invisible'
+          )}
+        >
+          {isLastQuestion ? 'Fertig' : 'Weiter'}
+        </button>
+      </div>
     </div>
   )
 }

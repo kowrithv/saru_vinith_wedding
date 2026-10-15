@@ -8,7 +8,7 @@ Feature complete bis auf: Videos (zurückgestellt) und das Ansehen von Admin und
 ## Brautpaar
 
 - [ ] „Wer von uns?" ansehen (`/wer-von-uns`) und entscheiden: Vorgaben sind eine Stimme je
-      Frage und Gerät, DJ-Seite `/dj` mit Wort aus dem Admin, Abstimmung über Fotos statt Namen (andere Fotos:
+      Frage und Gerät (bis zur Auflösung änderbar), DJ-Seite `/dj` mit Wort aus dem Admin, Abstimmung über Fotos statt Namen (andere Fotos:
       Dateien in `public/who/` ersetzen)
 - [ ] Videos bleiben zurückgestellt (Empfehlung: erst nach der Feier)
 

@@ -131,8 +131,8 @@ Produktions-Domain sowie `http://localhost:3000` erlauben (Einstellung im
 Cloudflare-Dashboard, nicht im Code).
 
 **„Wer von uns?“** (`/wer-von-uns`): Gäste stimmen vorab mit dem Gäste-Kennwort
-ab (eine Stimme je Frage und Gerät, höchstens 60 Stimmen je Gerät in 15 Minuten)
-und sehen keine Zwischenstände: `GET /api/who-votes` liefert `questions: null`.
+ab (eine Stimme je Frage und Gerät, bis zur Auflösung änderbar; höchstens 60
+Stimmen je Gerät in 15 Minuten) und sehen keine Zwischenstände: `GET /api/who-votes` liefert `questions: null`.
 Im Admin-Bereich gibt das Brautpaar die **Auflösung** frei; dann zeigt die Seite
 die Verteilung, und die Abstimmung ist beendet (423). Der DJ tippt `vsjourney.de/dj`
 und ein **Wort** (z. B. `kirsche`; Adresse und Wort stehen im Admin, dazu ein

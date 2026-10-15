@@ -68,10 +68,16 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   try {
-    const { alreadyVoted } = castVote(db, parsed.data.questionId, parsed.data.voterId, parsed.data.option)
+    // Wer noch einmal abstimmt, ändert seine Stimme (bis zur Auflösung).
+    const { alreadyVoted, changed } = castVote(
+      db,
+      parsed.data.questionId,
+      parsed.data.voterId,
+      parsed.data.option
+    )
     // Kein Zwischenstand in der Antwort: die Ergebnisse bleiben bis zur
     // Freigabe verborgen.
-    const response = NextResponse.json({ alreadyVoted })
+    const response = NextResponse.json({ alreadyVoted, changed })
     // Mit dem Kennwort abgestimmt: den Browser gleich für Galerie, Gästebuch
     // und Erinnerungen entsperren.
     if (gate.issueSession) setGallerySessionCookie(response, db)
