@@ -15,7 +15,7 @@ Admin-Bereich für das Brautpaar.
 | `/gallery` | Fotogalerie, Upload für Gäste, Kategorien, offizielle Fotos |
 | `/quiz` | Hochzeitsquiz |
 | `/wer-von-uns` | „Wer von uns?“-Abstimmung (Ergebnisse erst nach der Freigabe) |
-| `/dj` | Lese-Link für den DJ (Schlüssel im Fragment, siehe unten) |
+| `/dj` | Ergebnisse für den DJ (Wort statt Kennwort, siehe unten) |
 | `/memory-spiel` | Liebes-Memory mit Rekord aller Gäste |
 | `/memories` | Erinnerungen der Gäste |
 | `/guestbook` | Gästebuch |
@@ -134,10 +134,13 @@ Cloudflare-Dashboard, nicht im Code).
 ab (eine Stimme je Frage und Gerät, höchstens 60 Stimmen je Gerät in 15 Minuten)
 und sehen keine Zwischenstände: `GET /api/who-votes` liefert `questions: null`.
 Im Admin-Bereich gibt das Brautpaar die **Auflösung** frei; dann zeigt die Seite
-die Verteilung, und die Abstimmung ist beendet (423). Der DJ bekommt einen
-Lese-Link `/dj#k=<Schlüssel>` (im Admin zum Kopieren). Der
-Schlüssel (24 Zeichen) ist aus `ADMIN_SECRET` abgeleitet, zeigt nur die Ergebnisse (auch vor
-der Freigabe) und steht im Fragment, nie im Log. Die Porträts liegen als
+die Verteilung, und die Abstimmung ist beendet (423). Der DJ tippt `vsjourney.de/dj`
+und ein **Wort** (z. B. `kirsche`; Adresse und Wort stehen im Admin, dazu ein
+Link zum Kopieren mit `#k=<Wort>` im Fragment). Das Wort wird aus `ADMIN_SECRET` aus
+einer Liste leicht tippbarer Wörter gewählt (`who-results-words.ts`), zeigt nur die
+Ergebnisse (auch vor der Freigabe) und ist kein starkes Geheimnis: es hält Gäste vom
+Vorab-Blick ab. Falsche Wörter werden gebremst (20 je Adresse in 15 Minuten); das
+richtige wird nie abgewiesen. Die Porträts liegen als
 `public/who/saruga.jpg` und `public/who/vinith.jpg` (zum Tauschen die Datei
 ersetzen).
 
@@ -374,7 +377,7 @@ zweites System ist noch offen (`TODO.md`).
   ```bash
   npm run build
   DATABASE_PATH=/tmp/lasttest/wedding.db npx next start -p 3124
-  node scripts/load/run.mjs http://localhost:3124 --guests=500 --upload-password=<Kennwort> [--results-key=<DJ-Schlüssel>]
+  node scripts/load/run.mjs http://localhost:3124 --guests=500 --upload-password=<Kennwort> [--results-key=<DJ-Wort>]
   ```
 
   Simuliert Memory-Rekord, Galerie-Liste, Polling und – mit Kennwort –

@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useSyncExternalStore } from 'react'
+import { useEffect, useState, useSyncExternalStore, type FormEvent } from 'react'
+import { KeyRound } from 'lucide-react'
 import SectionTitle from '@/components/ui/SectionTitle'
 import WhoResults, { type TallyMap } from '@/components/sections/WhoResults'
-import { usePolling } from '@/lib/use-polling'
-import { takeResultsKey } from '@/lib/who-results-key'
+import { textFieldClassName } from '@/lib/form-styles'
+import { clearResultsKey, rememberResultsKey, subscribeResultsKey, takeResultsKey } from '@/lib/who-results-key'
 
 const POLL_MS = 5000
 
@@ -13,51 +14,116 @@ interface Snapshot {
   questions: TallyMap | null
 }
 
-const noSubscription = () => () => {}
+function CodeForm({ notice }: { notice: string | null }) {
+  const [input, setInput] = useState('')
+  const [error, setError] = useState<string | null>(null)
 
-function Notice({ title, children }: { title: string; children: string }) {
+  const handleSubmit = (event: FormEvent) => {
+    event.preventDefault()
+    if (!rememberResultsKey(input)) {
+      setError('Bitte das Wort eintippen, nur Buchstaben.')
+    }
+  }
+
+  const message = error ?? notice
   return (
-    <div className="card-ornate rounded-3xl p-8 text-center">
-      <h3 className="font-display text-2xl font-semibold text-dark-blue mb-2">{title}</h3>
-      <p className="text-sm text-gray-600">{children}</p>
-    </div>
+    <form onSubmit={handleSubmit} className="card-ornate rounded-3xl p-6 md:p-8">
+      <h3 className="font-display text-2xl font-semibold text-dark-blue mb-2 text-center">Wort eingeben</h3>
+      <p className="text-sm text-gray-600 mb-5 text-center">
+        Das Wort bekommst du vom Brautpaar.
+      </p>
+      <label htmlFor="dj-code" className="block text-sm font-medium text-gray-700 mb-1.5">
+        <KeyRound size={14} className="inline mr-1" aria-hidden="true" />
+        Wort
+      </label>
+      <input
+        id="dj-code"
+        type="text"
+        value={input}
+        onChange={(event) => {
+          setInput(event.target.value)
+          setError(null)
+        }}
+        placeholder="zum Beispiel kirsche"
+        autoComplete="off"
+        autoCapitalize="none"
+        autoCorrect="off"
+        spellCheck={false}
+        maxLength={24}
+        className={textFieldClassName}
+      />
+      {message && (
+        <p className="mt-3 text-sm text-red-600" role="alert">
+          {message}
+        </p>
+      )}
+      <button
+        type="submit"
+        className="mt-5 w-full px-5 py-3 rounded-xl bg-dark-blue text-white text-sm font-medium hover:bg-dark-blue-light transition-colors"
+      >
+        Ergebnisse anzeigen
+      </button>
+    </form>
   )
 }
 
 // Ergebnisse für den DJ: auch vor der Freigabe, alle paar Sekunden neu.
 export default function WhoResultsPage() {
-  // Der Schlüssel steht im Fragment des Links; auf dem Server gibt es ihn nicht.
-  const key = useSyncExternalStore(noSubscription, takeResultsKey, () => null)
+  // Das Wort kommt aus dem Link oder dem Browser; auf dem Server gibt es es nicht.
+  const key = useSyncExternalStore(subscribeResultsKey, takeResultsKey, () => null)
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null)
   const [unreachable, setUnreachable] = useState(false)
+  const [notice, setNotice] = useState<string | null>(null)
 
-  usePolling(
-    () => {
-      if (!key) return
+  // Sofort laden, sobald es ein Wort gibt, danach alle paar Sekunden (nicht im
+  // versteckten Tab). Ein verworfenes Wort beendet die Abfragen von selbst.
+  useEffect(() => {
+    if (!key) return
+    let active = true
+
+    const load = () => {
       fetch('/api/who-votes', { cache: 'no-store', headers: { 'x-results-key': key } })
-        .then((res) => (res.ok ? res.json() : Promise.reject(new Error('Laden fehlgeschlagen'))))
-        .then((data: { released?: boolean; questions?: TallyMap | null }) => {
-          setSnapshot({ released: data.released === true, questions: data.questions ?? null })
+        .then(async (res) => {
+          if (!active) return
+          if (res.status === 429) {
+            // Zu viele falsche Wörter von dieser Adresse: nicht weiter anfragen.
+            clearResultsKey()
+            setSnapshot(null)
+            setNotice('Zu viele falsche Wörter. Bitte in ein paar Minuten noch einmal versuchen.')
+            return
+          }
+          if (!res.ok) throw new Error('Laden fehlgeschlagen')
+          const data = (await res.json()) as { released?: boolean; questions?: TallyMap | null }
+          if (!active) return
+          if (!data.questions) {
+            // Der Server kennt das Wort nicht: verwerfen, sonst zählt jede Abfrage als Fehlversuch.
+            clearResultsKey()
+            setSnapshot(null)
+            setNotice('Dieses Wort gilt nicht. Bitte noch einmal eingeben.')
+            return
+          }
+          setSnapshot({ released: data.released === true, questions: data.questions })
+          setNotice(null)
           setUnreachable(false)
         })
-        .catch(() => setUnreachable(true))
-    },
-    { minDelayMs: POLL_MS, maxDelayMs: POLL_MS }
-  )
+        .catch(() => {
+          if (active) setUnreachable(true)
+        })
+    }
+
+    load()
+    const timer = setInterval(() => {
+      if (!document.hidden) load()
+    }, POLL_MS)
+    return () => {
+      active = false
+      clearInterval(timer)
+    }
+  }, [key])
 
   let content
   if (!key) {
-    content = (
-      <Notice title="Dieser Link ist unvollständig">
-        Bitte den Link aus dem Admin-Bereich verwenden. Er enthält am Ende einen langen Schlüssel.
-      </Notice>
-    )
-  } else if (snapshot && !snapshot.questions) {
-    content = (
-      <Notice title="Der Schlüssel gilt nicht">
-        Bitte den Link im Admin-Bereich neu kopieren.
-      </Notice>
-    )
+    content = <CodeForm notice={notice} />
   } else if (snapshot?.questions) {
     content = (
       <>

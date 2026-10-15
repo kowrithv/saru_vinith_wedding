@@ -1,48 +1,64 @@
-// Der Lese-Link für den DJ trägt den Schlüssel im Fragment
-// (`/dj#k=<Schlüssel>`): Fragmente gehen nicht an den
-// Server und nicht in den Referer. Wie beim QR-Link wird er sofort aus der
-// Adresszeile entfernt; für ein Neuladen merkt sich der Tab ihn in der
-// Sitzung (sessionStorage, nur dieser Tab).
+import { normalizeResultsCode } from './who-results-code'
+
+// Das Wort für die DJ-Seite tippt der DJ auf /dj ein oder bringt es als
+// `#k=<Wort>` im Link mit. Das Fragment geht nicht an den Server und nicht in
+// den Referer; wie beim QR-Link wird es sofort aus der Adresszeile entfernt.
+// Der Browser merkt sich das Wort, damit ein Neuladen oder ein späterer
+// Besuch nicht wieder danach fragt.
 
 const KEY_PARAM = 'k'
-const STORAGE_KEY = 'who-results-key'
-const KEY_PATTERN = /^[0-9a-f]{24}$/
+const STORAGE_KEY = 'who-results-code'
+
+const listeners = new Set<() => void>()
 
 function takeFromAddress(): string | null {
   const { hash, pathname, search } = window.location
   if (!hash.startsWith('#')) return null
 
   const params = new URLSearchParams(hash.slice(1))
-  const key = params.get(KEY_PARAM)
-  if (key === null) return null
+  const raw = params.get(KEY_PARAM)
+  if (raw === null) return null
 
   params.delete(KEY_PARAM)
   const rest = params.toString()
   // history.state unverändert lassen: der Next.js-Router hängt seinen Zustand daran.
   window.history.replaceState(window.history.state, '', `${pathname}${search}${rest ? `#${rest}` : ''}`)
-  return KEY_PATTERN.test(key) ? key : null
+  return normalizeResultsCode(raw)
 }
 
 function readStored(): string | null {
   try {
-    const value = window.sessionStorage.getItem(STORAGE_KEY)
-    return value && KEY_PATTERN.test(value) ? value : null
+    const value = window.localStorage.getItem(STORAGE_KEY)
+    return value ? normalizeResultsCode(value) : null
   } catch {
     return null
   }
 }
 
-function store(key: string): void {
+function store(code: string | null): void {
   try {
-    window.sessionStorage.setItem(STORAGE_KEY, key)
+    if (code) window.localStorage.setItem(STORAGE_KEY, code)
+    else window.localStorage.removeItem(STORAGE_KEY)
   } catch {
-    // ohne Speicher gilt der Schlüssel bis zum Neuladen
+    // ohne Speicher gilt das Wort bis zum Neuladen
   }
 }
 
 let cached: string | null | undefined
 
-/** Der Schlüssel aus dem Link (oder dem Tab); der Adressteil wird dabei entfernt. */
+function notify(): void {
+  listeners.forEach((listener) => listener())
+}
+
+/** Für useSyncExternalStore: meldet, wenn ein Wort eingegeben oder verworfen wurde. */
+export function subscribeResultsKey(listener: () => void): () => void {
+  listeners.add(listener)
+  return () => {
+    listeners.delete(listener)
+  }
+}
+
+/** Das Wort aus dem Link oder dem Browser (null: keines); der Adressteil wird dabei entfernt. */
 export function takeResultsKey(): string | null {
   if (typeof window === 'undefined') return null
   if (cached !== undefined) return cached
@@ -53,7 +69,24 @@ export function takeResultsKey(): string | null {
   return cached
 }
 
-/** Nur für Tests: den gemerkten Wert vergessen. */
+/** Merkt sich ein eingegebenes Wort. Liefert false, wenn es kein Wort aus Buchstaben sein kann. */
+export function rememberResultsKey(input: string): boolean {
+  const code = normalizeResultsCode(input)
+  if (!code) return false
+  store(code)
+  cached = code
+  notify()
+  return true
+}
+
+/** Verwirft das Wort, z. B. weil der Server es abgewiesen hat. */
+export function clearResultsKey(): void {
+  store(null)
+  cached = null
+  notify()
+}
+
+/** Nur für Tests: den gemerkten Stand im Speicher vergessen. */
 export function forgetResultsKey(): void {
   cached = undefined
 }

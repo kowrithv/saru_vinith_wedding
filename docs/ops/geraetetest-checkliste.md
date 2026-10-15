@@ -54,7 +54,7 @@ Geräte: ☐ iPhone (Safari) ☐ Android (Chrome) ☐ ältere Hardware ☐ Deskt
 ## Spiele und Einträge
 - [ ] Quiz (klassisch): alle Fragen durchspielen, Auswertung am Ende.
 - [ ] „Wer von uns?" (`/wer-von-uns`): Porträts neben den Antworten; Kennwortfeld nur, wenn der Browser nicht entsperrt ist; nach der Stimme „Deine Stimme ist gespeichert" **ohne** Zahlen; Seite schließen und öffnen: es geht bei der ersten offenen Frage weiter.
-- [ ] Admin: „Auflösung freigeben" (mit Rückfrage) → Gäste-Handy zeigt die Verteilung, weitere Stimmen werden abgewiesen; zurücknehmen → Abstimmen geht wieder. Der Link für den DJ zeigt die Ergebnisse schon vorher und aktualisiert sich alle paar Sekunden.
+- [ ] Admin: „Auflösung freigeben" (mit Rückfrage) → Gäste-Handy zeigt die Verteilung, weitere Stimmen werden abgewiesen; zurücknehmen → Abstimmen geht wieder. Am Rechner des DJ: `vsjourney.de/dj` öffnen, das Wort aus dem Admin eintippen (Groß-/Kleinschreibung egal); die Ergebnisse stehen schon vor der Freigabe da und aktualisieren sich alle paar Sekunden. Ein falsches Wort wird abgelehnt.
 - [ ] Memory: komplettes Spiel, „Neuer Rekord"-Meldung, Rekord aller Gäste wird angezeigt; Brett springt nicht.
 - [ ] Memory: zwei Runden hintereinander („Neues Spiel"): keine leere Karte beim Umdrehen, auch im schwachen WLAN.
 - [ ] Gästebuch und Erinnerungen: Eintrag schreiben (Kennwort nur, wenn der Browser noch nicht entsperrt ist), erscheint in der Liste.

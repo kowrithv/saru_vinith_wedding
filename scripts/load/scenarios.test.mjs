@@ -21,7 +21,7 @@ function createFakeServer(options = {}) {
     const body = init.body ? JSON.parse(init.body) : undefined
 
     if (pathname === '/api/who-votes' && method === 'GET') {
-      // Zähler nur mit dem Schlüssel aus dem DJ-Link (bis zur Freigabe verborgen).
+      // Zähler nur mit dem Wort der DJ-Seite (bis zur Freigabe verborgen).
       if (init.headers?.['x-results-key'] !== 'dj-key') return json(200, { released: false, questions: null })
       const tally = {}
       for (const q of questions) {
@@ -117,7 +117,7 @@ describe('runScenarios', () => {
     expect(votes.checks.some((c) => !c.ok && /verloren|gezählt/i.test(c.detail))).toBe(true)
   })
 
-  it('checks the hidden counters only when the key from the DJ link is given', async () => {
+  it('checks the hidden counters only when the word of the DJ page is given', async () => {
     const withoutKey = await runScenarios({
       baseUrl: 'http://localhost:3000',
       guests: 20,

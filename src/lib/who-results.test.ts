@@ -5,9 +5,11 @@ import {
   RESULTS_KEY_HEADER,
   areResultsReleased,
   canSeeResults,
+  resultsAccess,
   resultsKey,
   setResultsReleased,
 } from './who-results'
+import { RESULTS_WORDS } from './who-results-words'
 
 function requestWith(headers: Record<string, string> = {}): Request {
   return new Request('http://localhost/api/who-votes', { headers })
@@ -20,6 +22,7 @@ describe('who-results', () => {
 
   beforeEach(() => {
     delete globalThis.__appDb
+    delete globalThis.__resultsCodeFailures
     process.env.DATABASE_PATH = ':memory:'
     process.env.ADMIN_SECRET = 'test-admin-secret'
     process.env.ADMIN_PASSWORD = 'test-admin-password'
@@ -28,6 +31,7 @@ describe('who-results', () => {
   afterEach(() => {
     globalThis.__appDb?.close()
     delete globalThis.__appDb
+    delete globalThis.__resultsCodeFailures
     process.env.DATABASE_PATH = originalPath
     if (originalSecret === undefined) delete process.env.ADMIN_SECRET
     else process.env.ADMIN_SECRET = originalSecret
@@ -50,49 +54,89 @@ describe('who-results', () => {
   })
 
   describe('results key', () => {
-    it('is a stable, short hex string', () => {
+    it('is a stable word from the list', () => {
       const db = getDb()
       const key = resultsKey(db)
-      expect(key).toMatch(/^[0-9a-f]{24}$/)
+      expect(RESULTS_WORDS).toContain(key)
       expect(resultsKey(db)).toBe(key)
     })
 
-    it('differs from every other key derived from the admin secret', () => {
+    it('changes with the admin secret (over many secrets it is not always the same word)', () => {
       const db = getDb()
-      expect(resultsKey(db)).not.toBe(adminCookieSecret(getOrCreateAdminSecret(db)))
-      expect(resultsKey(db)).not.toBe(getOrCreateAdminSecret(db))
-    })
-
-    it('changes when the admin secret changes', () => {
-      const db = getDb()
-      const before = resultsKey(db)
-      process.env.ADMIN_SECRET = 'another-admin-secret'
-      expect(resultsKey(db)).not.toBe(before)
+      const words = new Set<string>()
+      for (let index = 0; index < 30; index += 1) {
+        process.env.ADMIN_SECRET = `secret-${index}`
+        words.add(resultsKey(db))
+      }
+      expect(words.size).toBeGreaterThan(10)
     })
   })
 
   describe('canSeeResults', () => {
-    it('accepts the right key', () => {
+    it('accepts the right word in every typed form', () => {
       const db = getDb()
-      expect(canSeeResults(requestWith({ [RESULTS_KEY_HEADER]: resultsKey(db) }), db)).toBe(true)
+      const key = resultsKey(db)
+      for (const typed of [key, key.toUpperCase(), `${key[0].toUpperCase()}${key.slice(1)}`, ` ${key} `]) {
+        expect(canSeeResults(requestWith({ [RESULTS_KEY_HEADER]: typed }), db)).toBe(true)
+      }
     })
 
-    it('rejects a missing, wrong, short, long or non-hex key', () => {
+    it('rejects a missing, wrong, short, long or malformed word', () => {
       const db = getDb()
       const key = resultsKey(db)
       expect(canSeeResults(requestWith(), db)).toBe(false)
-      expect(canSeeResults(requestWith({ [RESULTS_KEY_HEADER]: 'nope' }), db)).toBe(false)
-      expect(canSeeResults(requestWith({ [RESULTS_KEY_HEADER]: key.slice(0, 23) }), db)).toBe(false)
-      expect(canSeeResults(requestWith({ [RESULTS_KEY_HEADER]: `${key}0` }), db)).toBe(false)
-      expect(canSeeResults(requestWith({ [RESULTS_KEY_HEADER]: key.toUpperCase() }), db)).toBe(false)
-      expect(canSeeResults(requestWith({ [RESULTS_KEY_HEADER]: `${key.slice(0, 23)}g` }), db)).toBe(false)
+      for (const wrong of ['zzzzzz', key.slice(0, key.length - 1), `${key}x`, `${key}1`, 'zwei woerter']) {
+        expect(canSeeResults(requestWith({ [RESULTS_KEY_HEADER]: wrong }), db)).toBe(false)
+      }
     })
 
-    it('accepts an admin session without a key', () => {
+    it('accepts an admin session without a word', () => {
       const db = getDb()
-      const expiresAt = Date.now() + 60_000
-      const cookie = signCookieValue(expiresAt, adminCookieSecret(getOrCreateAdminSecret(db)))
+      const cookie = signCookieValue(Date.now() + 60_000, adminCookieSecret(getOrCreateAdminSecret(db)))
       expect(canSeeResults(requestWith({ cookie: `${ADMIN_COOKIE_NAME}=${cookie}` }), db)).toBe(true)
+    })
+  })
+
+  describe('limit for wrong words', () => {
+    const fromAddress = (address: string, code: string) =>
+      requestWith({ [RESULTS_KEY_HEADER]: code, 'x-forwarded-for': address })
+
+    it('does not count requests without a word', () => {
+      const db = getDb()
+      for (let index = 0; index < 100; index += 1) {
+        expect(resultsAccess(fromAddress('10.0.0.1', ''), db).kind).toBe('hidden')
+      }
+      // Danach bleibt das Konto voll: erst die Fehlversuche zählen.
+      expect(resultsAccess(fromAddress('10.0.0.1', 'zzzzzz'), db)).toEqual({ kind: 'hidden', codeGiven: true })
+    })
+
+    it('blocks an address after too many wrong words', () => {
+      const db = getDb()
+      let blocked: ReturnType<typeof resultsAccess> | null = null
+      for (let index = 0; index < 40; index += 1) {
+        const access = resultsAccess(fromAddress('10.0.0.2', 'zzzzzz'), db)
+        if (access.kind === 'blocked') {
+          blocked = access
+          break
+        }
+      }
+      expect(blocked).toMatchObject({ kind: 'blocked' })
+      expect((blocked as { retryAfterSeconds: number }).retryAfterSeconds).toBeGreaterThan(0)
+    })
+
+    it('never rejects the right word, even from a blocked address', () => {
+      const db = getDb()
+      for (let index = 0; index < 40; index += 1) resultsAccess(fromAddress('10.0.0.3', 'zzzzzz'), db)
+      expect(resultsAccess(fromAddress('10.0.0.3', 'yyyyyy'), db).kind).toBe('blocked')
+
+      expect(resultsAccess(fromAddress('10.0.0.3', resultsKey(db)), db)).toEqual({ kind: 'allowed' })
+    })
+
+    it('counts each address on its own', () => {
+      const db = getDb()
+      for (let index = 0; index < 40; index += 1) resultsAccess(fromAddress('10.0.0.4', 'zzzzzz'), db)
+
+      expect(resultsAccess(fromAddress('10.0.0.5', 'zzzzzz'), db).kind).toBe('hidden')
     })
   })
 })

@@ -46,7 +46,7 @@ function totalVotes(tally) {
 }
 
 // Die Zähler sind für Gäste verborgen (bis zur Freigabe): lesen lassen sie sich
-// nur mit dem Schlüssel aus dem DJ-Link (--results-key). Ohne ihn ist das Ergebnis null.
+// nur mit dem Wort der DJ-Seite (--results-key). Ohne es ist das Ergebnis null.
 async function readTally(ctx) {
   const init = ctx.resultsKey ? { headers: { 'x-results-key': ctx.resultsKey } } : {}
   const res = await timed(ctx.fetchImpl, `${ctx.baseUrl}/api/who-votes`, init)
@@ -99,7 +99,7 @@ async function votesScenario(ctx) {
     detail: `${duplicateAcks} als neu bestätigt, erwartet 1`,
   })
 
-  // Mit dem Schlüssel aus dem DJ-Link lassen sich die Zähler gegenprüfen.
+  // Mit dem Wort der DJ-Seite lassen sich die Zähler gegenprüfen.
   const after = await readTally(ctx)
   if (before && mid && after) {
     const counted = totalVotes(mid) - totalVotes(before)

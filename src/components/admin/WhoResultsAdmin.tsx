@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Copy, Eye, EyeOff } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -12,15 +12,14 @@ interface ResultsState {
 const LOAD_FAILED = 'Der Stand konnte nicht geladen werden.'
 const SWITCH_FAILED = 'Umschalten fehlgeschlagen. Bitte versuch es erneut.'
 
-// "Wer von uns?": Auflösung für die Gäste freigeben und den Lese-Link für den
-// DJ zeigen. Die Ergebnisse bleiben für Gäste verborgen, bis sie freigegeben
-// sind; mit der Freigabe endet die Abstimmung.
+// "Wer von uns?": Auflösung für die Gäste freigeben und den Zugang für den DJ
+// zeigen (Adresse und ein Wort zum Abtippen). Die Ergebnisse bleiben für Gäste
+// verborgen, bis sie freigegeben sind; mit der Freigabe endet die Abstimmung.
 export default function WhoResultsAdmin() {
   const [state, setState] = useState<ResultsState | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
-  const [copied, setCopied] = useState(false)
-  const linkRef = useRef<HTMLInputElement>(null)
+  const [copyMessage, setCopyMessage] = useState<string | null>(null)
 
   useEffect(() => {
     let active = true
@@ -67,15 +66,16 @@ export default function WhoResultsAdmin() {
     }
   }
 
+  // Die Adresse zum Abtippen ohne "https://".
+  const address = state ? `${window.location.host}/dj` : ''
   const link = state ? `${window.location.origin}/dj#k=${state.key}` : ''
 
   const copyLink = async () => {
     try {
       await navigator.clipboard.writeText(link)
-      setCopied(true)
+      setCopyMessage('Link kopiert.')
     } catch {
-      // Ohne Zwischenablage: den Link markieren, dann lässt er sich kopieren.
-      linkRef.current?.select()
+      setCopyMessage('Kopieren hat nicht geklappt. Adresse und Wort lassen sich abtippen.')
     }
   }
 
@@ -123,30 +123,37 @@ export default function WhoResultsAdmin() {
       </div>
 
       {state && (
-        <div className="mt-4">
-          <label htmlFor="who-dj-link" className="block text-xs font-medium text-gray-600 mb-1.5">
-            Link für den DJ (zeigt die Ergebnisse live, auch vor der Freigabe)
-          </label>
-          <div className="flex gap-2">
-            <input
-              id="who-dj-link"
-              ref={linkRef}
-              readOnly
-              value={link}
-              onFocus={(event) => event.currentTarget.select()}
-              className="min-w-0 flex-1 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-700"
-            />
+        <div className="mt-5 rounded-xl bg-champagne-light/60 border border-champagne-dark/40 p-4">
+          <p className="text-xs font-medium text-gray-600 mb-3">
+            Für den DJ: zeigt die Ergebnisse live, auch vor der Freigabe
+          </p>
+          <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 items-baseline">
+            <dt className="text-xs text-gray-500">Adresse</dt>
+            <dd className="font-mono text-sm text-dark-blue break-all" data-testid="dj-address">
+              {address}
+            </dd>
+            <dt className="text-xs text-gray-500">Wort</dt>
+            <dd className="font-mono text-xl font-semibold text-dark-blue" data-testid="dj-word">
+              {state.key}
+            </dd>
+          </dl>
+          <div className="mt-4 flex flex-wrap items-center gap-3">
             <button
               type="button"
               onClick={copyLink}
-              className="flex flex-shrink-0 items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-2 text-xs font-medium text-dark-blue hover:bg-champagne/40"
+              className="flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-2 text-xs font-medium text-dark-blue hover:bg-champagne/40"
             >
               <Copy size={14} aria-hidden="true" />
-              {copied ? 'Kopiert' : 'Kopieren'}
+              Link kopieren
             </button>
+            {copyMessage && (
+              <span className="text-xs text-gray-600" role="status">
+                {copyMessage}
+              </span>
+            )}
           </div>
-          <p className="mt-1.5 text-xs text-gray-400">
-            Nur an den DJ weitergeben. Der Link gilt, bis <code>ADMIN_SECRET</code> geändert wird.
+          <p className="mt-3 text-xs text-gray-500">
+            Nur an den DJ weitergeben. Das Wort gilt, bis <code>ADMIN_SECRET</code> geändert wird.
           </p>
         </div>
       )}

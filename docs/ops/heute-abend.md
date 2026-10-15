@@ -104,8 +104,8 @@ Datei waren unbrauchbar (die Hinweise stehen darüber).
 - Die Abstimm-Route verlangt das Gäste-Kennwort (`--password=...`, oder die
   Umgebungsvariable `GUEST_PASSWORD`). Bei „zu viele Anfragen" wartet das Skript
   und versucht es erneut.
-- Danach im Admin den Link für den DJ öffnen (Abschnitt „Wer von uns?") und
-  prüfen, dass die Zähler stimmen: Gäste sehen sie bis zur Auflösung nicht.
+- Danach `/dj` öffnen, das Wort aus dem Admin (Abschnitt „Wer von uns?") eintippen
+  und prüfen, dass die Zähler stimmen: Gäste sehen sie bis zur Auflösung nicht.
 - Ist die Auflösung schon freigegeben, meldet das Skript „abgewiesen (HTTP 423)":
   im Admin die Freigabe zurücknehmen.
 

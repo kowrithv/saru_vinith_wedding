@@ -43,7 +43,7 @@ describe('/api/admin/who-results', () => {
     expect((await GET(request('GET'))).status).toBe(401)
   })
 
-  it('GET returns the state and the key for the DJ link', async () => {
+  it('GET returns the state and the short code for the DJ', async () => {
     const response = await GET(request('GET', adminHeaders()))
 
     expect(response.status).toBe(200)

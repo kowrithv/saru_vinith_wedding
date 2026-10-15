@@ -37,7 +37,7 @@ const reports = await runScenarios({
   guests,
   concurrency,
   uploadPassword: flags['upload-password'],
-  // Schlüssel aus dem DJ-Link: damit lassen sich die verborgenen Zähler gegenprüfen.
+  // Wort der DJ-Seite: damit lassen sich die verborgenen Zähler gegenprüfen.
   resultsKey: flags['results-key'],
 })
 console.log(formatLoadReport(reports))

@@ -17,6 +17,7 @@ describe('GET /api/who-votes', () => {
 
   beforeEach(() => {
     delete globalThis.__appDb
+    delete globalThis.__resultsCodeFailures
     process.env.DATABASE_PATH = ':memory:'
     process.env.ADMIN_SECRET = 'test-admin-secret'
   })
@@ -69,9 +70,53 @@ describe('GET /api/who-votes', () => {
     expect(body.questions['1'][whoGameOptions[1]]).toBe(1)
   })
 
-  it('keeps hiding the results from a wrong key', async () => {
-    const body = await (await GET(getRequest({ [RESULTS_KEY_HEADER]: 'a'.repeat(24) }))).json()
+  it('shows the live counts for the word in upper case', async () => {
+    const typed = resultsKey(getDb()).toUpperCase()
+
+    const body = await (await GET(getRequest({ [RESULTS_KEY_HEADER]: typed }))).json()
+
+    expect(Object.keys(body.questions)).toHaveLength(whoQuestions.length)
+  })
+
+  it('keeps hiding the results from a wrong word', async () => {
+    const body = await (await GET(getRequest({ [RESULTS_KEY_HEADER]: 'zzzzzz' }))).json()
     expect(body.questions).toBeNull()
+  })
+
+  it('answers 429 after too many wrong words, but still serves the right one', async () => {
+    const wrong = () => GET(getRequest({ [RESULTS_KEY_HEADER]: 'zzzzzz', 'x-forwarded-for': '10.1.1.1' }))
+    let last: Response | null = null
+    for (let index = 0; index < 40; index += 1) {
+      last = await wrong()
+      if (last.status === 429) break
+    }
+    expect(last?.status).toBe(429)
+    expect(Number(last?.headers.get('retry-after'))).toBeGreaterThan(0)
+
+    const right = await GET(
+      getRequest({ [RESULTS_KEY_HEADER]: resultsKey(getDb()), 'x-forwarded-for': '10.1.1.1' })
+    )
+    expect(right.status).toBe(200)
+    expect((await right.json()).questions).not.toBeNull()
+  })
+
+  it('never blocks guests who only ask for the released state', async () => {
+    for (let index = 0; index < 60; index += 1) {
+      const response = await GET(getRequest({ 'x-forwarded-for': '10.1.1.2' }))
+      expect(response.status).toBe(200)
+    }
+  })
+
+  it('shows the results to everyone after the release, even to a blocked address', async () => {
+    for (let index = 0; index < 40; index += 1) {
+      await GET(getRequest({ [RESULTS_KEY_HEADER]: 'zzzzzz', 'x-forwarded-for': '10.1.1.3' }))
+    }
+    setResultsReleased(getDb(), true)
+
+    const response = await GET(getRequest({ [RESULTS_KEY_HEADER]: 'zzzzzz', 'x-forwarded-for': '10.1.1.3' }))
+
+    expect(response.status).toBe(200)
+    expect((await response.json()).released).toBe(true)
   })
 
   it('shows the live counts to an admin session', async () => {

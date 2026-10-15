@@ -29,7 +29,7 @@ In diesem Ordner liegen auch `.env` (Compose: `IMAGE_TAG`) und `.env.production`
 | **Gästebuch** | Keine neuen Einträge | Spam oder Beleidigungen |
 | **Erinnerungen** | Keine neuen Einträge | dito |
 | **Wer-von-uns-Abstimmung** | Keine neuen Stimmen | Auffälliges Abstimmverhalten |
-| **Wer von uns? – Auflösung** | Gäste sehen die Ergebnisse, die Abstimmung ist beendet; zurücknehmen verbirgt sie wieder | Zum Zeitpunkt der Auflösung auf der Feier. Der Link für den DJ zeigt die Ergebnisse auch vorher (im Admin zum Kopieren) |
+| **Wer von uns? – Auflösung** | Gäste sehen die Ergebnisse, die Abstimmung ist beendet; zurücknehmen verbirgt sie wieder | Zum Zeitpunkt der Auflösung auf der Feier. Die DJ-Seite (`/dj`, Wort steht im Admin) zeigt die Ergebnisse auch vorher |
 | **Galerie-Sichtbarkeit** | **Kennwort** (Standard): Fotos nur mit QR-Code/Kennwort; **Öffentlich**: jeder mit dem Link sieht die Fotos | auf Kennwort lassen; ist der Link an Fremde gelangt: zusätzlich das Kennwort wechseln (§3) |
 | **Gemeldete Ergebnisse** (Memory) | einzelne Ergebnisse entfernen, der Rekord fällt auf das nächstbeste zurück | unmöglicher Wert (z. B. 8 Züge · 00:04) |
 | **Memory-Rekord zurücksetzen** | alle gemeldeten Ergebnisse werden gelöscht | nach Testspielen vor der Feier |

@@ -1,17 +1,24 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { forgetResultsKey, takeResultsKey } from './who-results-key'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  clearResultsKey,
+  forgetResultsKey,
+  rememberResultsKey,
+  subscribeResultsKey,
+  takeResultsKey,
+} from './who-results-key'
 
-const KEY = 'ab'.repeat(12)
+const KEY = 'kirsche'
 
-describe('takeResultsKey', () => {
+describe('results key in the browser', () => {
   beforeEach(() => {
     forgetResultsKey()
-    window.sessionStorage.clear()
+    window.localStorage.clear()
     window.history.replaceState(null, '', '/dj')
   })
 
   afterEach(() => {
     forgetResultsKey()
+    window.localStorage.clear()
     window.history.replaceState(null, '', '/')
   })
 
@@ -27,7 +34,7 @@ describe('takeResultsKey', () => {
     expect(window.location.pathname).toBe('/dj')
   })
 
-  it('remembers the key for a reload in the same tab', () => {
+  it('remembers the key from the link for a later visit', () => {
     window.history.replaceState(null, '', `/dj#k=${KEY}`)
     takeResultsKey()
     forgetResultsKey()
@@ -35,7 +42,7 @@ describe('takeResultsKey', () => {
     expect(takeResultsKey()).toBe(KEY)
   })
 
-  it('ignores a key that is not 24 hex characters', () => {
+  it('ignores a fragment key that is not a word of letters', () => {
     window.history.replaceState(null, '', '/dj#k=zu-kurz')
 
     expect(takeResultsKey()).toBeNull()
@@ -48,5 +55,36 @@ describe('takeResultsKey', () => {
     takeResultsKey()
 
     expect(window.location.hash).toBe('#x=1')
+  })
+
+  describe('typed in', () => {
+    it('stores a typed word in its basic form and tells the listeners', () => {
+      const listener = vi.fn()
+      const unsubscribe = subscribeResultsKey(listener)
+
+      expect(rememberResultsKey('  Kirsche ')).toBe(true)
+
+      expect(takeResultsKey()).toBe('kirsche')
+      expect(listener).toHaveBeenCalledTimes(1)
+      forgetResultsKey()
+      expect(takeResultsKey()).toBe('kirsche')
+      unsubscribe()
+    })
+
+    it('refuses an input that cannot be a word', () => {
+      expect(rememberResultsKey('ab')).toBe(false)
+      expect(rememberResultsKey('kirsche 7')).toBe(false)
+      expect(takeResultsKey()).toBeNull()
+    })
+
+    it('forgets a rejected word', () => {
+      rememberResultsKey(KEY)
+
+      clearResultsKey()
+
+      expect(takeResultsKey()).toBeNull()
+      forgetResultsKey()
+      expect(takeResultsKey()).toBeNull()
+    })
   })
 })

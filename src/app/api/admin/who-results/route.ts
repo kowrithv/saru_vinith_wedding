@@ -13,7 +13,7 @@ export async function GET(request: Request): Promise<Response> {
   if (!isAdminRequest(request, db)) {
     return NextResponse.json({ error: 'Nicht angemeldet.' }, { status: 401 })
   }
-  // Der Schlüssel gehört in den Lese-Link für den DJ (`#k=` im Fragment).
+  // Der Code, den der DJ auf /dj eingibt (oder als `#k=` im Link mitbringt).
   return NextResponse.json({ released: areResultsReleased(db), key: resultsKey(db) }, { headers: NO_STORE })
 }
 

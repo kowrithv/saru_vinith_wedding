@@ -3,7 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import WhoResultsAdmin from './WhoResultsAdmin'
 
-const KEY = 'ef'.repeat(12)
+const KEY = 'kirsche'
 
 function stubFetch(
   initial: { released: boolean } = { released: false },
@@ -37,8 +37,8 @@ describe('WhoResultsAdmin', () => {
 
     expect(await screen.findByText(/verborgen/i)).toBeInTheDocument()
     expect(screen.getByRole('switch', { name: /auflösung für gäste freigeben/i })).not.toBeChecked()
-    const link = screen.getByLabelText(/link für den dj/i) as HTMLInputElement
-    expect(link.value).toBe(`${window.location.origin}/dj#k=${KEY}`)
+    expect(screen.getByTestId('dj-word')).toHaveTextContent(KEY)
+    expect(screen.getByTestId('dj-address')).toHaveTextContent(`${window.location.host}/dj`)
   })
 
   it('anchors the switch knob to the left edge so it can slide', async () => {
@@ -49,13 +49,14 @@ describe('WhoResultsAdmin', () => {
     expect(knob).toHaveClass('left-0')
   })
 
-  it('shows a short link for the DJ', async () => {
+  it('shows the address without protocol, short enough to type', async () => {
     stubFetch()
     render(<WhoResultsAdmin />)
 
-    const link = (await screen.findByLabelText(/link für den dj/i)) as HTMLInputElement
-    expect(link.value).toBe(`${window.location.origin}/dj#k=${KEY}`)
-    expect(link.value.length - window.location.origin.length).toBeLessThan(40)
+    const address = await screen.findByTestId('dj-address')
+    expect(address.textContent).not.toMatch(/^https?:/)
+    expect(address.textContent).toMatch(/\/dj$/)
+    expect(screen.getByTestId('dj-word').textContent).toBe(KEY)
   })
 
   it('releases the results after a confirmation', async () => {
@@ -105,10 +106,10 @@ describe('WhoResultsAdmin', () => {
     const writeText = vi.fn().mockResolvedValue(undefined)
     Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
     render(<WhoResultsAdmin />)
-    await userEvent.click(await screen.findByRole('button', { name: /kopieren/i }))
+    await userEvent.click(await screen.findByRole('button', { name: /link kopieren/i }))
 
-    await waitFor(() => expect(writeText).toHaveBeenCalledWith(expect.stringContaining(`#k=${KEY}`)))
-    expect(await screen.findByRole('button', { name: /kopiert/i })).toBeInTheDocument()
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith(expect.stringContaining(`/dj#k=${KEY}`)))
+    expect(await screen.findByText('Link kopiert.')).toBeInTheDocument()
   })
 
   it('reports when the state cannot be loaded', async () => {

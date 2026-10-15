@@ -9,12 +9,14 @@ Buchstaben-Marken (S, V) werden Porträts.
 ## Entscheidungen (Vorgaben, jederzeit änderbar)
 
 - **Eine Stimme je Frage und Gerät** (wie bisher, kein Ändern, kein Mehrfach-Abstimmen).
-- **DJ-Zugang:** eigener Lese-Link `/dj#k=<Schlüssel>`. Der Schlüssel
-  ist `HMAC(Admin-Schlüssel, 'who-results-link')` (hex, 24 Zeichen = 96 Bit, damit der Link kurz bleibt): nichts zu speichern,
-  stabil, ungültig erst bei einem Wechsel von `ADMIN_SECRET`. Er steht im Fragment (nie im
-  Server-Log, nie im Referer) und wird per Header `x-results-key` gesendet. Er gibt nur
-  die Ergebnisse frei, sonst nichts; vom Admin-Cookie und vom Gäste-Cookie ist er getrennt
-  abgeleitet.
+- **DJ-Zugang:** Seite `/dj` mit einem **Wort** (der DJ tippt es ab, deshalb kein
+  langer Schlüssel). Das Wort wird aus `HMAC(Admin-Schlüssel, 'who-results-link')` aus der
+  Liste `RESULTS_WORDS` gewählt (nichts zu speichern, stabil, ändert sich mit
+  `ADMIN_SECRET`). Es kommt per Header `x-results-key`; der Link zum Kopieren trägt es als
+  `#k=<Wort>` im Fragment (nie im Server-Log, nie im Referer). Es gibt nur die Ergebnisse frei, sonst nichts.
+  Ein Wort ist kein starkes Geheimnis; es hält Gäste vom Vorab-Blick ab. Deshalb: falsche
+  Wörter werden je Adresse gebremst (20 in 15 Minuten, dann 429), das richtige wird nie
+  abgewiesen.
 - **Auflösung:** Schalter `who_results_released` in `app_config` (Admin-Bereich). Mit der
   Freigabe ist die Abstimmung beendet: `POST /api/who-votes/vote` antwortet 423, die Seite
   zeigt die Ergebnisse. Der bestehende Schalter `who_votes` (Abstimmung sperren) bleibt
@@ -42,14 +44,14 @@ Buchstaben-Marken (S, V) werden Porträts.
   Frage beginnen; Kennwortfeld nur wenn nicht entsperrt; nach der Stimme „Gespeichert"
   statt der Ergebnisse; am Ende Dank. Nach der Freigabe: Ergebnisse aller Fragen, die
   eigene Stimme markiert.
-- `/dj` (DJ): Ergebnisse aller Fragen, alle 5 s aktualisiert, mit
-  Schlüssel aus dem Fragment; ohne gültigen Schlüssel eine Hinweisseite.
+- `/dj` (DJ): Ergebnisse aller Fragen, alle 5 s aktualisiert. Das Wort kommt aus dem Link
+  (`#k=`), aus dem Browser (beim nächsten Besuch) oder aus einem Eingabefeld.
 - `/quiz`: nur noch das klassische Quiz, mit Verweis auf die neue Seite.
 
 ## Admin
 
 Abschnitt „Wer von uns?": Schalter „Auflösung für Gäste freigeben" (mit Hinweis, dass die
-Abstimmung damit endet), DJ-Link zum Kopieren.
+Abstimmung damit endet), Adresse und Wort für den DJ, Link zum Kopieren.
 
 ## Folgen
 
