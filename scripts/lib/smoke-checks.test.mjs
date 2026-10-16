@@ -22,12 +22,15 @@ function fakeServer(overrides = {}) {
     'GET /memories': () => ({ status: 200, body: html }),
     'GET /guestbook': () => ({ status: 200, body: html }),
     'GET /admin': () => ({ status: 200, body: html }),
+    'GET /beamer': () => ({ status: 200, body: html }),
+    'GET /punkte': () => ({ status: 200, body: html }),
     'GET /robots.txt': () => ({ status: 200, body: 'User-Agent: *\nDisallow: /' }),
     'GET /api/health': () => ({ status: 200, json: { ok: true } }),
     'GET /api/gallery': () => ({ status: 200, json: { mode: 'public', unlocked: true, uploadsLocked: false, photos: [] } }),
     'GET /api/memory-record': () => ({ status: 200, json: { record: null } }),
     'GET /api/guestbook': () => ({ status: 200, json: { entries: [] } }),
     'GET /api/who-votes': () => ({ status: 200, json: { released: false, questions: null } }),
+    'GET /api/score': () => ({ status: 401, json: { error: 'Nicht angemeldet.' } }),
     'GET /does-not-exist': () => ({ status: 404, body: '<meta http-equiv="refresh" content="0;url=/"/>' }),
     'POST /api/uploads/request': () => ({ status: 401, json: { error: 'Falsches Kennwort.' } }),
     ...overrides,
@@ -61,6 +64,18 @@ describe('runSmokeChecks', () => {
     const failed = results.filter((r) => !r.ok)
     expect(failed.map((r) => r.name)).toEqual([expect.stringMatching(/gallery/i)])
     expect(failed[0].detail).toMatch(/500/)
+  })
+
+  it('reports a score API that is missing or open to everyone', async () => {
+    const missing = await runSmokeChecks('https://example.de', fakeServer({ 'GET /api/score': () => ({ status: 404, body: 'nicht da' }) }))
+    expect(missing.filter((r) => !r.ok).map((r) => r.name).join()).toMatch(/punkte/i)
+    const open = await runSmokeChecks('https://example.de', fakeServer({ 'GET /api/score': () => ({ status: 200, json: { bride: 0, groom: 0, rev: 0 } }) }))
+    expect(open.filter((r) => !r.ok).map((r) => r.name).join()).toMatch(/punkte/i)
+  })
+
+  it('reports a beamer page that is gone', async () => {
+    const results = await runSmokeChecks('https://example.de', fakeServer({ 'GET /beamer': () => ({ status: 404, body: 'x' }) }))
+    expect(results.filter((r) => !r.ok).map((r) => r.name)).toEqual([expect.stringMatching(/beamer/i)])
   })
 
   it('reports an API that returns an unexpected shape', async () => {

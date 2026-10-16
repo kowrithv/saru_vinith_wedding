@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { InvalidEnvError, MissingEnvError, validateEnv } from './env'
+import { InvalidEnvError, MissingEnvError, getScorePassword, validateEnv } from './env'
 
 const allSet = {
   ADMIN_PASSWORD: 'secret',
@@ -108,5 +108,21 @@ describe('validateEnv', () => {
   it('rejects an unknown client IP header at startup', () => {
     expect(() => validateEnv({ ...allSet, CLIENT_IP_HEADER: 'x-real-ip' })).toThrowError(InvalidEnvError)
     expect(() => validateEnv({ ...allSet, CLIENT_IP_HEADER: 'x-real-ip' })).toThrowError(/CLIENT_IP_HEADER/)
+  })
+})
+
+describe('getScorePassword', () => {
+  it('is undefined when the variable is missing, empty or only spaces', () => {
+    expect(getScorePassword({})).toBeUndefined()
+    expect(getScorePassword({ SCORE_PASSWORD: '' })).toBeUndefined()
+    expect(getScorePassword({ SCORE_PASSWORD: '   ' })).toBeUndefined()
+  })
+
+  it('returns the trimmed password', () => {
+    expect(getScorePassword({ SCORE_PASSWORD: ' Torte ' })).toBe('Torte')
+  })
+
+  it('is not required to start the app', () => {
+    expect(() => validateEnv(allSet)).not.toThrow()
   })
 })

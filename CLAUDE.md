@@ -67,6 +67,16 @@ einer Route meldet `tsc` ggf. veraltete Dateien in `.next/types` – dann
   `who_votes_epoch` hoch; die Gäste-Seite gleicht sie mit der gemerkten Runde ab
   (`syncRound` in `who-local-votes.ts`). Abstimmung über Fotos statt Namen: `public/who/*.jpg`,
   `whoPortraits` in `site-images.ts`.
+- Beamer/Punktestand (`/beamer` nur Ansicht, `/punkte` Steuerung; nicht in der Navigation):
+  eigenes Kennwort `SCORE_PASSWORD` (optional, ohne ihn bleiben die Seiten zu), Cookie
+  `score_session` mit abgeleitetem Schlüssel (`score-auth.ts`, nie als Admin-/Galerie-Cookie
+  gültig; der Admin hat keinen Sonderzugang). Stand in `app_config` (`score.ts`), Änderungen immer
+  relativ (`+1`/`-1`). Push per SSE: `api/score/stream` + `score-hub.ts` (`globalThis`, wie die
+  Datenbank, weil Next jede Route als eigenes Bündel laden kann); Client `use-live-score.ts`
+  (Ping-Wächter, Ersatz-Abfrage alle 3 s). Maße der Anzeige in `cqmin` (Container-Einheiten).
+  Die Teamfarben (Pink/Bordeaux) und den Hintergrund liefert `score-colors.ts` als CSS-Variablen an
+  Beamer und Steuerung. Das schwebende „+1“ leitet `use-score-bumps.ts` beim Rendern aus dem vorigen Stand ab (kein Effect;
+  nur Werte-Importe ohne `score.ts`, das hängt an der Datenbank).
 - Tailwind v4, Farb-Tokens `dark-blue`, `champagne(-light/-dark)`, `gold`,
   `bordeaux`, `rose-sand`; Schriften `font-serif` (Playfair), `font-display`
   (Cormorant), `font-script` (Great Vibes, nur Namen/Unterschriften). Ornament:
@@ -112,6 +122,7 @@ einer Route meldet `tsc` ggf. veraltete Dateien in `.next/types` – dann
   definierte – über `cn()` (tailwind-merge) wird das aufgelöst, in einem
   reinen String nicht. Genau eine Schatten-Klasse verwenden.
 - **Touch:** Bedienelemente nie nur per Hover sichtbar machen.
+- **Offener Stream:** Seiten mit Event-Stream (`/beamer`, `/punkte`) erreichen in Playwright nie `networkidle`: auf `load` und ein Element warten.
 - **Download:** `<a download>` wird bei Cross-Origin ignoriert – per Blob laden.
 - **Fotos per `fetch()` (Polaroid, Download):** nie dieselbe Adresse wie das `<img>`.
   Cloudflare und der Browser speichern die Antwort der `<img>`-Anfrage ohne

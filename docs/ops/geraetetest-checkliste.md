@@ -58,6 +58,13 @@ Geräte: ☐ iPhone (Safari) ☐ Android (Chrome) ☐ ältere Hardware ☐ Deskt
 - [ ] `/info`: Abschnitt „Unsere Dienstleister" mit sechs Einträgen; jeder Link öffnet das richtige Profil in einem neuen Tab.
 - [ ] Anfahrt-Karte: „Route planen" öffnet die Karten-App, „In Kalender speichern" legt den Termin an.
 
+## Beamer und Punktestand (braucht `SCORE_PASSWORD` in `.env.production`)
+- [ ] `/beamer` auf dem Laptop am Beamer öffnen: ohne Anmeldung nur das Kennwortfeld; das **Admin**-Kennwort wird abgewiesen, `SCORE_PASSWORD` öffnet die Anzeige. Vollbild (F11): Namen, Datum, beide Kästen vollständig sichtbar, nichts abgeschnitten, auch im echten Beamer-Format.
+- [ ] `/punkte` am Handy öffnen (anmelden): +1 für Bride, +1 für Groom, −1: **der Beamer folgt in unter einer Sekunde** und der Punkt unten links ist **grün**. Bei jedem Punkt schwebt ein **„+1“** neben der Zahl des Teams auf. Orange heißt: der Proxy hält den Strom zurück (Anzeige stimmt trotzdem, nur alle 3 Sekunden) – dann Caddy prüfen.
+- [ ] Zwei Handys tippen gleichzeitig auf dasselbe Team: beide Punkte kommen an. Handy ins Flugmodus und zurück: die Seite holt den Stand von selbst.
+- [ ] „Auf 0 zurücksetzen" fragt nach; nach „Ja" zeigt der Beamer 0 : 0. Die Beamer-Seite 5 Minuten offen lassen: Bildschirm bleibt an, Stand stimmt noch.
+- [ ] Ohne Anmeldung ist `/api/score` gesperrt (401), die Seiten stehen nicht in der Navigation.
+
 ## Spiele und Einträge
 - [ ] Quiz (klassisch): alle Fragen durchspielen, Auswertung am Ende.
 - [ ] „Wer von uns?" (`/wer-von-uns`): drei Fotos statt Namen (zwei Quadrate, darunter das gemeinsame), das gewählte bekommt einen Haken; Kennwortfeld nur, wenn der Browser nicht entsperrt ist; nach der Stimme ein Haken auf dem Foto und „Weiter", **ohne** Zahlen und ohne Satz; ein anderes Foto antippen ändert die Stimme (der Haken wandert), „Zurück" und auf der Dank-Seite „Antworten ansehen und ändern" funktionieren; Seite schließen und öffnen: es geht bei der ersten offenen Frage weiter. Im Admin „Alle Stimmen löschen" (mit Rückfrage): Zähler 0, und das Test-Handy beginnt ohne Löschen der Browserdaten wieder bei Frage 1; nach „Freigegeben" ist der Knopf gesperrt.
