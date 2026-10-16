@@ -2,7 +2,7 @@
 // Seiteneffekte auf Daten: nur Lesezugriffe, ein Upload-Ticket mit falschem
 // Kennwort (wird abgewiesen) und - nur mit Passwort - Admin-Login/-Logout.
 
-const PAGES = ['/story', '/info', '/gallery', '/quiz', '/wer-von-uns', '/dj', '/memory-spiel', '/memories', '/guestbook', '/admin']
+const PAGES = ['/story', '/info', '/gallery', '/quiz', '/wer-von-uns', '/dj', '/memory-spiel', '/memories', '/guestbook', '/admin', '/beamer', '/punkte']
 const SLOW_MS = 3000
 
 function pass() {
@@ -80,6 +80,14 @@ export function buildSmokeChecks(options = {}) {
         (d) => typeof d.released === 'boolean' && 'questions' in d,
         'released und questions erwartet'
       ),
+  })
+
+  checks.push({
+    name: 'API: Punkte nur mit Anmeldung',
+    path: '/api/score',
+    // 401 = die Route lebt und ist geschützt. 404 hieße: das Image kennt die Punkte-Seiten nicht;
+    // 200 ohne Anmeldung wäre ein Befund.
+    expect: (res) => expectStatus(res, 401),
   })
 
   checks.push({

@@ -67,10 +67,27 @@ einer Route meldet `tsc` ggf. veraltete Dateien in `.next/types` – dann
   `who_votes_epoch` hoch; die Gäste-Seite gleicht sie mit der gemerkten Runde ab
   (`syncRound` in `who-local-votes.ts`). Abstimmung über Fotos statt Namen: `public/who/*.jpg`,
   `whoPortraits` in `site-images.ts`.
+- Beamer/Punktestand (`/beamer` nur Ansicht, `/punkte` Steuerung; nicht in der Navigation):
+  eigenes Kennwort `SCORE_PASSWORD` (optional, ohne ihn bleiben die Seiten zu), Cookie
+  `score_session` mit abgeleitetem Schlüssel (`score-auth.ts`, nie als Admin-/Galerie-Cookie
+  gültig; der Admin hat keinen Sonderzugang). Stand in `app_config` (`score.ts`), Änderungen immer
+  relativ (`+1`/`-1`). Push per SSE: `api/score/stream` + `score-hub.ts` (`globalThis`, wie die
+  Datenbank, weil Next jede Route als eigenes Bündel laden kann); Client `use-live-score.ts`
+  (Ping-Wächter, Ersatz-Abfrage alle 3 s). Maße der Anzeige in `cqmin` (Container-Einheiten).
+  Die Teamfarben (Pink/Bordeaux) und den Hintergrund liefert `score-colors.ts` als CSS-Variablen an
+  Beamer und Steuerung. Das schwebende „+1“ leitet `use-score-bumps.ts` beim Rendern aus dem vorigen Stand ab (kein Effect;
+  nur Werte-Importe ohne `score.ts`, das hängt an der Datenbank).
 - Tailwind v4, Farb-Tokens `dark-blue`, `champagne(-light/-dark)`, `gold`,
   `bordeaux`, `rose-sand`; Schriften `font-serif` (Playfair), `font-display`
   (Cormorant), `font-script` (Great Vibes, nur Namen/Unterschriften). Ornament:
   `Lotus`, `Card variant="ornate"` (Eckmarken), `EmptyState`.
+- Vorschau eines gewählten Fotos im Formular: `useFilePreview` (`use-file-preview.ts`, dieselbe 800-px-Vorschau
+  wie beim Hochladen; `null` = keine Vorschau möglich, z. B. HEIC). Das Galerie-Formular hat eine eigene,
+  auf viele Dateien ausgelegte Logik.
+- Galerie-Raster (`GalleryGrid.tsx`): Mosaik als dichtes CSS-Grid (`[grid-auto-flow:dense]`), 3/5/6 Spalten, quadratische Kacheln
+  über die Zeilenhöhe in `cqw`; das neueste Foto und danach jedes `BIG_TILE_EVERY`. (7.) ist 2 x 2 groß, gezählt von oben in der
+  gezeigten Liste (die Größe hängt an der Position und wechselt, wenn ein neues Foto kommt: gewollt, nur Kosmetik). Auf 1 gestellt
+  sind alle Kacheln gleich. Bewusst **kein** CSS-Spalten-Masonry: das füllt erst die linke, dann die rechte Spalte und springt beim Nachladen.
 - Upload-Kategorien: Gäste wählen nur `Standesamt`/`Party` (`uploadCategoriesFor`
   in `gallery-categories.ts`); `/api/uploads/request` lehnt `Kennenlernen`/`Verlobung`
   für Gäste ab, `Erinnerungen` kommt nur aus dem Erinnerungs-Formular.
@@ -112,6 +129,7 @@ einer Route meldet `tsc` ggf. veraltete Dateien in `.next/types` – dann
   definierte – über `cn()` (tailwind-merge) wird das aufgelöst, in einem
   reinen String nicht. Genau eine Schatten-Klasse verwenden.
 - **Touch:** Bedienelemente nie nur per Hover sichtbar machen.
+- **Offener Stream:** Seiten mit Event-Stream (`/beamer`, `/punkte`) erreichen in Playwright nie `networkidle`: auf `load` und ein Element warten.
 - **Download:** `<a download>` wird bei Cross-Origin ignoriert – per Blob laden.
 - **Fotos per `fetch()` (Polaroid, Download):** nie dieselbe Adresse wie das `<img>`.
   Cloudflare und der Browser speichern die Antwort der `<img>`-Anfrage ohne

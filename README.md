@@ -16,6 +16,8 @@ Admin-Bereich für das Brautpaar.
 | `/quiz` | Hochzeitsquiz |
 | `/wer-von-uns` | „Wer von uns?“-Abstimmung (Ergebnisse erst nach der Freigabe) |
 | `/dj` | Ergebnisse für den DJ (Wort statt Kennwort, siehe unten) |
+| `/beamer` | Punktestand „Team Bride gegen Team Groom“ für den Beamer, nur zum Ansehen (eigenes Kennwort, siehe „Beamer-Anzeige und Punktestand“) |
+| `/punkte` | Punkte vergeben am Handy oder Laptop; der Beamer folgt sofort (nicht in der Navigation verlinkt) |
 | `/memory-spiel` | Liebes-Memory mit Rekord aller Gäste |
 | `/memories` | Erinnerungen der Gäste |
 | `/guestbook` | Gästebuch |
@@ -55,6 +57,7 @@ wirklich auszuprobieren.
 |---|---|---|
 | `ADMIN_PASSWORD` | ja | Kennwort für `/admin` |
 | `GUEST_PASSWORD` | ja | Gäste-Kennwort („vom Empfang“) für Galerie, Gästebuch, Erinnerungen und Uploads; kurz und merkbar, Groß-/Kleinschreibung egal (siehe „Gäste-Zugang“) |
+| `SCORE_PASSWORD` | nein | Kennwort für `/beamer` und `/punkte`: ein **eigenes**, nicht das Admin- und nicht das Gäste-Kennwort; Groß-/Kleinschreibung egal. Ohne Wert bleiben beide Seiten geschlossen (siehe „Beamer-Anzeige und Punktestand“) |
 | `R2_ACCOUNT_ID` | ja | Cloudflare-Konto |
 | `R2_ACCESS_KEY_ID` | ja | R2-API-Token (Object Read & Write, nur für den Bucket) |
 | `R2_SECRET_ACCESS_KEY` | ja | zum Token gehörendes Secret |
@@ -122,6 +125,16 @@ Fotos laufen **nie durch den App-Server**:
    Speicher des Upload-Geräts (in der DB steht nur dessen Hash); der Admin
    löscht jedes Foto.
 
+**Vor dem Hochladen** zeigt das Formular gleich beim Auswählen eine Kachel mit Vorschau je Foto
+(eine nach der anderen erzeugt, um den Speicher zu schonen, und vom Upload wiederverwendet), und
+jedes Foto lässt sich mit dem × aus der Auswahl nehmen. Während des Sendens und nach dem Fertigwerden
+verschwindet das ×.
+
+**Vor dem Hochladen** zeigt das Formular gleich beim Auswählen eine Kachel mit Vorschau je Foto
+(eine nach der anderen erzeugt, um den Speicher zu schonen, und vom Upload wiederverwendet), und
+jedes Foto lässt sich mit dem × aus der Auswahl nehmen. Während des Sendens und nach dem Fertigwerden
+verschwindet das ×.
+
 **Die Galerie lädt sich selbst neu** (`src/app/gallery/page.tsx`): alle 30 Sekunden
 und sobald der Tab wieder sichtbar wird (die Seite wird dabei nicht neu geladen, auch
 schon gezeigte Bilder nicht), aber **nicht während eines Uploads**
@@ -172,7 +185,7 @@ Zum Tauschen die Datei ersetzen (gleicher Name und gleiches Format).
 
 Details: `docs/superpowers/specs/2026-10-12-gallery-design.md`.
 
-**Kategorien beim Hochladen:** Gäste wählen nur *Standesamt* oder *Party* (früher „Hochzeit“; vorhandene Fotos werden beim Start umbenannt);
+**Kategorien beim Hochladen:** Gäste wählen nur *Standesamt* oder *Party*, vorausgewählt ist *Party* (früher „Hochzeit“; vorhandene Fotos werden beim Start umbenannt);
 *Kennenlernen* und *Verlobung* legt der Admin an (der Server lehnt sie für Gäste
 ab), *Erinnerungen* entsteht allein über das Erinnerungs-Formular.
 
@@ -283,6 +296,32 @@ qrencode -s 10 -o gaeste-qr.png 'https://vsjourney.de/gallery#k=Hochzeit'
 `.env.production` setzen und `up -d --force-recreate web`. Alle bisherigen
 Sitzungen und gedruckten QR-Codes sind dann ungültig; neuen QR-Code erzeugen.
 
+### Beamer-Anzeige und Punktestand
+
+Für das Spiel „Team Bride gegen Team Groom“ gibt es zwei Seiten, die nicht in der Navigation
+stehen und nur mit `SCORE_PASSWORD` aufgehen (ein eigenes Kennwort; das Admin-Kennwort öffnet
+sie **nicht**). Ohne den Wert bleiben beide Seiten geschlossen und `POST /api/score/login`
+antwortet `503`. Falsche Kennwörter werden je Adresse gebremst (5 in 15 Minuten); eine
+Anmeldung gilt 3 Tage, damit der Beamer am Vortag eingerichtet werden kann.
+
+- `/beamer` füllt den Bildschirm und skaliert mit jeder Größe (16:9-Beamer genauso wie
+  hochkant). Nur zum Ansehen; hält den Bildschirm wach (Wake Lock). Der kleine Punkt unten
+  links zeigt die Verbindung: grün = live, orange = wird neu aufgebaut. Bekommt ein Team einen
+  Punkt, schwebt ein „+1“ in der Farbe des Teams neben der Zahl auf (`use-score-bumps.ts`;
+  nicht beim ersten Laden, nicht beim Verringern oder Zurücksetzen).
+- `/punkte` für Handy und Laptop: +1 und −1 je Team, „Auf 0 zurücksetzen“ mit Rückfrage.
+  Jedes Tippen schickt eine **Änderung** (`+1`/`-1`), nicht den ganzen Stand: tippen zwei
+  Handys gleichzeitig, gehen beide Punkte ein. Der Stand liegt in `app_config`
+  (`score_bride`, `score_groom`, `score_rev`), geht nicht unter 0 und nicht über 999.
+
+**Sofort statt Abfragen:** `GET /api/score/stream` ist ein Server-Sent-Events-Strom
+(`src/app/api/score/stream/route.ts`). Jede Änderung geht gleich nach dem Speichern an alle
+offenen Seiten (`score-hub.ts`, im Arbeitsspeicher: das funktioniert, weil die App als **ein**
+Prozess läuft). Alle 10 s kommt ein `ping`; hört die Seite 25 s nichts, baut sie den Strom neu
+auf. Steht er, fragt sie ersatzweise alle 3 s `GET /api/score` ab (`use-live-score.ts`), die Anzeige
+stimmt also auch hinter einem Proxy, der den Strom sammelt, nur nicht ganz so schnell (orange
+Punkt). Höchstens 50 offene Ströme.
+
 ### Bekannte Grenzen
 
 - **Datei-Adressen:** Das Kennwort schützt die Seite und die Liste der Fotos, nicht die
@@ -298,6 +337,7 @@ Sitzungen und gedruckten QR-Codes sind dann ungültig; neuen QR-Code erzeugen.
   Meldungen werden ohne Namen gespeichert, Obergrenze 100.000; „Zurücksetzen" leert alles).
   Wer das Fälschen ausschließen will, bräuchte ein vom Server verteiltes Spiel.
 - **Rate-Limiter:** liegen im Speicher, ein Neustart setzt sie zurück.
+- **Punktestand live:** der Verteiler liegt im Speicher eines Prozesses. Mehrere App-Instanzen hinter einem Lastverteiler (gibt es hier nicht) bekämen Änderungen nur über die Ersatz-Abfrage alle 3 s.
 
 ## Deployment
 

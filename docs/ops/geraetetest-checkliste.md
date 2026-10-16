@@ -27,8 +27,11 @@ Geräte: ☐ iPhone (Safari) ☐ Android (Chrome) ☐ ältere Hardware ☐ Deskt
 ## Galerie und Upload (braucht R2)
 - [ ] „Fotos hochladen" öffnet das Formular und scrollt es ins Bild.
 - [ ] Kategorie-Auswahl zeigt nur „Standesamt" und „Party"; am Auswahlfeld steht „Nur Fotos, keine Videos."
-- [ ] Name, Kategorie (Vorauswahl „Standesamt"), 3 Fotos auswählen → Vorschau, Fortschritt, „3 Fotos hochgeladen – danke!". Ein Kennwortfeld erscheint nur, wenn der Browser noch nicht entsperrt ist.
+- [ ] Name, Kategorie (Vorauswahl „Party"), 3 Fotos auswählen → Vorschau, Fortschritt, „3 Fotos hochgeladen – danke!". Ein Kennwortfeld erscheint nur, wenn der Browser noch nicht entsperrt ist.
 - [ ] 10 Fotos auf einmal: Formular bleibt offen, Liste scrollt, Abbrechen sichtbar.
+- [ ] **Galerie-Raster (Mosaik):** Das neueste Foto steht oben groß (doppelte Größe), danach jedes 7. Foto; dazwischen gleich große Quadrate, **keine Lücken**, auf dem Handy 3 Spalten. Das „Von …“-Schild liegt in jeder Kachel unten und läuft auch bei langem Namen nicht über. „60 weitere Fotos anzeigen“ führt den Rhythmus fort, Kategorie-Filter und Großansicht (Wischen, Löschen) gehen wie vorher.
+- [ ] **Beim Auswählen** füllen sich die Kacheln nacheinander mit der Vorschau (auf dem iPhone auch bei 10 Fotos ohne Ruckeln oder Neuladen der Seite); mit dem **×** auf einer Kachel lässt sich ein Foto vor dem Hochladen herausnehmen, hochgeladen werden nur die übrigen. Ein HEIC-Foto im Chrome zeigt statt der Vorschau ein Bild-Symbol.
+- [ ] **Beim Auswählen** füllen sich die Kacheln nacheinander mit der Vorschau (auf dem iPhone auch bei 10 Fotos ohne Ruckeln oder Neuladen der Seite); mit dem **×** auf einer Kachel lässt sich ein Foto vor dem Hochladen herausnehmen, hochgeladen werden nur die übrigen. Ein HEIC-Foto im Chrome zeigt statt der Vorschau ein Bild-Symbol.
 - [ ] **iPhone:** Foto im HEIC-Format (Originalformat) hochladen; erscheint in der Galerie, Original-Download funktioniert.
 - [ ] Datei > 20 MB: klare Meldung mit Dateiname.
 - [ ] Flugmodus während des Uploads: Fehlermeldung, nach erneutem „Hochladen" nur die unfertigen Fotos.
@@ -42,7 +45,7 @@ Geräte: ☐ iPhone (Safari) ☐ Android (Chrome) ☐ ältere Hardware ☐ Deskt
 - [ ] Mobil-Menü offen: der schwebende Knopf liegt **unter** dem Menü.
 
 ## Erinnerung mit Foto (braucht R2)
-- [ ] Erinnerungen: Name, Text und ein Foto wählen → Dateiname und „×" erscheinen; absenden → Eintrag mit Foto in der Liste, Button zeigt „Foto wird hochgeladen…".
+- [ ] Erinnerungen: Name, Text und ein Foto wählen → **Vorschau des Fotos** (kleine Kachel), Dateiname und „×" erscheinen (HEIC außerhalb von Safari: graue Kachel statt Vorschau); absenden → Eintrag mit Foto in der Liste, Button zeigt „Foto wird hochgeladen…".
 - [ ] Dasselbe Foto steht in der **Galerie** (Kategorie „Erinnerungen", „Von <Name>") und lässt sich mit dem Lösch-Knopf in der Lightbox entfernen (nur auf diesem Gerät).
 - [ ] **iPhone** (Foto direkt aus der Kamera/HEIC) und **Android-Chrome**: hochladen; nicht dekodierbare Bilder werden trotzdem angenommen (graue Vorschau in der Galerie).
 - [ ] Datei > 20 MB oder keine Bilddatei: Meldung, es wird nichts hochgeladen.
@@ -55,6 +58,13 @@ Geräte: ☐ iPhone (Safari) ☐ Android (Chrome) ☐ ältere Hardware ☐ Deskt
 ## Dienstleister und Info
 - [ ] `/info`: Abschnitt „Unsere Dienstleister" mit sechs Einträgen; jeder Link öffnet das richtige Profil in einem neuen Tab.
 - [ ] Anfahrt-Karte: „Route planen" öffnet die Karten-App, „In Kalender speichern" legt den Termin an.
+
+## Beamer und Punktestand (braucht `SCORE_PASSWORD` in `.env.production`)
+- [ ] `/beamer` auf dem Laptop am Beamer öffnen: ohne Anmeldung nur das Kennwortfeld; das **Admin**-Kennwort wird abgewiesen, `SCORE_PASSWORD` öffnet die Anzeige. Vollbild (F11): Namen, Datum, beide Kästen vollständig sichtbar, nichts abgeschnitten, auch im echten Beamer-Format.
+- [ ] `/punkte` am Handy öffnen (anmelden): +1 für Bride, +1 für Groom, −1: **der Beamer folgt in unter einer Sekunde** und der Punkt unten links ist **grün**. Bei jedem Punkt schwebt ein **„+1“** neben der Zahl des Teams auf. Orange heißt: der Proxy hält den Strom zurück (Anzeige stimmt trotzdem, nur alle 3 Sekunden) – dann Caddy prüfen.
+- [ ] Zwei Handys tippen gleichzeitig auf dasselbe Team: beide Punkte kommen an. Handy ins Flugmodus und zurück: die Seite holt den Stand von selbst.
+- [ ] „Auf 0 zurücksetzen" fragt nach; nach „Ja" zeigt der Beamer 0 : 0. Die Beamer-Seite 5 Minuten offen lassen: Bildschirm bleibt an, Stand stimmt noch.
+- [ ] Ohne Anmeldung ist `/api/score` gesperrt (401), die Seiten stehen nicht in der Navigation.
 
 ## Spiele und Einträge
 - [ ] Quiz (klassisch): alle Fragen durchspielen, Auswertung am Ende.

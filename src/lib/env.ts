@@ -22,6 +22,17 @@ export function getGuestPassword(
   return source.GUEST_PASSWORD || undefined
 }
 
+/**
+ * Das Kennwort für Beamer-Anzeige und Punkte-Steuerung (`/beamer`, `/punkte`).
+ * Bewusst nicht Pflicht: fehlt es, bleiben beide Seiten zu und alles andere läuft
+ * unverändert.
+ */
+export function getScorePassword(
+  source: Record<string, string | undefined> = process.env
+): string | undefined {
+  return source.SCORE_PASSWORD?.trim() || undefined
+}
+
 export class InvalidEnvError extends Error {
   readonly variable: string
 
