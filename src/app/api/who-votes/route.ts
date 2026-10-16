@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
-import { getTally } from '@/lib/who-votes'
+import { getTally, getVotesEpoch } from '@/lib/who-votes'
 import { getWhoPhase, resultsAccess } from '@/lib/who-results'
 
 const NO_STORE = { 'Cache-Control': 'no-store' }
@@ -11,11 +11,13 @@ const NO_STORE = { 'Cache-Control': 'no-store' }
 export async function GET(request: Request): Promise<Response> {
   const db = getDb()
   const phase = getWhoPhase(db)
+  // Die Runde: wird beim Zurücksetzen der Stimmen hochgezählt (siehe resetVotes).
+  const epoch = getVotesEpoch(db)
   const released = phase === 'released'
   const access = resultsAccess(request, db)
 
   if (released || access.kind === 'allowed') {
-    return NextResponse.json({ phase, released, questions: getTally(db) }, { headers: NO_STORE })
+    return NextResponse.json({ phase, released, epoch, questions: getTally(db) }, { headers: NO_STORE })
   }
 
   if (access.kind === 'blocked') {
@@ -25,5 +27,5 @@ export async function GET(request: Request): Promise<Response> {
     )
   }
 
-  return NextResponse.json({ phase, released, questions: null }, { headers: NO_STORE })
+  return NextResponse.json({ phase, released, epoch, questions: null }, { headers: NO_STORE })
 }

@@ -36,8 +36,9 @@ Geräte: ☐ iPhone (Safari) ☐ Android (Chrome) ☐ ältere Hardware ☐ Deskt
 - [ ] Lightbox: öffnen, wischen/Pfeile, Original herunterladen, eigenes Foto löschen (nur auf dem Upload-Gerät).
 - [ ] **Nach dem Anzeigen** eines Fotos (Galerie, Lightbox, Erinnerung) funktionieren „Original herunterladen“ und „Als Polaroid speichern“ für genau dieses Foto (nicht nur für eines, das man noch nicht gesehen hat).
 - [ ] **Auswahl-Knopf** „Fotos auswählen“ (Galerie) bzw. „Foto auswählen“ (Erinnerungen): groß, gestrichelt, mit Kamera-Symbol; Tippen öffnet die Foto-Auswahl des Handys.
+- [ ] **Gästebuch und Erinnerungen:** Auf Handy A die Seite offen lassen, auf Handy B einen Eintrag schreiben: nach höchstens ca. 30 Sekunden erscheint er auf A; ist A weit unten, erscheint „1 neuer Eintrag anzeigen" bzw. „1 neue Erinnerung anzeigen".
 - [ ] **Filter** zeigen nur Kategorien, in denen Fotos liegen (anfangs z. B. nur „Alle“ und „Standesamt“).
-- [ ] **Neuladen:** Auf Handy A die Galerie offen lassen, auf Handy B ein Foto hochladen: nach spätestens ca. 30 Sekunden erscheint es auf A. Ist A weit unten im Raster, erscheint stattdessen „1 neues Foto anzeigen“ und nichts springt. Läuft auf A selbst gerade ein Upload, lädt die Galerie währenddessen nicht neu.
+- [ ] **Neuladen:** Auf Handy A die Galerie offen lassen, auf Handy B ein Foto hochladen: nach spätestens ca. 30 Sekunden erscheint es auf A. Ist A weit unten im Raster, erscheint stattdessen „1 neues Foto anzeigen“ und nichts springt. Läuft auf A selbst gerade ein Upload, lädt die Galerie währenddessen nicht neu. Bei offenem Upload-Formular ist der schwebende Knopf nur noch ein kleiner runder „Schließen"-Knopf und verdeckt keine Zeilen.
 - [ ] Mobil-Menü offen: der schwebende Knopf liegt **unter** dem Menü.
 
 ## Erinnerung mit Foto (braucht R2)
@@ -57,8 +58,9 @@ Geräte: ☐ iPhone (Safari) ☐ Android (Chrome) ☐ ältere Hardware ☐ Deskt
 
 ## Spiele und Einträge
 - [ ] Quiz (klassisch): alle Fragen durchspielen, Auswertung am Ende.
-- [ ] „Wer von uns?" (`/wer-von-uns`): drei Fotos statt Namen (zwei Quadrate, darunter das gemeinsame), das gewählte bekommt einen Haken; Kennwortfeld nur, wenn der Browser nicht entsperrt ist; nach der Stimme ein Haken auf dem Foto und „Weiter", **ohne** Zahlen und ohne Satz; ein anderes Foto antippen ändert die Stimme (der Haken wandert), „Zurück" und auf der Dank-Seite „Antworten ansehen und ändern" funktionieren; Seite schließen und öffnen: es geht bei der ersten offenen Frage weiter.
+- [ ] „Wer von uns?" (`/wer-von-uns`): drei Fotos statt Namen (zwei Quadrate, darunter das gemeinsame), das gewählte bekommt einen Haken; Kennwortfeld nur, wenn der Browser nicht entsperrt ist; nach der Stimme ein Haken auf dem Foto und „Weiter", **ohne** Zahlen und ohne Satz; ein anderes Foto antippen ändert die Stimme (der Haken wandert), „Zurück" und auf der Dank-Seite „Antworten ansehen und ändern" funktionieren; Seite schließen und öffnen: es geht bei der ersten offenen Frage weiter. Im Admin „Alle Stimmen löschen" (mit Rückfrage): Zähler 0, und das Test-Handy beginnt ohne Löschen der Browserdaten wieder bei Frage 1; nach „Freigegeben" ist der Knopf gesperrt.
 - [ ] Admin „Wer von uns?": „Beendet" → Gäste-Handy zeigt „Die Abstimmung ist beendet" ohne Fotos und ohne Ergebnisse, weitere Stimmen werden abgewiesen; „Freigegeben" (mit Rückfrage) → Gäste-Handy zeigt die Verteilung; „Abstimmen" → Abstimmen geht wieder. Am Rechner des DJ: `vsjourney.de/dj` öffnen, das Wort aus dem Admin eintippen (Groß-/Kleinschreibung egal); die Ergebnisse stehen schon vor der Freigabe da und aktualisieren sich alle paar Sekunden. Ein falsches Wort wird abgelehnt.
+- [ ] Memory: die Zeit startet erst mit der **ersten aufgedeckten Karte**.
 - [ ] Memory: komplettes Spiel, „Neuer Rekord"-Meldung, Rekord aller Gäste wird angezeigt; Brett springt nicht.
 - [ ] Memory: zwei Runden hintereinander („Neues Spiel"): keine leere Karte beim Umdrehen, auch im schwachen WLAN.
 - [ ] Gästebuch und Erinnerungen: Eintrag schreiben (Kennwort nur, wenn der Browser noch nicht entsperrt ist), erscheint in der Liste.

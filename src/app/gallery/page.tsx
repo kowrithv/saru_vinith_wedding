@@ -9,6 +9,7 @@ import GalleryGrid from '@/components/gallery/GalleryGrid'
 import GalleryUploadForm from '@/components/gallery/GalleryUploadForm'
 import GuestPasswordField from '@/components/ui/GuestPasswordField'
 import type { GalleryPhotoView } from '@/lib/gallery-photo-view'
+import { cn } from '@/lib/utils'
 import { useGuestAccess } from '@/lib/use-guest-access'
 
 // So oft schaut die offene Galerie nach neuen Fotos (nicht während eines Uploads,
@@ -257,10 +258,22 @@ export default function GalleryPage() {
                   }}
                   aria-expanded={showUploadForm}
                   aria-controls="gallery-upload-panel"
-                  className="fixed bottom-6 right-6 z-30 flex items-center gap-2 bg-gold text-dark-blue font-medium px-5 py-3 rounded-full shadow-lg hover:shadow-xl transition-shadow"
+                  aria-label={showUploadForm ? 'Schließen' : undefined}
+                  // Offen nur noch ein kleiner runder Knopf: der breite lag am Handy über
+                  // den Zeilen und Knöpfen am Ende des Formulars ("Abbrechen" u. a.).
+                  className={cn(
+                    'fixed bottom-6 right-6 z-30 flex items-center justify-center gap-2 bg-gold text-dark-blue font-medium rounded-full shadow-lg hover:shadow-xl transition-shadow',
+                    showUploadForm ? 'h-12 w-12' : 'px-5 py-3'
+                  )}
                 >
-                  {showUploadForm ? <X size={18} /> : <Camera size={18} />}
-                  {showUploadForm ? 'Schließen' : 'Fotos hochladen'}
+                  {showUploadForm ? (
+                    <X size={20} aria-hidden="true" />
+                  ) : (
+                    <>
+                      <Camera size={18} aria-hidden="true" />
+                      Fotos hochladen
+                    </>
+                  )}
                 </button>
 
                 {uploadFormMounted && (

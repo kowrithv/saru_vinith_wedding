@@ -8,9 +8,11 @@ import Button from '@/components/ui/Button'
 import GuestPasswordField from '@/components/ui/GuestPasswordField'
 import EmptyState from '@/components/ui/EmptyState'
 import ShowMoreButton from '@/components/ui/ShowMoreButton'
+import NewItemsButton from '@/components/ui/NewItemsButton'
 import { textFieldClassName } from '@/lib/form-styles'
 import { useGuestAccess } from '@/lib/use-guest-access'
 import { useGuestName } from '@/lib/use-guest-name'
+import { useLiveList } from '@/lib/use-live-list'
 import { cn } from '@/lib/utils'
 
 // So viele Einträge werden auf einmal gezeigt (neueste zuerst), die älteren auf Wunsch.
@@ -62,6 +64,19 @@ export default function GuestbookPage() {
       active = false
     }
   }, [reloadKey])
+
+  // Neue Einträge anderer Gäste erscheinen von selbst (alle 30 Sekunden).
+  const live = useLiveList<GuestbookEntry>({
+    url: '/api/guestbook',
+    shown: entries,
+    enabled: !loadFailed,
+    keyOf: (entry) => String(entry.id),
+    parse: (body) => {
+      const list = (body as { entries?: unknown } | null)?.entries
+      return Array.isArray(list) ? (list as GuestbookEntry[]) : null
+    },
+    onApply: setEntries,
+  })
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -190,6 +205,7 @@ export default function GuestbookPage() {
           </div>
 
           <div className="lg:col-span-3 space-y-4">
+            <NewItemsButton count={live.newCount} singular="neuer Eintrag" plural="neue Einträge" onClick={live.showNew} />
             {loadFailed && entries.length === 0 && (
               <EmptyState
                 title="Die Einträge konnten nicht geladen werden"

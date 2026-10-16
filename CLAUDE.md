@@ -62,7 +62,10 @@ einer Route meldet `tsc` ggf. veraltete Dateien in `.next/types` – dann
   (`who-results.ts`: Abstimmen → Beendet → Freigegeben; Beendet ist die Sperre
   `who_votes`, Freigegeben zusätzlich `who_results_released`; der DJ sieht immer). DJ-Seite `/dj`: ein Wort aus `who-results-words.ts`, gewählt per HMAC aus dem
   Admin-Schlüssel (kein starkes Geheimnis; falsche Wörter je Adresse gebremst, das
-  richtige nie abgewiesen), Header `x-results-key`, Link mit `#k=<Wort>`. Abstimmung über Fotos statt Namen: `public/who/*.jpg`,
+  richtige nie abgewiesen), Header `x-results-key`, Link mit `#k=<Wort>`.
+  „Alle Stimmen löschen" (`DELETE /api/admin/who-results`, nicht nach der Freigabe) zählt
+  `who_votes_epoch` hoch; die Gäste-Seite gleicht sie mit der gemerkten Runde ab
+  (`syncRound` in `who-local-votes.ts`). Abstimmung über Fotos statt Namen: `public/who/*.jpg`,
   `whoPortraits` in `site-images.ts`.
 - Tailwind v4, Farb-Tokens `dark-blue`, `champagne(-light/-dark)`, `gold`,
   `bordeaux`, `rose-sand`; Schriften `font-serif` (Playfair), `font-display`

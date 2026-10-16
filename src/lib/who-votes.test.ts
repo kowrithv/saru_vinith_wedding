@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createDb } from './db'
-import { castVote, getTally } from './who-votes'
+import { castVote, countVotes, getTally, getVotesEpoch, resetVotes } from './who-votes'
 import { whoQuestions, whoGameOptions } from './who-game-content'
 
 describe('getTally', () => {
@@ -103,6 +103,74 @@ describe('castVote', () => {
   it('rejects an unknown option value', () => {
     const db = createDb(':memory:')
     expect(() => castVote(db, '1', 'voter-a', 'Nicht-Existent')).toThrow()
+    db.close()
+  })
+})
+
+describe('countVotes', () => {
+  it('counts votes and the devices behind them', () => {
+    const db = createDb(':memory:')
+    expect(countVotes(db)).toEqual({ votes: 0, voters: 0 })
+
+    castVote(db, '1', 'voter-a', whoGameOptions[0])
+    castVote(db, '2', 'voter-a', whoGameOptions[1])
+    castVote(db, '1', 'voter-b', whoGameOptions[2])
+
+    expect(countVotes(db)).toEqual({ votes: 3, voters: 2 })
+    db.close()
+  })
+
+  it('does not count a changed vote twice', () => {
+    const db = createDb(':memory:')
+    castVote(db, '1', 'voter-a', whoGameOptions[0])
+    castVote(db, '1', 'voter-a', whoGameOptions[1])
+
+    expect(countVotes(db)).toEqual({ votes: 1, voters: 1 })
+    db.close()
+  })
+})
+
+describe('resetVotes', () => {
+  it('deletes every vote and reports how many there were', () => {
+    const db = createDb(':memory:')
+    castVote(db, '1', 'voter-a', whoGameOptions[0])
+    castVote(db, '2', 'voter-a', whoGameOptions[1])
+    castVote(db, '1', 'voter-b', whoGameOptions[2])
+
+    expect(resetVotes(db)).toBe(3)
+
+    expect(countVotes(db)).toEqual({ votes: 0, voters: 0 })
+    expect(getTally(db)['1'][whoGameOptions[0]]).toBe(0)
+    db.close()
+  })
+
+  it('starts a new round: the epoch counts up with every reset', () => {
+    const db = createDb(':memory:')
+    expect(getVotesEpoch(db)).toBe('0')
+
+    resetVotes(db)
+    expect(getVotesEpoch(db)).toBe('1')
+
+    resetVotes(db)
+    expect(getVotesEpoch(db)).toBe('2')
+    db.close()
+  })
+
+  it('lets the same device vote again afterwards', () => {
+    const db = createDb(':memory:')
+    castVote(db, '1', 'voter-a', whoGameOptions[0])
+    resetVotes(db)
+
+    const again = castVote(db, '1', 'voter-a', whoGameOptions[1])
+
+    expect(again.alreadyVoted).toBe(false)
+    expect(countVotes(db)).toEqual({ votes: 1, voters: 1 })
+    db.close()
+  })
+
+  it('works on an empty table', () => {
+    const db = createDb(':memory:')
+    expect(resetVotes(db)).toBe(0)
     db.close()
   })
 })

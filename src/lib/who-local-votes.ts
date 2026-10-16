@@ -6,6 +6,10 @@ import { useCallback, useMemo, useSyncExternalStore } from 'react'
 // gemerkte Stand - kein Hydrations-Konflikt.
 
 const VOTES_STORAGE_KEY = 'who-game-votes'
+// Die Runde der Abstimmung, zu der die gemerkten Stimmen gehören (siehe syncRound).
+const ROUND_STORAGE_KEY = 'who-game-round'
+// So heißt die erste Runde auf dem Server; ein Browser ohne gemerkte Runde gehört dazu.
+const FIRST_ROUND = '0'
 
 const listeners = new Set<() => void>()
 
@@ -50,6 +54,33 @@ function parseVotes(raw: string): Record<string, string> {
   } catch {
     return {}
   }
+}
+
+function readRound(): string {
+  try {
+    return window.localStorage.getItem(ROUND_STORAGE_KEY) ?? FIRST_ROUND
+  } catch {
+    return FIRST_ROUND
+  }
+}
+
+/**
+ * Gleicht die gemerkten Stimmen mit der Runde ab, die der Server meldet. Hat das
+ * Brautpaar die Abstimmung zurückgesetzt (Testdaten vor der Feier), gehören die
+ * gemerkten Antworten zu einer Runde, die es nicht mehr gibt: der Browser
+ * vergisst sie und beginnt wieder bei Frage 1.
+ */
+export function syncRound(serverRound: string): void {
+  if (readRound() === serverRound) return
+  memoryVotes = {}
+  memoryVersion += 1
+  try {
+    window.localStorage.removeItem(VOTES_STORAGE_KEY)
+    window.localStorage.setItem(ROUND_STORAGE_KEY, serverRound)
+  } catch {
+    // ohne Speicher gilt die Änderung für diese Sitzung
+  }
+  listeners.forEach((listener) => listener())
 }
 
 export function useWhoVotes(): {

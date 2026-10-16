@@ -561,8 +561,8 @@ export default function GalleryUploadForm({
         // Groß und direkt über dem Knopf: dort schaut man nach dem Tippen hin.
         <div>
           <div className="mb-1.5 flex items-baseline justify-between gap-3 text-sm font-semibold text-dark-blue">
-            <span>Fotos werden gesendet …</span>
-            <span className="tabular-nums">
+            <span>Wird gesendet …</span>
+            <span className="whitespace-nowrap tabular-nums">
               {doneCount} von {totalCount} fertig
             </span>
           </div>

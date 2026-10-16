@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Check } from 'lucide-react'
 import { whoQuestions, whoGameOptions, whoBoth } from '@/lib/who-game-content'
@@ -8,7 +8,7 @@ import { whoPortraits } from '@/lib/site-images'
 import { getDeviceId } from '@/lib/device-id'
 import { usePolling } from '@/lib/use-polling'
 import { useGuestAccess } from '@/lib/use-guest-access'
-import { useWhoVotes } from '@/lib/who-local-votes'
+import { syncRound, useWhoVotes } from '@/lib/who-local-votes'
 import GuestPasswordField from '@/components/ui/GuestPasswordField'
 import Lotus from '@/components/ui/Lotus'
 import WhoResults, { type TallyMap } from '@/components/sections/WhoResults'
@@ -74,6 +74,8 @@ type WhoPhase = 'voting' | 'closed' | 'released'
 
 interface WhoState {
   phase: WhoPhase
+  /** Die Runde der Abstimmung; steigt, wenn das Brautpaar die Stimmen zurücksetzt. */
+  epoch: string
   questions: TallyMap | null
 }
 
@@ -97,12 +99,22 @@ export default function WhoKnowsUsGame() {
   // sobald abgestimmt wird, bleibt sie stehen, bis "Weiter" gedrückt wird.
   const [viewIndex, setViewIndex] = useState<number | null>(null)
 
+  // Wurde die Abstimmung zurückgesetzt, vergisst der Browser seine alten Antworten.
+  const round = state?.epoch
+  useEffect(() => {
+    if (round !== undefined) syncRound(round)
+  }, [round])
+
   usePolling(() => {
     fetch('/api/who-votes', { cache: 'no-store' })
       .then((res) => (res.ok ? res.json() : null))
-      .then((data: { phase?: unknown; questions?: TallyMap | null } | null) => {
+      .then((data: { phase?: unknown; epoch?: unknown; questions?: TallyMap | null } | null) => {
         if (data && isPhase(data.phase)) {
-          setState({ phase: data.phase, questions: data.questions ?? null })
+          setState({
+            phase: data.phase,
+            epoch: typeof data.epoch === 'string' ? data.epoch : '0',
+            questions: data.questions ?? null,
+          })
         }
       })
       .catch(() => {})

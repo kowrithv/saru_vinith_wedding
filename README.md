@@ -132,7 +132,12 @@ hinter dem Knopf „N neue Fotos anzeigen“. Die Großansicht merkt sich das Fo
 Kategorie-Filter zeigen nur Kategorien mit Fotos. Das Nachsehen ist billig: `GET /api/gallery`
 trägt einen `ETag` (Anzahl und neuestes Foto, dazu Modus, Upload-Sperre und ob der Aufrufer
 entsperrt ist); kommt er als `If-None-Match` zurück, antwortet der Server mit `304` ohne
-Liste. Erst bei einer Änderung kommt die ganze Liste. Das Auswahlfeld ist ein großer
+Liste. Erst bei einer Änderung kommt die ganze Liste. Dasselbe machen **Gästebuch** und
+**Erinnerungen** (`GET /api/guestbook`, `GET /api/memories`, Hilfen in `etag.ts`, Verhalten
+der Seiten in `use-live-list.ts`): neue Einträge anderer Gäste erscheinen nach höchstens
+ca. 30 Sekunden von selbst; wer weiter unten ist, bekommt den Knopf „N neue Einträge
+anzeigen". Bei den Erinnerungen steckt in den Stand auch, ob Fotos sichtbar sind und wie
+viele Einträge ein Foto haben (ein aus der Galerie gelöschtes Foto ändert den Eintrag). Das Auswahlfeld ist ein großer
 Knopf (`PhotoPickerButton`) mit dem echten, unsichtbaren Dateifeld dahinter.
 
 Der Admin kann im Dashboard die Galerie zwischen **Kennwort** (Standard) und
@@ -156,7 +161,11 @@ Link zum Kopieren mit `#k=<Wort>` im Fragment). Das Wort wird aus `ADMIN_SECRET`
 einer Liste leicht tippbarer Wörter gewählt (`who-results-words.ts`), zeigt nur die
 Ergebnisse (auch vor der Freigabe) und ist kein starkes Geheimnis: es hält Gäste vom
 Vorab-Blick ab. Falsche Wörter werden gebremst (20 je Adresse in 15 Minuten); das
-richtige wird nie abgewiesen. Abgestimmt wird über Fotos statt Namen: je eines für
+richtige wird nie abgewiesen. Im Admin steht die Zahl der Stimmen und Geräte, dazu der
+Knopf **„Alle Stimmen löschen"** (Rückfrage; nach der Freigabe gesperrt): er leert
+`who_votes` und zählt die „Runde" (`who_votes_epoch`) hoch, die `GET /api/who-votes`
+mitschickt. Die Seite der Gäste vergleicht sie mit der gemerkten Runde und vergisst ihre
+alten Antworten von selbst, ein Testgerät beginnt wieder bei Frage 1. Abgestimmt wird über Fotos statt Namen: je eines für
 Saruga und Vinith (`public/who/saruga.jpg`, `public/who/vinith.jpg`, quadratisch,
 640 px) und ein gemeinsames für „Beide" (`public/who/beide.jpg`, 2:1, 1000 x 500 px).
 Zum Tauschen die Datei ersetzen (gleicher Name und gleiches Format).
@@ -413,8 +422,19 @@ zweites System ist noch offen (`TODO.md`).
 der alten Seite (`data/who-votes.json`) in die neue:
 `node scripts/import-old-votes.mjs <datei> <https://vsjourney.de> [--apply --password=<Gäste-Kennwort>]`
 (ohne `--apply` nur ein Probelauf; wiederholbar, legt nichts doppelt an; die
-Abstimm-Route verlangt das Gäste-Kennwort). Es läuft
-auf dem Rechner mit dem Repo-Checkout, nicht auf dem Server.
+Abstimm-Route verlangt das Gäste-Kennwort, statt `--password` geht auch die
+Umgebungsvariable `GUEST_PASSWORD`). Es läuft auf dem Rechner mit dem Repo-Checkout
+(Node ab Version 20), nicht auf dem Server. Die Datei mit den Stimmen der alten Seite
+enthält die **Namen** der Abstimmenden: nicht weitergeben und nach dem Import auf dem
+Server und lokal löschen. Namen werden nicht mit übernommen.
+
+- Ist „Wer von uns?" im Admin auf „Beendet" oder „Freigegeben", meldet das Skript
+  „abgewiesen (HTTP 423)": kurz auf „Abstimmen" stellen, importieren, zurückstellen.
+- Bei „zu viele Anfragen" (429) wartet das Skript und versucht es erneut. Exit-Code 1
+  heißt: etwas wurde abgewiesen, ist fehlgeschlagen oder war unbrauchbar (die Hinweise
+  stehen darüber).
+- Danach `/dj` öffnen, das Wort aus dem Admin eintippen und die Zähler prüfen: Gäste
+  sehen sie bis zur Auflösung nicht.
 
 `scripts/compress-memory-images.mjs` verkleinert die Bilder für das
 Memory-Spiel nach `public/memory-spiel/`. Es braucht `sharp`, das nicht in

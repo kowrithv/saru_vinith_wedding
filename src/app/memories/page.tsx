@@ -9,6 +9,7 @@ import GuestPasswordField from '@/components/ui/GuestPasswordField'
 import PhotoPickerButton from '@/components/ui/PhotoPickerButton'
 import EmptyState from '@/components/ui/EmptyState'
 import ShowMoreButton from '@/components/ui/ShowMoreButton'
+import NewItemsButton from '@/components/ui/NewItemsButton'
 import MemoryPolaroid from '@/components/memories/MemoryPolaroid'
 import { textFieldClassName } from '@/lib/form-styles'
 import { MEMORY_PHOTO_CATEGORY } from '@/lib/gallery-categories'
@@ -21,6 +22,7 @@ import {
 import { uploadPhotoForTicket } from '@/lib/photo-upload'
 import { useGuestAccess } from '@/lib/use-guest-access'
 import { useGuestName } from '@/lib/use-guest-name'
+import { useLiveList } from '@/lib/use-live-list'
 import { formatEntryMoment } from '@/lib/format-time'
 import { cn } from '@/lib/utils'
 
@@ -86,6 +88,21 @@ export default function MemoriesPage() {
       active = false
     }
   }, [accessResolved, unlocked, reloadKey])
+
+  // Neue Erinnerungen anderer Gäste erscheinen von selbst (alle 30 Sekunden). Ein Foto, das
+  // aus der Galerie gelöscht wurde, gehört zum Schlüssel: der Eintrag wird dann neu gezeigt.
+  const live = useLiveList<MemoryEntry>({
+    url: '/api/memories',
+    shown: entries,
+    enabled: accessResolved && !loadFailed,
+    keyOf: (entry) => `${entry.id}:${entry.photo?.id ?? (entry.hasPhoto ? 'verborgen' : '')}`,
+    parse: (body) => {
+      const list = (body as { entries?: unknown } | null)?.entries
+      return Array.isArray(list) ? (list as MemoryEntry[]) : null
+    },
+    onApply: setEntries,
+    onBody: (body) => setPhotosEnabled(Boolean((body as { photosEnabled?: boolean }).photosEnabled)),
+  })
 
   const handlePhotoChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] ?? null
@@ -308,6 +325,7 @@ export default function MemoriesPage() {
           <EmptyState title="Noch keine Erinnerungen" description="Teilt eure erste." />
         ) : (
           <>
+            <NewItemsButton count={live.newCount} singular="neue Erinnerung" plural="neue Erinnerungen" onClick={live.showNew} />
             <div className="columns-1 md:columns-2 gap-4">
               {entries.slice(0, visibleCount).map((entry) => (
                 <Card key={entry.id} variant="ornate" className="relative overflow-hidden mb-4 break-inside-avoid">
