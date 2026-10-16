@@ -99,6 +99,25 @@ describe('Countdown', () => {
     expect(screen.queryByText('Tage')).not.toBeInTheDocument()
   })
 
+  // Am Vorabend (ab 16:30 Uhr, weniger als ein Tag, aber noch vor Mitternacht) wären es "00 Tage".
+  it('does not show "0 days" on the evening before: the hours become the main number', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-10-16T18:00:00Z'))
+    render(<Countdown />)
+
+    expect(screen.queryByText('Tage')).not.toBeInTheDocument()
+    expect(screen.queryByText('Tag')).not.toBeInTheDocument()
+    expect(screen.getByText('20')).toHaveClass('text-5xl', 'lining-nums')
+    expect(screen.getByText('30')).toHaveClass('text-5xl')
+    expect(screen.getByText('Stunden')).toBeInTheDocument()
+    expect(screen.getByText('Minuten')).toBeInTheDocument()
+    expect(screen.getByText('Sekunden')).toBeInTheDocument()
+    expect(screen.getByText(/bis zu unserem empfang/i)).toBeInTheDocument()
+    // Datum, Uhrzeit und der Kalender-Knopf bleiben.
+    expect(screen.getByText(/um 16:30 uhr/i)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /in meinen kalender/i })).toBeInTheDocument()
+  })
+
   it('makes the days the main number and the rest companions', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-10-15T08:00:00Z'))
