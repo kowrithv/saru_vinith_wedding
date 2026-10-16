@@ -60,6 +60,8 @@ Geräte: ☐ iPhone (Safari) ☐ Android (Chrome) ☐ ältere Hardware ☐ Deskt
 - [ ] Anfahrt-Karte: „Route planen" öffnet die Karten-App, „In Kalender speichern" legt den Termin an.
 
 ## Beamer und Punktestand (braucht `SCORE_PASSWORD` in `.env.production`)
+- [ ] `/beamer` und `/punkte` sind eigene Seiten: **kein Menü, keine Fußzeile, keine Scrollleiste** am Rand (auch im Vollbild), die Anzeige füllt die ganze Breite. Normale Seiten (Startseite, Galerie, Info …) haben Menü und Fußzeile wie immer.
+- [ ] `/beamer` (ohne Anmeldung) neu laden: kein Aufblitzen der Anzeige vor dem Anmeldefenster, das Fenster ist am Beamer **groß und gut lesbar** und hat denselben beigen Hintergrund wie die Anzeige.
 - [ ] `/beamer` auf dem Laptop am Beamer öffnen: ohne Anmeldung nur das Kennwortfeld; das **Admin**-Kennwort wird abgewiesen, `SCORE_PASSWORD` öffnet die Anzeige. Vollbild (F11): Namen, Datum, beide Kästen vollständig sichtbar, nichts abgeschnitten, auch im echten Beamer-Format.
 - [ ] `/punkte` am Handy öffnen (anmelden): +1 für Bride, +1 für Groom, −1: **der Beamer folgt in unter einer Sekunde** und der Punkt unten links ist **grün**. Bei jedem Punkt schwebt ein **„+1“** neben der Zahl des Teams auf. Orange heißt: der Proxy hält den Strom zurück (Anzeige stimmt trotzdem, nur alle 3 Sekunden) – dann Caddy prüfen.
 - [ ] Zwei Handys tippen gleichzeitig auf dasselbe Team: beide Punkte kommen an. Handy ins Flugmodus und zurück: die Seite holt den Stand von selbst.

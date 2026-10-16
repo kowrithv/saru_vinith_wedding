@@ -144,7 +144,7 @@ interface ScoreBoardProps {
 export default function ScoreBoard({ score, status }: ScoreBoardProps) {
   const bumps = useScoreBumps(score)
   return (
-    <div
+    <main
       style={THEME}
       className="fixed inset-0 z-[100] cursor-none select-none overflow-hidden bg-[radial-gradient(ellipse_at_center,var(--backdrop-center)_0%,var(--backdrop-edge)_100%)] text-[var(--ink)] [container-type:size]"
     >
@@ -200,6 +200,6 @@ export default function ScoreBoard({ score, status }: ScoreBoardProps) {
         title={STATUS_LABEL[status]}
         className={cn('absolute bottom-[1.2cqmin] left-[1.2cqmin] h-[1.1cqmin] w-[1.1cqmin] rounded-full', STATUS_DOT[status])}
       />
-    </div>
+    </main>
   )
 }

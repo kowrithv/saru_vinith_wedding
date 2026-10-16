@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils'
 import { polaroidCaption } from '@/lib/event-info'
 import type { ScoreTeam } from '@/lib/score'
 import { parseScore, useLiveScore, type ScoreStatus } from '@/lib/use-live-score'
+import ScoreLoading from './ScoreLoading'
 import ScoreLoginForm from './ScoreLoginForm'
 import ScoreScreen from './ScoreScreen'
 import { SCORE_CSS_VARS } from '@/lib/score-colors'
@@ -102,6 +103,8 @@ export default function ScoreRemote() {
   if (status === 'login') {
     return <ScoreLoginForm title="Punktestand steuern" onSuccess={reconnect} />
   }
+  // Noch unklar, ob eine Anmeldung gilt: nur der Hintergrund, nicht erst die Knöpfe und dann das Anmeldefenster.
+  if (status === 'connecting' && score === null) return <ScoreLoading />
 
   const change = (team: ScoreTeam, delta: 1 | -1) => void send({ action: 'change', team, delta })
 
