@@ -81,6 +81,9 @@ einer Route meldet `tsc` ggf. veraltete Dateien in `.next/types` – dann
   `bordeaux`, `rose-sand`; Schriften `font-serif` (Playfair), `font-display`
   (Cormorant), `font-script` (Great Vibes, nur Namen/Unterschriften). Ornament:
   `Lotus`, `Card variant="ornate"` (Eckmarken), `EmptyState`.
+- Vorschau eines gewählten Fotos im Formular: `useFilePreview` (`use-file-preview.ts`, dieselbe 800-px-Vorschau
+  wie beim Hochladen; `null` = keine Vorschau möglich, z. B. HEIC). Das Galerie-Formular hat eine eigene,
+  auf viele Dateien ausgelegte Logik.
 - Upload-Kategorien: Gäste wählen nur `Standesamt`/`Party` (`uploadCategoriesFor`
   in `gallery-categories.ts`); `/api/uploads/request` lehnt `Kennenlernen`/`Verlobung`
   für Gäste ab, `Erinnerungen` kommt nur aus dem Erinnerungs-Formular.

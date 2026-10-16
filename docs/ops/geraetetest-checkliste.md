@@ -44,7 +44,7 @@ Geräte: ☐ iPhone (Safari) ☐ Android (Chrome) ☐ ältere Hardware ☐ Deskt
 - [ ] Mobil-Menü offen: der schwebende Knopf liegt **unter** dem Menü.
 
 ## Erinnerung mit Foto (braucht R2)
-- [ ] Erinnerungen: Name, Text und ein Foto wählen → Dateiname und „×" erscheinen; absenden → Eintrag mit Foto in der Liste, Button zeigt „Foto wird hochgeladen…".
+- [ ] Erinnerungen: Name, Text und ein Foto wählen → **Vorschau des Fotos** (kleine Kachel), Dateiname und „×" erscheinen (HEIC außerhalb von Safari: graue Kachel statt Vorschau); absenden → Eintrag mit Foto in der Liste, Button zeigt „Foto wird hochgeladen…".
 - [ ] Dasselbe Foto steht in der **Galerie** (Kategorie „Erinnerungen", „Von <Name>") und lässt sich mit dem Lösch-Knopf in der Lightbox entfernen (nur auf diesem Gerät).
 - [ ] **iPhone** (Foto direkt aus der Kamera/HEIC) und **Android-Chrome**: hochladen; nicht dekodierbare Bilder werden trotzdem angenommen (graue Vorschau in der Galerie).
 - [ ] Datei > 20 MB oder keine Bilddatei: Meldung, es wird nichts hochgeladen.

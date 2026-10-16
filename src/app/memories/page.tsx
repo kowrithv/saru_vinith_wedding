@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
-import { Camera, Heart, Send, User, X } from 'lucide-react'
+import { Camera, Heart, ImageIcon, Send, User, X } from 'lucide-react'
 import SectionTitle from '@/components/ui/SectionTitle'
 import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
@@ -20,6 +20,7 @@ import {
   resolveImageContentType,
 } from '@/lib/gallery-upload-limits'
 import { uploadPhotoForTicket } from '@/lib/photo-upload'
+import { useFilePreview } from '@/lib/use-file-preview'
 import { useGuestAccess } from '@/lib/use-guest-access'
 import { useGuestName } from '@/lib/use-guest-name'
 import { useLiveList } from '@/lib/use-live-list'
@@ -58,6 +59,7 @@ export default function MemoriesPage() {
   const [photoError, setPhotoError] = useState<string | null>(null)
   // Neuer key setzt das (unkontrollierte) Datei-Feld zurück.
   const [photoInputKey, setPhotoInputKey] = useState(0)
+  const photoPreview = useFilePreview(photoFile)
   const access = useGuestAccess()
   // Das Feld erscheint nur, solange dieser Browser nicht entsperrt ist.
   const needsPassword = access.status === 'locked'
@@ -279,17 +281,31 @@ export default function MemoriesPage() {
                 />
                 <p className="mt-1.5 text-xs text-gray-500">Nur Fotos, keine Videos.</p>
                 {photoFile && (
-                  <p className="mt-2 flex items-center gap-2 text-sm text-gray-600">
-                    <span className="break-all">{photoFile.name}</span>
-                    <button
-                      type="button"
-                      onClick={removePhoto}
-                      aria-label="Foto entfernen"
-                      className="rounded-full p-1 text-gray-500 hover:bg-champagne hover:text-dark-blue"
-                    >
-                      <X size={14} />
-                    </button>
-                  </p>
+                  // Wie im Galerie-Upload: eine Vorschau statt nur des Dateinamens, das × nimmt das Foto wieder heraus.
+                  <div className="mt-3 flex items-start gap-3">
+                    <div className="relative h-28 w-28 shrink-0 overflow-hidden rounded-xl bg-champagne/60">
+                      {photoPreview ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={photoPreview} alt="Vorschau des gewählten Fotos" className="h-full w-full object-cover" />
+                      ) : (
+                        <span
+                          data-testid={photoPreview === null ? 'memory-preview-fallback' : undefined}
+                          className="flex h-full w-full items-center justify-center text-gray-400"
+                        >
+                          <ImageIcon size={28} aria-hidden="true" />
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={removePhoto}
+                        aria-label="Foto entfernen"
+                        className="absolute right-1.5 top-1.5 flex h-8 w-8 items-center justify-center rounded-full bg-dark-blue/75 text-white shadow transition-colors hover:bg-dark-blue focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                      >
+                        <X size={16} aria-hidden="true" />
+                      </button>
+                    </div>
+                    <p className="min-w-0 break-all pt-1 text-sm text-gray-600">{photoFile.name}</p>
+                  </div>
                 )}
                 {photoError && <p className="mt-2 text-sm text-red-600">{photoError}</p>}
                 <p className="mt-1 text-xs text-gray-500">Das Foto erscheint auch in der Galerie.</p>

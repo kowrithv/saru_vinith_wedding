@@ -4,9 +4,13 @@ import userEvent from '@testing-library/user-event'
 import MemoriesPage from './page'
 import { bodyOf, callsTo, mockFetchRoutes } from '@/test-utils/mock-fetch'
 import { uploadPhotoForTicket } from '@/lib/photo-upload'
+import { createPreviewImage } from '@/lib/gallery-preview'
 import { getDeleteToken } from '@/lib/gallery-delete-tokens'
 
 vi.mock('@/lib/photo-upload', () => ({ uploadPhotoForTicket: vi.fn() }))
+vi.mock('@/lib/gallery-preview', () => ({
+  createPreviewImage: vi.fn(async () => ({ blob: new Blob(['t']), isPlaceholder: false })),
+}))
 
 const photoView = {
   id: 'photo-1',
@@ -34,12 +38,17 @@ async function fillForm() {
 describe('MemoriesPage', () => {
   beforeEach(() => {
     window.history.replaceState(null, '', '/memories')
+    // jsdom kennt keine Objekt-Adressen; die Vorschau im Formular braucht sie.
+    Object.defineProperty(URL, 'createObjectURL', { value: vi.fn(() => 'blob:memory-preview'), configurable: true, writable: true })
+    Object.defineProperty(URL, 'revokeObjectURL', { value: vi.fn(), configurable: true, writable: true })
   })
 
   afterEach(() => {
     vi.unstubAllGlobals()
     window.localStorage.clear()
     vi.mocked(uploadPhotoForTicket).mockReset()
+    Reflect.deleteProperty(URL, 'createObjectURL')
+    Reflect.deleteProperty(URL, 'revokeObjectURL')
   })
 
   it('loads and renders existing entries', async () => {
@@ -317,6 +326,35 @@ describe('MemoriesPage', () => {
 
       expect(await screen.findByText('Anderes Foto wählen')).toBeInTheDocument()
       expect(screen.getByText('urlaub.jpg')).toBeInTheDocument()
+    })
+
+    it('shows a preview of the chosen photo next to its name, and removes both with the photo', async () => {
+      mockApi()
+      render(<MemoriesPage />)
+      const input = await screen.findByLabelText(/foto \(optional\)/i)
+
+      await userEvent.upload(input, photoFile('urlaub.jpg'))
+
+      const preview = await screen.findByAltText('Vorschau des gewählten Fotos')
+      expect(preview).toHaveAttribute('src', 'blob:memory-preview')
+      expect(screen.getByText('urlaub.jpg')).toBeInTheDocument()
+
+      await userEvent.click(screen.getByRole('button', { name: 'Foto entfernen' }))
+      expect(screen.queryByAltText('Vorschau des gewählten Fotos')).not.toBeInTheDocument()
+      expect(screen.queryByText('urlaub.jpg')).not.toBeInTheDocument()
+    })
+
+    it('shows a neutral picture instead of a preview when the browser cannot decode the photo (e.g. HEIC)', async () => {
+      vi.mocked(createPreviewImage).mockResolvedValueOnce({ blob: new Blob(['p']), isPlaceholder: true })
+      mockApi()
+      render(<MemoriesPage />)
+      const input = await screen.findByLabelText(/foto \(optional\)/i)
+
+      await userEvent.upload(input, photoFile('foto.heic', 'image/heic'))
+
+      expect(await screen.findByTestId('memory-preview-fallback')).toBeInTheDocument()
+      expect(screen.queryByAltText('Vorschau des gewählten Fotos')).not.toBeInTheDocument()
+      expect(screen.getByText('foto.heic')).toBeInTheDocument()
     })
 
     it('uploads the photo first and sends the ticket with the entry', async () => {
