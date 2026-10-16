@@ -84,6 +84,10 @@ einer Route meldet `tsc` ggf. veraltete Dateien in `.next/types` – dann
 - Vorschau eines gewählten Fotos im Formular: `useFilePreview` (`use-file-preview.ts`, dieselbe 800-px-Vorschau
   wie beim Hochladen; `null` = keine Vorschau möglich, z. B. HEIC). Das Galerie-Formular hat eine eigene,
   auf viele Dateien ausgelegte Logik.
+- Galerie-Raster (`GalleryGrid.tsx`): Mosaik als dichtes CSS-Grid (`[grid-auto-flow:dense]`), 3/5/6 Spalten, quadratische Kacheln
+  über die Zeilenhöhe in `cqw`; das neueste Foto und danach jedes `BIG_TILE_EVERY`. (7.) ist 2 x 2 groß, gezählt von oben in der
+  gezeigten Liste (die Größe hängt an der Position und wechselt, wenn ein neues Foto kommt: gewollt, nur Kosmetik). Auf 1 gestellt
+  sind alle Kacheln gleich. Bewusst **kein** CSS-Spalten-Masonry: das füllt erst die linke, dann die rechte Spalte und springt beim Nachladen.
 - Upload-Kategorien: Gäste wählen nur `Standesamt`/`Party` (`uploadCategoriesFor`
   in `gallery-categories.ts`); `/api/uploads/request` lehnt `Kennenlernen`/`Verlobung`
   für Gäste ab, `Erinnerungen` kommt nur aus dem Erinnerungs-Formular.

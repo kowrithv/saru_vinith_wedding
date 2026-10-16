@@ -159,6 +159,71 @@ describe('GalleryGrid', () => {
     expect(screen.getByRole('img')).toHaveAttribute('loading', 'lazy')
   })
 
+  // Mosaik: ein dichtes Raster, das Zeile für Zeile gelesen wird (neueste zuerst); das neueste Foto
+  // und danach jedes 7. ist doppelt so groß.
+  describe('mosaic layout', () => {
+    const many = (count: number, category = 'Party') =>
+      Array.from({ length: count }, (_, i) =>
+        photo({ id: `p${i}`, uploaderName: `Gast ${i}`, category, thumbUrl: `https://fotos.example.de/p${i}/thumb.jpg` })
+      )
+    const tiles = () => screen.getAllByRole('img').map((img) => img.closest('button') as HTMLButtonElement)
+    const isBig = (tile: HTMLElement) => tile.classList.contains('col-span-2') && tile.classList.contains('row-span-2')
+    const bigIndexes = () =>
+      tiles()
+        .map((tile, index) => (isBig(tile) ? index : -1))
+        .filter((index) => index >= 0)
+
+    it('lays the photos out as a dense grid read row by row, not in CSS columns', () => {
+      render(<GalleryGrid photos={many(5)} onPhotoDeleted={vi.fn()} />)
+      const grid = tiles()[0].parentElement
+      expect(grid).toHaveClass('grid')
+      expect(grid?.className).toContain('[grid-auto-flow:dense]')
+      expect(grid?.className).not.toMatch(/\bcolumns-/)
+    })
+
+    it('makes the newest photo and then every 7th photo a large tile', () => {
+      render(<GalleryGrid photos={many(15)} onPhotoDeleted={vi.fn()} />)
+      expect(bigIndexes()).toEqual([0, 7, 14])
+    })
+
+    it('keeps the rhythm going when more photos are shown', () => {
+      render(<GalleryGrid photos={many(70)} onPhotoDeleted={vi.fn()} />)
+      expect(bigIndexes()).toEqual([0, 7, 14, 21, 28, 35, 42, 49, 56])
+      fireEvent.click(screen.getByRole('button', { name: /10 weitere/i }))
+      expect(bigIndexes()).toEqual([0, 7, 14, 21, 28, 35, 42, 49, 56, 63])
+    })
+
+    it('counts the rhythm within the chosen category', () => {
+      const photos = [
+        ...many(3, 'Standesamt').map((p, i) => ({ ...p, id: `s${i}` })),
+        ...many(10, 'Party').map((p, i) => ({ ...p, id: `q${i}` })),
+      ]
+      render(<GalleryGrid photos={photos} onPhotoDeleted={vi.fn()} />)
+      fireEvent.click(screen.getByRole('button', { name: /^party/i }))
+      expect(bigIndexes()).toEqual([0, 7])
+    })
+
+    it('keeps the photos in the order they were given, newest first', () => {
+      render(<GalleryGrid photos={many(4)} onPhotoDeleted={vi.fn()} />)
+      expect(screen.getAllByRole('img').map((img) => img.getAttribute('alt'))).toEqual([
+        'Foto von Gast 0',
+        'Foto von Gast 1',
+        'Foto von Gast 2',
+        'Foto von Gast 3',
+      ])
+    })
+
+    it('crops every photo to fill its tile', () => {
+      render(<GalleryGrid photos={many(2)} onPhotoDeleted={vi.fn()} />)
+      for (const img of screen.getAllByRole('img')) expect(img).toHaveClass('h-full', 'w-full', 'object-cover')
+    })
+
+    it('never lets a long uploader name run out of its tile', () => {
+      render(<GalleryGrid photos={[photo({ uploaderName: 'Alexandra-Marie von Hohenzollern-Sigmaringen' })]} onPhotoDeleted={vi.fn()} />)
+      expect(screen.getByText(/von alexandra-marie/i)).toHaveClass('truncate', 'max-w-full')
+    })
+  })
+
   // Der Champagner-Filter muss auf dem hellen Hintergrund erkennbar sein
   // (Kante) und der aktive eine Goldkante tragen (Vorschlag C9).
   describe('filter chips', () => {
