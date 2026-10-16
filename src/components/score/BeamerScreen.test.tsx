@@ -21,6 +21,30 @@ describe('BeamerScreen', () => {
     expect(wakeLock).toHaveBeenCalled()
   })
 
+  it('shows only a quiet background while it is still finding out whether there is a session (no flash of the board)', () => {
+    live.current = { ...live.current, status: 'connecting', score: null }
+    render(<BeamerScreen />)
+    expect(screen.queryByLabelText(/Punkte Team/)).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Passwort')).not.toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent('Wird geladen')
+  })
+
+  it('keeps showing the scoreboard while it reconnects, once it has a score', () => {
+    live.current = { ...live.current, status: 'connecting' }
+    render(<BeamerScreen />)
+    expect(screen.getByLabelText('Punkte Team Bride: 2')).toBeInTheDocument()
+  })
+
+  it('gives the login and the waiting screen the same backdrop as the board, so nothing flashes in between', () => {
+    live.current = { ...live.current, status: 'login', score: null }
+    const { container, rerender } = render(<BeamerScreen />)
+    const loginBackdrop = (container.firstElementChild as HTMLElement).className
+    live.current = { ...live.current, status: 'connecting', score: null }
+    rerender(<BeamerScreen />)
+    expect((container.firstElementChild as HTMLElement).className).toBe(loginBackdrop)
+    expect(loginBackdrop).toContain('var(--backdrop-center)')
+  })
+
   it('asks for the password instead of showing scores when there is no session', () => {
     live.current = { ...live.current, status: 'login', score: null }
     render(<BeamerScreen />)

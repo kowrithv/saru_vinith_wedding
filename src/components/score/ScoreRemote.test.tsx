@@ -55,6 +55,14 @@ describe('ScoreRemote', () => {
     expect(main.style.getPropertyValue('--groom')).toBe(SCORE_COLORS.groom)
   })
 
+  it('shows nothing but a quiet background while it is still finding out whether there is a session', () => {
+    setLive({ status: 'connecting', score: null })
+    render(<ScoreRemote />)
+    expect(screen.queryByRole('button', { name: /Punkt/ })).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Passwort')).not.toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent('Wird geladen')
+  })
+
   it('shows both scores', () => {
     render(<ScoreRemote />)
     expect(screen.getByLabelText('Punkte Team Bride: 3')).toBeInTheDocument()

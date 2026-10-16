@@ -76,7 +76,9 @@ einer Route meldet `tsc` ggf. veraltete Dateien in `.next/types` – dann
   (Ping-Wächter, Ersatz-Abfrage alle 3 s). Maße der Anzeige in `cqmin` (Container-Einheiten).
   `SiteChrome` (Root-Layout) lässt Navigation, `<main>`, Fußzeile und Zeit-Hinweis für genau diese beiden Pfade weg: eigene
   Vollbild-Seiten, nichts liegt darunter (daher keine Seiten-Scrollleiste, und die Tab-Taste bleibt in der Anzeige). Neue
-  Bediener-Seiten dieser Art in `BARE_PATHS` eintragen. Die Teamfarben (Pink/Bordeaux) und den Hintergrund liefert `score-colors.ts` als CSS-Variablen an
+  Bediener-Seiten dieser Art in `BARE_PATHS` eintragen. Solange unklar ist, ob eine Anmeldung gilt (`status` `connecting`, noch kein Stand), zeigt `ScoreLoading` nur den
+  Hintergrund, und Anmeldefenster, Warten und Anzeige teilen denselben Verlauf (`variant="beamer"`): sonst blitzt erst die Anzeige auf und
+  springt dann aufs Anmeldefenster. Das Anmeldefenster ist in `em` gebaut und wächst mit dem Bildschirm (`cqmin`, mindestens 16 px). Die Teamfarben (Pink/Bordeaux) und den Hintergrund liefert `score-colors.ts` als CSS-Variablen an
   Beamer und Steuerung. Das schwebende „+1“ leitet `use-score-bumps.ts` beim Rendern aus dem vorigen Stand ab (kein Effect;
   nur Werte-Importe ohne `score.ts`, das hängt an der Datenbank).
 - Tailwind v4, Farb-Tokens `dark-blue`, `champagne(-light/-dark)`, `gold`,

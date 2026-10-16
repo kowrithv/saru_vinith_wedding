@@ -9,6 +9,13 @@ describe('ScoreLoginForm', () => {
     vi.unstubAllGlobals()
   })
 
+  it('grows with the screen, so it stays easy to read on a beamer', () => {
+    render(<ScoreLoginForm title="Beamer" onSuccess={vi.fn()} />)
+    const sized = screen.getByRole('heading', { name: 'Beamer' }).closest('[class*="cqmin"]')
+    expect(sized).not.toBeNull()
+    expect(sized?.className).toMatch(/clamp\(/)
+  })
+
   it('sends the password and reports success', async () => {
     const fetchMock = mockFetch({ '/api/score/login': { body: { success: true } } })
     const onSuccess = vi.fn()
