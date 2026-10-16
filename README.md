@@ -122,6 +122,16 @@ Fotos laufen **nie durch den App-Server**:
    Speicher des Upload-Geräts (in der DB steht nur dessen Hash); der Admin
    löscht jedes Foto.
 
+**Vor dem Hochladen** zeigt das Formular gleich beim Auswählen eine Kachel mit Vorschau je Foto
+(eine nach der anderen erzeugt, um den Speicher zu schonen, und vom Upload wiederverwendet), und
+jedes Foto lässt sich mit dem × aus der Auswahl nehmen. Während des Sendens und nach dem Fertigwerden
+verschwindet das ×.
+
+**Vor dem Hochladen** zeigt das Formular gleich beim Auswählen eine Kachel mit Vorschau je Foto
+(eine nach der anderen erzeugt, um den Speicher zu schonen, und vom Upload wiederverwendet), und
+jedes Foto lässt sich mit dem × aus der Auswahl nehmen. Während des Sendens und nach dem Fertigwerden
+verschwindet das ×.
+
 **Die Galerie lädt sich selbst neu** (`src/app/gallery/page.tsx`): alle 30 Sekunden
 und sobald der Tab wieder sichtbar wird (die Seite wird dabei nicht neu geladen, auch
 schon gezeigte Bilder nicht), aber **nicht während eines Uploads**
@@ -172,7 +182,7 @@ Zum Tauschen die Datei ersetzen (gleicher Name und gleiches Format).
 
 Details: `docs/superpowers/specs/2026-10-12-gallery-design.md`.
 
-**Kategorien beim Hochladen:** Gäste wählen nur *Standesamt* oder *Party* (früher „Hochzeit“; vorhandene Fotos werden beim Start umbenannt);
+**Kategorien beim Hochladen:** Gäste wählen nur *Standesamt* oder *Party*, vorausgewählt ist *Party* (früher „Hochzeit“; vorhandene Fotos werden beim Start umbenannt);
 *Kennenlernen* und *Verlobung* legt der Admin an (der Server lehnt sie für Gäste
 ab), *Erinnerungen* entsteht allein über das Erinnerungs-Formular.
 

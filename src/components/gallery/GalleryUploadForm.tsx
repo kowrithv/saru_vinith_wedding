@@ -57,6 +57,8 @@ const CANCELLED_MESSAGE = 'Abgebrochen.'
 type FileStatus = 'pending' | 'uploading' | 'done' | 'error'
 
 interface SelectedFile {
+  /** Feste Kennung: Positionen ändern sich, wenn ein Foto entfernt wird. */
+  id: number
   file: File
   contentType: string
   status: FileStatus
@@ -65,6 +67,8 @@ interface SelectedFile {
   message?: string
   /** Vorschau: URL des erzeugten Thumbnails, null = nur Platzhalter, undefined = noch keine. */
   previewUrl?: string | null
+  /** Das beim Auswählen erzeugte Vorschaubild: der Upload nimmt es, statt es noch einmal zu rechnen. */
+  preview?: PreviewImage
 }
 
 interface UploadTicket {
@@ -76,18 +80,18 @@ interface UploadTicket {
 
 type UploadResult = { photo: GalleryPhotoView; deleteToken: string } | { error: string } | { cancelled: true }
 
-function toSelectedFile(file: File): SelectedFile {
+function toSelectedFile(file: File, id: number): SelectedFile {
   const contentType = resolveImageContentType(file)
   if (!IMAGE_CONTENT_TYPE_EXTENSIONS.has(contentType)) {
-    return { file, contentType, status: 'error', invalid: true, message: 'Dateityp nicht unterstützt.' }
+    return { id, file, contentType, status: 'error', invalid: true, message: 'Dateityp nicht unterstützt.' }
   }
   if (file.size === 0) {
-    return { file, contentType, status: 'error', invalid: true, message: 'Datei ist leer.' }
+    return { id, file, contentType, status: 'error', invalid: true, message: 'Datei ist leer.' }
   }
   if (file.size > MAX_ORIGINAL_BYTES) {
-    return { file, contentType, status: 'error', invalid: true, message: 'Zu groß (max. 20 MB).' }
+    return { id, file, contentType, status: 'error', invalid: true, message: 'Zu groß (max. 20 MB).' }
   }
-  return { file, contentType, status: 'pending', invalid: false }
+  return { id, file, contentType, status: 'pending', invalid: false }
 }
 
 interface UploadControl {
@@ -212,6 +216,11 @@ export default function GalleryUploadForm({
   const [cancelled, setCancelled] = useState(false)
   const abortRef = useRef<AbortController | null>(null)
   const previewUrlsRef = useRef<string[]>([])
+  // Zählt die Auswahlen und Fotos: die Vorschau-Schleife einer früheren Auswahl bricht ab.
+  const selectionRef = useRef(0)
+  const nextFileIdRef = useRef(0)
+  // Welche Fotos gerade ausgewählt sind (für die Vorschau-Schleife, nach einem Entfernen).
+  const selectedIdsRef = useRef<Set<number>>(new Set())
   const formRef = useRef<HTMLFormElement>(null)
   // "Abbrechen" verschwindet, sobald der Upload beendet ist: der Fokus würde
   // dabei auf <body> fallen (Tastatur, VoiceOver). Er geht stattdessen auf
@@ -225,6 +234,10 @@ export default function GalleryUploadForm({
 
   // Beim Entfernen des Formulars die Objekt-URLs der Vorschauen freigeben.
   useEffect(() => releasePreviews, [])
+
+  useEffect(() => {
+    selectedIdsRef.current = new Set(selectedFiles.map((selected) => selected.id))
+  }, [selectedFiles])
 
   // Die Galerie darf sich nicht neu laden, solange hochgeladen wird.
   useEffect(() => {
@@ -242,11 +255,50 @@ export default function GalleryUploadForm({
     formRef.current?.querySelector<HTMLButtonElement>('button[type="submit"]')?.focus()
   }, [submitting])
 
+  // Die Vorschauen entstehen gleich nach dem Auswählen, eine nach der anderen: ein
+  // Vollbild nach dem anderen zu dekodieren schont den Speicher (iPhone), und die
+  // Kacheln füllen sich der Reihe nach. Der Upload nimmt das fertige Vorschaubild.
+  const generatePreviews = async (files: SelectedFile[], selection: number) => {
+    for (const item of files) {
+      if (selectionRef.current !== selection) return
+      if (item.invalid || !selectedIdsRef.current.has(item.id)) continue
+      const preview = await createPreviewImage(item.file)
+      if (selectionRef.current !== selection || !selectedIdsRef.current.has(item.id)) continue
+      let url: string | null = null
+      if (!preview.isPlaceholder && typeof URL.createObjectURL === 'function') {
+        url = URL.createObjectURL(preview.blob)
+        previewUrlsRef.current.push(url)
+      }
+      setSelectedFiles((prev) =>
+        prev.map((selected) => (selected.id === item.id ? { ...selected, preview, previewUrl: url } : selected))
+      )
+    }
+  }
+
   const handleFilesChange = (e: ChangeEvent<HTMLInputElement>) => {
     setFormError(null)
     setCancelled(false)
     releasePreviews()
-    setSelectedFiles(Array.from(e.target.files ?? []).map(toSelectedFile))
+    const chosen = Array.from(e.target.files ?? []).map((file) => toSelectedFile(file, nextFileIdRef.current++))
+    // Das Feld leeren: sonst löst dieselbe Auswahl noch einmal (nach dem Entfernen von
+    // Fotos) kein Ereignis aus.
+    e.target.value = ''
+    setSelectedFiles(chosen)
+    selectedIdsRef.current = new Set(chosen.map((selected) => selected.id))
+    const selection = ++selectionRef.current
+    void generatePreviews(chosen, selection)
+  }
+
+  // Ein Foto vor dem Hochladen aus der Auswahl nehmen.
+  const removeFile = (id: number) => {
+    const target = selectedFiles.find((selected) => selected.id === id)
+    if (!target) return
+    if (target.previewUrl && typeof URL.revokeObjectURL === 'function') {
+      URL.revokeObjectURL(target.previewUrl)
+      previewUrlsRef.current = previewUrlsRef.current.filter((url) => url !== target.previewUrl)
+    }
+    setFormError(null)
+    setSelectedFiles((prev) => prev.filter((selected) => selected.id !== id))
   }
 
   const updateFile = (index: number, changes: Partial<SelectedFile>) => {
@@ -311,6 +363,8 @@ export default function GalleryUploadForm({
       signal,
       timeoutMs,
       onPreview: (blob, isPlaceholder) => {
+        // Beim Auswählen schon gezeigt: nicht noch einmal anlegen.
+        if (selected.previewUrl !== undefined) return
         if (isPlaceholder || typeof URL.createObjectURL !== 'function') {
           updateFile(index, { previewUrl: null })
           return
@@ -371,6 +425,9 @@ export default function GalleryUploadForm({
     // Ab hier ist die Eingabe gültig: der Name steht in den anderen Formularen
     // schon bereit.
     remember(name)
+    // Ab jetzt rechnet der Upload selbst, eine Gruppe nach der anderen: die Vorschau-Schleife
+    // vom Auswählen darf nicht daneben weiter Vollbilder dekodieren.
+    selectionRef.current += 1
 
     const controller = new AbortController()
     abortRef.current = controller
@@ -384,7 +441,7 @@ export default function GalleryUploadForm({
         // fest signiert. Das Ticket (15 Minuten) läuft so erst nach der
         // Verkleinerung los.
         const previews = await Promise.all(
-          group.map(({ selected }) => createPreviewImage(selected.file))
+          group.map(({ selected }) => selected.preview ?? createPreviewImage(selected.file))
         )
         if (controller.signal.aborted) break
         const ticketsResult = await requestTickets(
@@ -505,12 +562,19 @@ export default function GalleryUploadForm({
         <p className="mt-1.5 text-xs text-gray-500">Nur Fotos, keine Videos.</p>
       </div>
 
+      {selectedFiles.length > 0 && !submitting && doneCount === 0 && (
+        <p className="text-sm text-gray-600" data-testid="selection-hint">
+          {selectedFiles.length === 1 ? '1 Foto ausgewählt' : `${selectedFiles.length} Fotos ausgewählt`}. Mit dem × nimmst du
+          einzelne wieder heraus.
+        </p>
+      )}
+
       {selectedFiles.length > 0 && (
         // Große Kacheln statt einer Textliste: man sieht auf einen Blick, welches
         // Foto gerade gesendet wird, welches fertig ist und welches nicht klappte.
         <ul className="grid max-h-[28rem] grid-cols-3 gap-2 overflow-y-auto sm:grid-cols-4">
-          {selectedFiles.map(({ file, status, message, previewUrl }, index) => (
-            <li key={index} className="min-w-0 text-xs text-gray-600">
+          {selectedFiles.map(({ id, file, status, message, previewUrl }) => (
+            <li key={id} className="min-w-0 text-xs text-gray-600">
               <div className="relative aspect-square overflow-hidden rounded-xl bg-champagne/60">
                 {previewUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -538,6 +602,17 @@ export default function GalleryUploadForm({
                   <span className="absolute inset-0 flex items-center justify-center bg-red-700/60 text-white">
                     <XCircle size={32} />
                   </span>
+                )}
+                {/* Vor dem Hochladen (und nach einem Fehler) lässt sich jedes Foto aus der Auswahl nehmen. */}
+                {!submitting && status !== 'done' && (
+                  <button
+                    type="button"
+                    onClick={() => removeFile(id)}
+                    aria-label={`Foto entfernen: ${file.name}`}
+                    className="absolute right-1.5 top-1.5 flex h-8 w-8 items-center justify-center rounded-full bg-dark-blue/75 text-white shadow transition-colors hover:bg-dark-blue focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                  >
+                    <X size={16} aria-hidden="true" />
+                  </button>
                 )}
                 {status === 'pending' && submitting && (
                   <span className="absolute inset-x-0 bottom-0 bg-dark-blue/50 px-1 py-0.5 text-center text-[11px] font-medium text-white">

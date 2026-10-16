@@ -6,8 +6,8 @@ export const MEMORY_PHOTO_CATEGORY = 'Erinnerungen' as const satisfies (typeof g
 export type GalleryCategory = (typeof galleryCategories)[number]
 
 // Vorauswahl im Upload-Formular: Gäste laden auf der Feier überwiegend
-// Hochzeitsfotos hoch - die erste Kategorie der Liste wäre dafür falsch.
-export const defaultGalleryCategory: GalleryCategory = 'Standesamt'
+// Party-Fotos hoch - die erste Kategorie der Liste wäre dafür falsch.
+export const defaultGalleryCategory: GalleryCategory = 'Party'
 
 // Beim manuellen Hochladen wählen Gäste nur den Tag selbst: Kennenlernen und
 // Verlobung sind die Fotos des Brautpaars (nur der Admin legt sie an), und

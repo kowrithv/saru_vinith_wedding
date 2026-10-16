@@ -27,8 +27,10 @@ Geräte: ☐ iPhone (Safari) ☐ Android (Chrome) ☐ ältere Hardware ☐ Deskt
 ## Galerie und Upload (braucht R2)
 - [ ] „Fotos hochladen" öffnet das Formular und scrollt es ins Bild.
 - [ ] Kategorie-Auswahl zeigt nur „Standesamt" und „Party"; am Auswahlfeld steht „Nur Fotos, keine Videos."
-- [ ] Name, Kategorie (Vorauswahl „Standesamt"), 3 Fotos auswählen → Vorschau, Fortschritt, „3 Fotos hochgeladen – danke!". Ein Kennwortfeld erscheint nur, wenn der Browser noch nicht entsperrt ist.
+- [ ] Name, Kategorie (Vorauswahl „Party"), 3 Fotos auswählen → Vorschau, Fortschritt, „3 Fotos hochgeladen – danke!". Ein Kennwortfeld erscheint nur, wenn der Browser noch nicht entsperrt ist.
 - [ ] 10 Fotos auf einmal: Formular bleibt offen, Liste scrollt, Abbrechen sichtbar.
+- [ ] **Beim Auswählen** füllen sich die Kacheln nacheinander mit der Vorschau (auf dem iPhone auch bei 10 Fotos ohne Ruckeln oder Neuladen der Seite); mit dem **×** auf einer Kachel lässt sich ein Foto vor dem Hochladen herausnehmen, hochgeladen werden nur die übrigen. Ein HEIC-Foto im Chrome zeigt statt der Vorschau ein Bild-Symbol.
+- [ ] **Beim Auswählen** füllen sich die Kacheln nacheinander mit der Vorschau (auf dem iPhone auch bei 10 Fotos ohne Ruckeln oder Neuladen der Seite); mit dem **×** auf einer Kachel lässt sich ein Foto vor dem Hochladen herausnehmen, hochgeladen werden nur die übrigen. Ein HEIC-Foto im Chrome zeigt statt der Vorschau ein Bild-Symbol.
 - [ ] **iPhone:** Foto im HEIC-Format (Originalformat) hochladen; erscheint in der Galerie, Original-Download funktioniert.
 - [ ] Datei > 20 MB: klare Meldung mit Dateiname.
 - [ ] Flugmodus während des Uploads: Fehlermeldung, nach erneutem „Hochladen" nur die unfertigen Fotos.

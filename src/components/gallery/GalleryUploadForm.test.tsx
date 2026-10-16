@@ -142,9 +142,14 @@ describe('GalleryUploadForm', () => {
     expect(screen.queryByLabelText(/kennwort/i)).not.toBeInTheDocument()
   })
 
-  it('preselects the wedding category instead of the first one in the list', () => {
+  it('preselects Party instead of the first category in the list', () => {
     render(<GalleryUploadForm onUploaded={vi.fn()} />)
-    expect(screen.getByLabelText(/kategorie/i)).toHaveValue('Standesamt')
+    expect(screen.getByLabelText(/kategorie/i)).toHaveValue('Party')
+  })
+
+  it('preselects Party for the admin as well', () => {
+    render(<GalleryUploadForm isAdmin onUploaded={vi.fn()} />)
+    expect(screen.getByLabelText(/kategorie/i)).toHaveValue('Party')
   })
 
   // Kennenlernen und Verlobung sind die Fotos des Brautpaars, Erinnerungen
@@ -241,6 +246,210 @@ describe('GalleryUploadForm', () => {
     await waitFor(() => expect(onBusyChange).toHaveBeenLastCalledWith(false))
     const calls = onBusyChange.mock.calls.map(([busy]) => busy)
     expect(calls.indexOf(true)).toBeLessThan(calls.lastIndexOf(false))
+  })
+
+  describe('choosing and removing photos before the upload', () => {
+    async function chooseThree(user: ReturnType<typeof setupUser>) {
+      createFakeBackend()
+      render(<GalleryUploadForm isAdmin onUploaded={vi.fn()} />)
+      await user.type(screen.getByLabelText(/dein name/i), 'Anna')
+      await user.upload(screen.getByLabelText(/fotos ausw/i), [makeFile('a.jpg'), makeFile('b.jpg'), makeFile('c.jpg')])
+    }
+
+    it('fills every tile with its own preview one after the other', async () => {
+      const user = setupUser()
+      await chooseThree(user)
+
+      await waitFor(() => expect(document.querySelectorAll('img[src^="blob:preview-"]')).toHaveLength(3))
+      expect(vi.mocked(createThumbnailBlob)).toHaveBeenCalledTimes(3)
+    })
+
+    it('decodes one photo at a time while previews are made', async () => {
+      const user = setupUser()
+      let running = 0
+      let peak = 0
+      vi.mocked(createThumbnailBlob).mockImplementation(async () => {
+        running += 1
+        peak = Math.max(peak, running)
+        await new Promise((resolve) => setTimeout(resolve, 5))
+        running -= 1
+        return new Blob(['thumb'])
+      })
+      await chooseThree(user)
+
+      await waitFor(() => expect(document.querySelectorAll('img[src^="blob:preview-"]')).toHaveLength(3))
+      expect(peak).toBe(1)
+    })
+
+    it('counts the chosen photos and says how to remove one', async () => {
+      const user = setupUser()
+      await chooseThree(user)
+
+      expect(screen.getByTestId('selection-hint')).toHaveTextContent('3 Fotos ausgewählt. Mit dem × nimmst du einzelne wieder heraus.')
+    })
+
+    it('offers a remove button on every tile, named after its file', async () => {
+      const user = setupUser()
+      await chooseThree(user)
+
+      for (const name of ['a.jpg', 'b.jpg', 'c.jpg']) {
+        expect(screen.getByRole('button', { name: `Foto entfernen: ${name}` })).toBeInTheDocument()
+      }
+    })
+
+    it('takes one photo out of the list and keeps the others', async () => {
+      const user = setupUser()
+      await chooseThree(user)
+      await waitFor(() => expect(document.querySelectorAll('img[src^="blob:preview-"]')).toHaveLength(3))
+
+      await user.click(screen.getByRole('button', { name: 'Foto entfernen: b.jpg' }))
+
+      expect(screen.queryByText('b.jpg')).not.toBeInTheDocument()
+      expect(screen.getByText('a.jpg')).toBeInTheDocument()
+      expect(screen.getByText('c.jpg')).toBeInTheDocument()
+      expect(screen.getAllByRole('listitem')).toHaveLength(2)
+      expect(screen.getByTestId('selection-hint')).toHaveTextContent('2 Fotos ausgewählt')
+    })
+
+    it('frees the preview of a removed photo', async () => {
+      const user = setupUser()
+      await chooseThree(user)
+      await waitFor(() => expect(document.querySelectorAll('img[src^="blob:preview-"]')).toHaveLength(3))
+      const before = revokedUrls.length
+
+      await user.click(screen.getByRole('button', { name: 'Foto entfernen: a.jpg' }))
+
+      expect(revokedUrls.length).toBe(before + 1)
+    })
+
+    it('uploads only the photos that are still there', async () => {
+      const user = setupUser()
+      const backend = createFakeBackend()
+      const onUploaded = vi.fn()
+      render(<GalleryUploadForm isAdmin onUploaded={onUploaded} />)
+      await user.type(screen.getByLabelText(/dein name/i), 'Anna')
+      await user.upload(screen.getByLabelText(/fotos ausw/i), [makeFile('a.jpg'), makeFile('b.jpg'), makeFile('c.jpg')])
+      await user.click(screen.getByRole('button', { name: 'Foto entfernen: b.jpg' }))
+
+      await user.click(screen.getByRole('button', { name: /^hochladen$/i }))
+
+      await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent(/2 fotos hochgeladen/i))
+      const sent = backend.requestBodies.flatMap((body) => (body as { files: { filename: string }[] }).files.map((file) => file.filename))
+      expect(sent.sort()).toEqual(['a.jpg', 'c.jpg'])
+      expect(onUploaded).toHaveBeenCalledTimes(2)
+    })
+
+    it('reuses the preview made at the selection instead of making it again', async () => {
+      const user = setupUser()
+      await chooseThree(user)
+      await waitFor(() => expect(document.querySelectorAll('img[src^="blob:preview-"]')).toHaveLength(3))
+      expect(vi.mocked(createThumbnailBlob)).toHaveBeenCalledTimes(3)
+
+      await user.click(screen.getByRole('button', { name: /^hochladen$/i }))
+
+      await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent(/3 fotos hochgeladen/i))
+      expect(vi.mocked(createThumbnailBlob)).toHaveBeenCalledTimes(3)
+    })
+
+    it('still uploads photos whose preview is not ready yet', async () => {
+      const user = setupUser()
+      const backend = createFakeBackend()
+      vi.mocked(createThumbnailBlob).mockImplementation(() => new Promise((resolve) => setTimeout(() => resolve(new Blob(['thumb'])), 50)))
+      render(<GalleryUploadForm isAdmin onUploaded={vi.fn()} />)
+      await user.type(screen.getByLabelText(/dein name/i), 'Anna')
+      await user.upload(screen.getByLabelText(/fotos ausw/i), [makeFile('a.jpg'), makeFile('b.jpg')])
+
+      await user.click(screen.getByRole('button', { name: /^hochladen$/i }))
+
+      await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent(/2 fotos hochgeladen/i))
+      expect(backend.requestBodies.flatMap((body) => (body as { files: unknown[] }).files)).toHaveLength(2)
+    })
+
+    it('shows no remove buttons while photos are being sent, and none on finished ones', async () => {
+      const user = setupUser()
+      let release: () => void = () => {}
+      createFakeBackend({ holdComplete: new Promise<void>((resolve) => (release = resolve)) })
+      render(<GalleryUploadForm isAdmin onUploaded={vi.fn()} />)
+      await user.type(screen.getByLabelText(/dein name/i), 'Anna')
+      await user.upload(screen.getByLabelText(/fotos ausw/i), [makeFile('a.jpg'), makeFile('b.jpg')])
+      expect(screen.getAllByRole('button', { name: /foto entfernen/i })).toHaveLength(2)
+
+      await user.click(screen.getByRole('button', { name: /^hochladen$/i }))
+      await screen.findByRole('progressbar')
+      expect(screen.queryByRole('button', { name: /foto entfernen/i })).not.toBeInTheDocument()
+      expect(screen.queryByTestId('selection-hint')).not.toBeInTheDocument()
+
+      release()
+      await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent(/2 fotos hochgeladen/i))
+      expect(screen.queryByRole('button', { name: /foto entfernen/i })).not.toBeInTheDocument()
+    })
+
+    it('lets a photo that failed be taken out before trying again', async () => {
+      const user = setupUser()
+      createFakeBackend({ failComplete: new Set(['b.jpg']) })
+      render(<GalleryUploadForm isAdmin onUploaded={vi.fn()} />)
+      await user.type(screen.getByLabelText(/dein name/i), 'Anna')
+      await user.upload(screen.getByLabelText(/fotos ausw/i), [makeFile('a.jpg'), makeFile('b.jpg')])
+      await user.click(screen.getByRole('button', { name: /^hochladen$/i }))
+      await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent(/nicht hochgeladen werden/i))
+
+      expect(screen.getByRole('button', { name: 'Foto entfernen: b.jpg' })).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Foto entfernen: a.jpg' })).not.toBeInTheDocument()
+      await user.click(screen.getByRole('button', { name: 'Foto entfernen: b.jpg' }))
+
+      expect(screen.queryByText('b.jpg')).not.toBeInTheDocument()
+    })
+
+    it('lets a file that cannot be uploaded be taken out', async () => {
+      const user = setupUser()
+      createFakeBackend()
+      render(<GalleryUploadForm isAdmin onUploaded={vi.fn()} />)
+      await user.upload(screen.getByLabelText(/fotos ausw/i), [makeFile('gut.jpg'), makeFile('doc.pdf', 'application/pdf')])
+
+      await user.click(screen.getByRole('button', { name: 'Foto entfernen: doc.pdf' }))
+
+      expect(screen.queryByText('doc.pdf')).not.toBeInTheDocument()
+      expect(screen.getByText('gut.jpg')).toBeInTheDocument()
+    })
+
+    it('shows the error for an empty selection when everything was removed', async () => {
+      const user = setupUser()
+      createFakeBackend()
+      render(<GalleryUploadForm isAdmin onUploaded={vi.fn()} />)
+      await user.type(screen.getByLabelText(/dein name/i), 'Anna')
+      await user.upload(screen.getByLabelText(/fotos ausw/i), makeFile('a.jpg'))
+      await user.click(screen.getByRole('button', { name: 'Foto entfernen: a.jpg' }))
+
+      expect(screen.queryByRole('list')).not.toBeInTheDocument()
+      await user.click(screen.getByRole('button', { name: /^hochladen$/i }))
+
+      expect(screen.getByRole('alert')).toHaveTextContent(/mindestens ein foto/i)
+    })
+
+    it('clears the file field after reading it, so the same choice works again later', async () => {
+      const user = setupUser()
+      createFakeBackend()
+      render(<GalleryUploadForm isAdmin onUploaded={vi.fn()} />)
+
+      await user.upload(screen.getByLabelText(/fotos ausw/i), makeFile('a.jpg'))
+
+      expect((screen.getByLabelText(/fotos ausw/i) as HTMLInputElement).value).toBe('')
+    })
+
+    it('does not make previews for a selection that was replaced by a new one', async () => {
+      const user = setupUser()
+      createFakeBackend()
+      vi.mocked(createThumbnailBlob).mockImplementation(() => new Promise((resolve) => setTimeout(() => resolve(new Blob(['thumb'])), 20)))
+      render(<GalleryUploadForm isAdmin onUploaded={vi.fn()} />)
+      await user.upload(screen.getByLabelText(/fotos ausw/i), [makeFile('a.jpg'), makeFile('b.jpg'), makeFile('c.jpg')])
+      await user.upload(screen.getByLabelText(/fotos ausw/i), makeFile('neu.jpg'))
+
+      await waitFor(() => expect(document.querySelectorAll('img[src^="blob:preview-"]')).toHaveLength(1))
+      await new Promise((resolve) => setTimeout(resolve, 150))
+
+      expect(screen.getAllByRole('listitem')).toHaveLength(1)
+      expect(document.querySelectorAll('img[src^="blob:preview-"]')).toHaveLength(1)
+    })
   })
 
   describe('progress you can see', () => {
@@ -360,7 +569,7 @@ describe('GalleryUploadForm', () => {
 
     await waitFor(() => expect(backend.requestBodies).toHaveLength(1))
     expect(backend.requestBodies[0]).toEqual({
-      category: 'Standesamt',
+      category: 'Party',
       files: [{ filename: 'photo.jpg', size: 100, contentType: 'image/jpeg', thumbSize: 5 }],
     })
   })
@@ -446,7 +655,7 @@ describe('GalleryUploadForm', () => {
 
     await waitFor(() => expect(backend.requestBodies).toHaveLength(1))
     expect(backend.requestBodies[0]).toEqual({
-      category: 'Standesamt',
+      category: 'Party',
       files: [{ filename: 'photo.jpg', size: 100, contentType: 'image/jpeg', thumbSize: 5 }],
     })
   })
@@ -624,17 +833,16 @@ describe('GalleryUploadForm', () => {
     )
   })
 
-  it('shows a preview tile built from the generated thumbnail once a file is uploading', async () => {
+  it('shows the preview tile as soon as the photo is chosen, before anything is uploaded', async () => {
     const user = setupUser()
-    createFakeBackend()
+    const backend = createFakeBackend()
     render(<GalleryUploadForm isAdmin onUploaded={vi.fn()} />)
     await user.type(screen.getByLabelText(/dein name/i), 'Anna')
-    await user.upload(screen.getByLabelText(/fotos ausw/i), makeFile('a.jpg'))
-    expect(document.querySelector('img')).toBeNull()
 
-    await user.click(screen.getByRole('button', { name: /hochladen/i }))
+    await user.upload(screen.getByLabelText(/fotos ausw/i), makeFile('a.jpg'))
 
     await waitFor(() => expect(document.querySelector('img[src^="blob:preview-"]')).not.toBeNull())
+    expect(backend.requestBodies).toHaveLength(0)
   })
 
   it('shows a neutral icon instead of a picture when only a placeholder thumbnail exists', async () => {
