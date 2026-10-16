@@ -130,17 +130,31 @@ export default function Countdown() {
         ) : (
           <>
             <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gold">Noch</p>
-            <p className="mt-2 font-display text-7xl font-semibold leading-none tabular-nums lining-nums text-gold sm:text-8xl">
-              {pad(timeLeft.days)}
-            </p>
-            <p className="mt-3 font-display text-2xl">
-              <span>{timeLeft.days === 1 ? 'Tag' : 'Tage'}</span> bis zu unserem Empfang
-            </p>
-            <div data-testid="countdown-small" className="mt-6 flex flex-wrap items-end justify-center gap-x-8 gap-y-4">
-              <Unit value={timeLeft.hours} label="Stunden" />
-              <Unit value={timeLeft.minutes} label="Minuten" />
-              <Unit value={timeLeft.seconds} label="Sekunden" />
-            </div>
+            {timeLeft.days > 0 ? (
+              <>
+                <p className="mt-2 font-display text-7xl font-semibold leading-none tabular-nums lining-nums text-gold sm:text-8xl">
+                  {pad(timeLeft.days)}
+                </p>
+                <p className="mt-3 font-display text-2xl">
+                  <span>{timeLeft.days === 1 ? 'Tag' : 'Tage'}</span> bis zu unserem Empfang
+                </p>
+                <div data-testid="countdown-small" className="mt-6 flex flex-wrap items-end justify-center gap-x-8 gap-y-4">
+                  <Unit value={timeLeft.hours} label="Stunden" />
+                  <Unit value={timeLeft.minutes} label="Minuten" />
+                  <Unit value={timeLeft.seconds} label="Sekunden" />
+                </div>
+              </>
+            ) : (
+              <>
+                {/* Am Vorabend (weniger als ein Tag, noch vor Mitternacht) stünde sonst "00 Tage": dann tragen die Stunden die Anzeige. */}
+                <div data-testid="countdown-small" className="mt-4 flex flex-wrap items-end justify-center gap-x-8 gap-y-4">
+                  <Unit value={timeLeft.hours} label="Stunden" large />
+                  <Unit value={timeLeft.minutes} label="Minuten" large />
+                  <Unit value={timeLeft.seconds} label="Sekunden" large />
+                </div>
+                <p className="mt-4 font-display text-2xl">bis zu unserem Empfang</p>
+              </>
+            )}
             <div className="mt-6 flex items-center gap-3 text-gold" aria-hidden="true">
               <span className="h-px w-12 bg-gold/50" />
               <Lotus size={18} />
