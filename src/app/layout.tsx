@@ -5,6 +5,7 @@ import Navigation from '@/components/layout/Navigation'
 import Footer from '@/components/layout/Footer'
 import MotionProvider from '@/components/layout/MotionProvider'
 import TimePreviewBanner from '@/components/layout/TimePreviewBanner'
+import SiteChrome from '@/components/layout/SiteChrome'
 import { siteMetadata, siteViewport } from '@/lib/site-metadata'
 
 const playfair = Playfair_Display({
@@ -48,17 +49,10 @@ export default function RootLayout({
     <html lang="de" className={`${playfair.variable} ${inter.variable} ${cormorant.variable} ${greatVibes.variable}`}>
       <body className="font-sans antialiased bg-white text-gray-900">
         <MotionProvider>
-        <Navigation />
-        {/* Die Navigation ist "fixed" und überlagert daher den Seitenanfang -
-            jede Seite ist dafür verantwortlich, selbst genug Abstand nach
-            oben zu lassen (Konvention: pt-24 pb-16 auf dem äußersten
-            Element der Seite, siehe src/app/info/page.tsx). Ausnahme ist
-            die Startseite: der Hero füllt den Bildschirm und bringt sein
-            eigenes pt-20 mit. Hier KEIN pt-* ergänzen, sonst doppelter
-            Abstand. */}
-        <main className="min-h-screen">{children}</main>
-        <Footer />
-        <TimePreviewBanner />
+        {/* Navigation, <main> und Fußzeile setzt SiteChrome; Beamer und Punkte (/beamer, /punkte) bekommen sie nicht. */}
+        <SiteChrome navigation={<Navigation />} footer={<Footer />} banner={<TimePreviewBanner />}>
+          {children}
+        </SiteChrome>
         </MotionProvider>
       </body>
     </html>

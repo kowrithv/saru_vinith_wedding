@@ -74,7 +74,9 @@ einer Route meldet `tsc` ggf. veraltete Dateien in `.next/types` – dann
   relativ (`+1`/`-1`). Push per SSE: `api/score/stream` + `score-hub.ts` (`globalThis`, wie die
   Datenbank, weil Next jede Route als eigenes Bündel laden kann); Client `use-live-score.ts`
   (Ping-Wächter, Ersatz-Abfrage alle 3 s). Maße der Anzeige in `cqmin` (Container-Einheiten).
-  Die Teamfarben (Pink/Bordeaux) und den Hintergrund liefert `score-colors.ts` als CSS-Variablen an
+  `SiteChrome` (Root-Layout) lässt Navigation, `<main>`, Fußzeile und Zeit-Hinweis für genau diese beiden Pfade weg: eigene
+  Vollbild-Seiten, nichts liegt darunter (daher keine Seiten-Scrollleiste, und die Tab-Taste bleibt in der Anzeige). Neue
+  Bediener-Seiten dieser Art in `BARE_PATHS` eintragen. Die Teamfarben (Pink/Bordeaux) und den Hintergrund liefert `score-colors.ts` als CSS-Variablen an
   Beamer und Steuerung. Das schwebende „+1“ leitet `use-score-bumps.ts` beim Rendern aus dem vorigen Stand ab (kein Effect;
   nur Werte-Importe ohne `score.ts`, das hängt an der Datenbank).
 - Tailwind v4, Farb-Tokens `dark-blue`, `champagne(-light/-dark)`, `gold`,

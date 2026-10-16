@@ -47,6 +47,11 @@ describe('ScoreBoard', () => {
     expect(screen.getByLabelText('Punkte Team Groom: 6')).toBeInTheDocument()
   })
 
+  it('is the main content of its own page, since nothing of the site stands around it', () => {
+    render(<ScoreBoard score={{ bride: 1, groom: 2, rev: 3 }} status="live" />)
+    expect(screen.getByRole('main')).toHaveTextContent('Saruga & Vinith')
+  })
+
   it('takes the team colours and the backdrop from the shared score colours', () => {
     const { container } = render(<ScoreBoard score={{ bride: 1, groom: 2, rev: 3 }} status="live" />)
     const root = container.firstElementChild as HTMLElement
